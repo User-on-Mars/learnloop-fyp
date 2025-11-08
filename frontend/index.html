@@ -4,6 +4,36 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LearnLoop</title>
+    <!-- Google Font (Inter) -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Tailwind CDN (with theme config for LearnLoop) -->
+<script>
+  window.tailwind = {
+    theme: {
+      extend: {
+        fontFamily: { inter: ['Inter', 'system-ui', 'sans-serif'] },
+        colors: {
+          ll: {
+            50:  '#eef9ff',
+            100: '#d9f1ff',
+            200: '#b6e5ff',
+            300: '#86d3ff',
+            400: '#54beff',
+            500: '#2aa4ff',   /* primary */
+            600: '#1488e8',
+            700: '#0f6bc0',
+            800: '#0d569a',
+            900: '#0c467d',
+          },
+        },
+      }
+    }
+  }
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+
   </head>
   <body>
     <div id="root"></div>
