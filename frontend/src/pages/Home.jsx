@@ -52,7 +52,6 @@ export default function Home() {
 
           <div className="mt-6 text-sm text-gray-600">
             <span className="inline-block mr-3">✅ Email & Google sign-in</span>
-            <span className="inline-block mr-3">✅ Protected dashboard</span>
           </div>
         </div>
 
