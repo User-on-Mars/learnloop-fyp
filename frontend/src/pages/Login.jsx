@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth, signInWithGoogle } from "../firebase.js";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import AuthLayout from "../components/AuthLayout.jsx";
 import Input from "../components/Input.jsx";
 import { Button, GhostButton } from "../components/Button.jsx";
@@ -21,7 +21,14 @@ export default function Login() {
     setMsg("");
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      if (!userCredential.user.emailVerified) {
+        await auth.signOut();
+        setErr("Please verify your email before logging in. Check your inbox for the verification link.");
+        return;
+      }
+      
       setMsg("Welcome back!");
       nav("/dashboard", { replace: true });
     } catch (e) {

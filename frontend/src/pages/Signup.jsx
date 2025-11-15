@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth, signInWithGoogle } from "../firebase.js";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import AuthLayout from "../components/AuthLayout.jsx";
 import Input from "../components/Input.jsx";
 import { Button, GhostButton } from "../components/Button.jsx";
@@ -20,8 +20,9 @@ export default function Signup() {
     setErr(""); setMsg(""); setLoading(true);
     try {
       if (password !== confirm) throw new Error("Passwords do not match");
-      await createUserWithEmailAndPassword(auth, email, password);
-      setMsg("Account created! Please log in.");
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await sendEmailVerification(userCredential.user);
+      setMsg("Account created! Please check your email to verify your account before logging in.");
       nav("/login", { replace: true });
     } catch (e) {
       const code = e?.code || "";
