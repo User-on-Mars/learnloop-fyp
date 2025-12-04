@@ -24,6 +24,18 @@
   - Apply sticky positioning and styling with Tailwind classes
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
+- [x] 1.3 Add User Profile Section to Sidebar
+
+
+
+  - Integrate user profile section into `frontend/src/components/Sidebar.jsx` above the logout button
+  - Retrieve user data (displayName, email, photoURL) from Firebase auth context
+  - Implement avatar display with photo or initials-based fallback
+  - Display user's display name with truncation for long names
+  - Display user's email address in secondary text style
+  - Apply styling with gray background, rounded corners, and proper spacing
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+
 - [x] 1.2 Update Dashboard page layout
 
 
