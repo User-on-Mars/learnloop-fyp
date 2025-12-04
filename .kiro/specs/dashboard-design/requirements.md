@@ -14,6 +14,7 @@ The Dashboard Design feature provides users with a comprehensive, personalized o
 - **Reflections Feed**: A list of recent user reflections on their learning experiences
 - **Blockers Summary**: An overview of obstacles or challenges the user has encountered
 - **Sidebar Navigation**: A persistent navigation menu with icons for accessing different sections of the application
+- **User Profile Section**: A component in the sidebar displaying the authenticated user's identity information including name, email, and avatar
 - **Practice Session**: A timed learning activity logged by the user
 - **Blocker**: An obstacle or challenge that impedes learning progress
 - **Reflection**: A user's written thoughts or insights about their learning experience
@@ -111,6 +112,18 @@ The Dashboard Design feature provides users with a comprehensive, personalized o
 5. THE Sidebar Navigation SHALL maintain a fixed position on the left side of the viewport
 
 ### Requirement 9
+
+**User Story:** As a learner, I want to see my profile information in the sidebar, so that I can quickly identify my account and access profile-related actions
+
+#### Acceptance Criteria
+
+1. THE Sidebar Navigation SHALL display a user profile section above the logout button
+2. THE user profile section SHALL show the authenticated user's display name
+3. THE user profile section SHALL show the authenticated user's email address
+4. THE user profile section SHALL display a user avatar or initials-based placeholder
+5. IF the user's display name is unavailable, THEN THE Sidebar Navigation SHALL display the email address as the primary identifier
+
+### Requirement 10
 
 **User Story:** As a learner, I want the dashboard to have consistent visual design, so that the interface feels cohesive and professional
 
