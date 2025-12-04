@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 
 import { useAuth } from "./useAuth";
 
@@ -37,6 +38,7 @@ const router = createBrowserRouter([
   { path: "/signup", element: <Signup /> },
   { path: "/forgot", element: <ForgotPassword /> },
   { path: "/dashboard", element: <Protected><Dashboard /></Protected> },
+  { path: "/profile", element: <Protected><Profile /></Protected> },
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
