@@ -54,32 +54,50 @@ export default function Signup() {
       title="Create your LearnLoop account"
       subtitle="Start mapping your skills and tracking progress."
     >
-      {err && <div className="bg-red-50 border border-red-200 text-red-700 p-2 rounded mb-3">{err}</div>}
-      {msg && <div className="bg-green-50 border border-green-200 text-green-700 p-2 rounded mb-3">{msg}</div>}
+      {err && <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 text-sm animate-shake">{err}</div>}
+      {msg && <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg mb-4 text-sm animate-slideDown">{msg}</div>}
 
-      <form className="space-y-4" onSubmit={handleSignup}>
-        <Input label="Email" type="email" value={email} required onChange={e=>setEmail(e.target.value)} />
-        <Input label="Password" type="password" value={password} required onChange={e=>setPassword(e.target.value)} />
-        <Input label="Confirm password" type="password" value={confirm} required onChange={e=>setConfirm(e.target.value)} />
-        <Button disabled={loading}>{loading ? "Creating..." : "Create account"}</Button>
+      <form className="space-y-5" onSubmit={handleSignup}>
+        <div className="transform transition-all duration-200 hover:scale-[1.01]">
+          <Input label="Email" type="email" value={email} required onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" />
+        </div>
+        <div className="transform transition-all duration-200 hover:scale-[1.01]">
+          <Input label="Password" type="password" value={password} required onChange={e=>setPassword(e.target.value)} placeholder="At least 6 characters" />
+        </div>
+        <div className="transform transition-all duration-200 hover:scale-[1.01]">
+          <Input label="Confirm password" type="password" value={confirm} required onChange={e=>setConfirm(e.target.value)} placeholder="Re-enter your password" />
+        </div>
+        <Button disabled={loading} className="transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Creating account...
+            </span>
+          ) : (
+            "Create account"
+          )}
+        </Button>
       </form>
 
-      <div className="my-4 flex items-center gap-3 text-xs text-gray-500">
-        <div className="h-px bg-gray-200 flex-1" />
-        or continue with
-        <div className="h-px bg-gray-200 flex-1" />
+      <div className="my-6 flex items-center gap-3 text-xs text-gray-500">
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1" />
+        <span className="font-medium">or continue with</span>
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1" />
       </div>
 
-      <GhostButton onClick={handleGoogle}>
+      <GhostButton onClick={handleGoogle} className="transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:border-ll-300 hover:bg-ll-50">
         <span className="inline-flex items-center gap-2 justify-center">
           <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="" className="w-5 h-5" />
-          Google
+          <span className="font-medium">Google</span>
         </span>
       </GhostButton>
 
-      <div className="text-sm mt-4 text-center">
-        <Link to="/login" className="text-gray-600 hover:underline">
-          Already have an account? Log in
+      <div className="text-sm mt-6 text-center pt-4 border-t border-gray-100">
+        <Link to="/login" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
+          Already have an account? <span className="text-ll-700">Log in →</span>
         </Link>
       </div>
     </AuthLayout>
