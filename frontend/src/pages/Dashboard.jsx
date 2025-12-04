@@ -18,7 +18,7 @@ export default function Dashboard() {
             {/* Placeholder for dashboard cards */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-semibold mb-2">Welcome to LearnLoop</h2>
-              <p className="text-gray-600">Your dashboard is being built...</p>
+              
             </div>
           </div>
         </div>
