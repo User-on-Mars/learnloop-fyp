@@ -14,7 +14,12 @@ The dashboard follows a card-based layout pattern with a persistent sidebar navi
 Dashboard (Page)
 ├── Sidebar Navigation (Persistent)
 │   ├── Navigation Items (7 items with icons)
-│   └── Active State Indicator
+│   ├── Active State Indicator
+│   ├── User Profile Section
+│   │   ├── Avatar/Initials
+│   │   ├── Display Name
+│   │   └── Email Address
+│   └── Logout Button
 ├── Main Content Area
 │   ├── Header Section
 │   │   └── Personalized Greeting
@@ -267,6 +272,61 @@ const navItems = [
 - Click to navigate to full blockers page
 
 **Data Source**: API endpoint `/api/blockers?status=active`
+
+### 9. User Profile Section Component
+
+**File**: Integrated into `frontend/src/components/Sidebar.jsx`
+
+**Purpose**: Displays authenticated user's identity information in the sidebar
+
+**Props Interface**:
+```javascript
+{
+  user: {
+    displayName: string | null,
+    email: string,
+    photoURL: string | null
+  }
+}
+```
+
+**Visual Elements**:
+- Avatar circle (48px diameter) showing:
+  - User's photo if available (photoURL)
+  - Initials-based placeholder if no photo (first letter of name or email)
+- Display name in medium font weight
+- Email address in smaller, secondary text color
+- Subtle background with rounded corners
+- Positioned above logout button with appropriate spacing
+
+**Layout**:
+```javascript
+<div className="p-3 border-t border-gray-200">
+  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-2">
+    <div className="w-12 h-12 rounded-full bg-ll-600 text-white flex items-center justify-center font-semibold">
+      {/* Avatar or Initials */}
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-sm font-medium text-gray-900 truncate">
+        {/* Display Name */}
+      </p>
+      <p className="text-xs text-gray-600 truncate">
+        {/* Email */}
+      </p>
+    </div>
+  </div>
+  {/* Logout Button */}
+</div>
+```
+
+**Styling**:
+- Container: `p-3 bg-gray-50 rounded-lg`
+- Avatar: `w-12 h-12 rounded-full bg-ll-600 text-white`
+- Name: `text-sm font-medium text-gray-900 truncate`
+- Email: `text-xs text-gray-600 truncate`
+- Truncate text to prevent overflow
+
+**Data Source**: Firebase Authentication context (`auth.currentUser`)
 
 ## Data Models
 
