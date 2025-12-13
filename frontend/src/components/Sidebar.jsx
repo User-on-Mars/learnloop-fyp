@@ -54,7 +54,7 @@ const LogoutIcon = () => (
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: HomeIcon, path: '/dashboard' },
-  // { id: 'practice', label: 'Practice', icon: ClockIcon, path: '/practice' },
+  { id: 'log-practice', label: 'Log Practice', icon: ClockIcon, path: '/log-practice' },
   // { id: 'reflections', label: 'Reflections', icon: BookIcon, path: '/reflections' },
   // { id: 'blockers', label: 'Blockers', icon: AlertIcon, path: '/blockers' },
   // { id: 'skill-map', label: 'Skill Map', icon: MapIcon, path: '/skill-map' },
@@ -90,9 +90,9 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-60 bg-white border-r border-gray-200 sticky top-0 h-screen overflow-y-auto flex flex-col">
-      <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-900">LearnLoop</h2>
+    <aside className="w-60 bg-white border-r border-gray-200 sticky top-0 h-screen overflow-y-auto flex flex-col hidden md:flex">
+      <div className="p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">LearnLoop</h2>
       </div>
       
       <nav className="px-3 flex-1">
