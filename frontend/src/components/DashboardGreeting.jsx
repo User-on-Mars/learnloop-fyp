@@ -7,9 +7,9 @@ export default function DashboardGreeting() {
   const displayName = user?.displayName || user?.email?.split('@')[0] || null;
 
   return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-bold text-gray-900">
-        {displayName ? `Welcome back, ${displayName}` : "Welcome back"}
+    <div>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+        {displayName ? `Welcome back, ${displayName}!` : "Welcome back!"}
       </h1>
     </div>
   );
