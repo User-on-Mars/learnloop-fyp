@@ -1,304 +1,460 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../firebase";
-import { updateProfile, updateEmail, updatePassword } from "firebase/auth";
-import { useAuth } from "../useAuth";
 import Sidebar from "../components/Sidebar";
-import { Button } from "../components/Button";
-import Input from "../components/Input";
+import Alert from "../components/Alert";
+import { useAuth } from "../useAuth";
+import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import { auth } from "../firebase";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function Profile() {
-  const navigate = useNavigate();
   const user = useAuth();
-
-  const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
+  
+  // Display Name State
   const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
+  const [originalDisplayName, setOriginalDisplayName] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [nameUpdateMessage, setNameUpdateMessage] = useState(null);
+  
+  // Password Change State
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
-
-  // Update form fields when user data loads
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordChangeMessage, setPasswordChangeMessage] = useState(null);
+  
+  // Initialize display name from user
   useEffect(() => {
     if (user) {
-      setDisplayName(user.displayName || "");
-      setEmail(user.email || "");
+      const name = user.displayName || "";
+      setDisplayName(name);
+      setOriginalDisplayName(name);
     }
   }, [user]);
-
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage({ type: "", text: "" });
-
+  
+  // Handle edit mode
+  const handleEditName = () => {
+    setIsEditingName(true);
+    setNameUpdateMessage(null);
+  };
+  
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setDisplayName(originalDisplayName);
+    setIsEditingName(false);
+    setNameUpdateMessage(null);
+  };
+  
+  // Handle save display name
+  const handleSaveName = async () => {
+    // Validate display name is not empty
+    const trimmedName = displayName.trim();
+    if (!trimmedName) {
+      setNameUpdateMessage({
+        variant: "error",
+        text: "Display name cannot be empty."
+      });
+      return;
+    }
+    
     try {
-      // Update display name
-      if (displayName !== user?.displayName) {
-        await updateProfile(user, { displayName });
-      }
-
-      // Update email
-      if (email !== user?.email) {
-        await updateEmail(user, email);
-      }
-
-      // Update password if provided
-      if (newPassword) {
-        if (newPassword !== confirmPassword) {
-          setMessage({ type: "error", text: "Passwords do not match" });
-          setLoading(false);
-          return;
-        }
-        if (newPassword.length < 6) {
-          setMessage({ type: "error", text: "Password must be at least 6 characters" });
-          setLoading(false);
-          return;
-        }
-        await updatePassword(user, newPassword);
-      }
-
-      setMessage({ type: "success", text: "Profile updated successfully!" });
-      setIsEditing(false);
-      setNewPassword("");
-      setConfirmPassword("");
+      setIsUpdatingName(true);
+      setNameUpdateMessage(null);
+      
+      // Update display name in Firebase
+      await updateProfile(auth.currentUser, {
+        displayName: trimmedName
+      });
+      
+      // Update local state
+      setOriginalDisplayName(trimmedName);
+      setDisplayName(trimmedName);
+      setIsEditingName(false);
+      
+      // Show success message
+      setNameUpdateMessage({
+        variant: "success",
+        text: "Display name updated successfully!"
+      });
+      
+      // Auto-dismiss success message after 3 seconds
+      setTimeout(() => {
+        setNameUpdateMessage(null);
+      }, 3000);
+      
     } catch (error) {
-      console.error("Profile update error:", error);
-      setMessage({ 
-        type: "error", 
-        text: error.message || "Failed to update profile. Please try again." 
+      let errorMessage = "Failed to update display name.";
+      
+      if (error.code === "auth/network-request-failed") {
+        errorMessage = "Unable to update name. Please check your connection.";
+      } else if (error.code === "auth/permission-denied") {
+        errorMessage = "You don't have permission to update this profile.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setNameUpdateMessage({
+        variant: "error",
+        text: errorMessage
       });
     } finally {
-      setLoading(false);
+      setIsUpdatingName(false);
     }
   };
-
-  const handleCancel = () => {
-    setDisplayName(user?.displayName || "");
-    setEmail(user?.email || "");
-    setNewPassword("");
-    setConfirmPassword("");
-    setIsEditing(false);
-    setMessage({ type: "", text: "" });
+  
+  // Handle password change
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    
+    // Clear any previous messages
+    setPasswordChangeMessage(null);
+    
+    // Client-side validation: Check if new password matches confirmation
+    if (newPassword !== confirmPassword) {
+      setPasswordChangeMessage({
+        variant: "error",
+        text: "New passwords do not match"
+      });
+      return;
+    }
+    
+    // Client-side validation: Check minimum length requirement
+    if (newPassword.length < 6) {
+      setPasswordChangeMessage({
+        variant: "error",
+        text: "Password must be at least 6 characters"
+      });
+      return;
+    }
+    
+    try {
+      setIsChangingPassword(true);
+      
+      // Re-authenticate user with current password
+      const credential = EmailAuthProvider.credential(
+        auth.currentUser.email,
+        currentPassword
+      );
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      
+      // Update password
+      await updatePassword(auth.currentUser, newPassword);
+      
+      // Show success message
+      setPasswordChangeMessage({
+        variant: "success",
+        text: "Password changed successfully!"
+      });
+      
+      // Clear form fields after successful password change
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      // Auto-dismiss success message after 3 seconds
+      setTimeout(() => {
+        setPasswordChangeMessage(null);
+      }, 3000);
+      
+    } catch (error) {
+      let errorMessage = "Failed to change password";
+      
+      if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+        errorMessage = "Current password is incorrect";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "New password is too weak";
+      } else if (error.code === "auth/requires-recent-login") {
+        errorMessage = "Please log out and log back in before changing password";
+      } else if (error.code === "auth/network-request-failed") {
+        errorMessage = "Unable to change password. Please check your connection.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setPasswordChangeMessage({
+        variant: "error",
+        text: errorMessage
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
-
+  
+  // Get user initials for avatar
   const getInitials = () => {
-    if (user?.displayName) {
-      return user.displayName.charAt(0).toUpperCase();
+    if (!user) return "";
+    if (user.displayName) {
+      const names = user.displayName.trim().split(" ");
+      if (names.length >= 2) {
+        return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+      }
+      return names[0][0].toUpperCase();
     }
-    if (user?.email) {
-      return user.email.charAt(0).toUpperCase();
+    if (user.email) {
+      return user.email[0].toUpperCase();
     }
     return "U";
   };
-
-  // Show loading state while user data is being fetched
+  
+  // Show loading state while user is being fetched
   if (user === undefined) {
     return (
-      <div className="flex min-h-screen bg-gray-50 items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-ll-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
-        </div>
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <p className="text-gray-600">Loading...</p>
+        </main>
       </div>
     );
   }
-
-  // Redirect if no user (shouldn't happen with Protected route, but just in case)
+  
+  // Show message if no user is logged in
   if (!user) {
-    navigate('/login');
-    return null;
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <p className="text-gray-600">Please log in to view your profile.</p>
+        </main>
+      </div>
+    );
   }
-
+  
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar Navigation - Hidden on mobile */}
       <Sidebar />
       
-      <main className="flex-1 p-8">
-        <div className="max-w-3xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto w-full">
+        {/* Mobile Header - Only visible on mobile */}
+        <div className="md:hidden bg-white border-b border-gray-200 p-4 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Back to dashboard"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Dashboard
+              <ArrowLeft className="w-5 h-5 text-gray-700" />
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-            <p className="text-gray-600 mt-2">Manage your account information and preferences</p>
+            <h1 className="text-lg font-bold text-gray-900">Profile Settings</h1>
           </div>
+        </div>
 
-          {/* Profile Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Avatar Section */}
-            <div className="bg-gradient-to-r from-ll-600 to-ll-700 p-8">
-              <div className="flex items-center gap-6">
-                <div className="relative group">
-                  {user?.photoURL ? (
-                    <img 
-                      src={user.photoURL} 
-                      alt="Profile" 
-                      className="w-24 h-24 rounded-full object-cover border-4 border-white"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-full bg-white border-4 border-white flex items-center justify-center">
-                      <div className="w-full h-full rounded-full bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center">
-                        <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </div>
-                    </div>
-                  )}
-                  <button className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </button>
+        <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+          {/* Page Header - Hidden on mobile, shown on desktop */}
+          <div className="mb-6 sm:mb-8 hidden md:block">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile Settings</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-2">Manage your account information and preferences</p>
+          </div>
+          
+          {/* Profile content */}
+          <div className="space-y-4 sm:space-y-6">
+            {/* Profile Information Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Profile Information</h2>
+              
+              {/* Avatar Section */}
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-ll-600 text-white flex items-center justify-center text-xl sm:text-2xl font-semibold flex-shrink-0">
+                  {getInitials()}
                 </div>
-                <div className="text-white">
-                  <h2 className="text-2xl font-bold">{user?.displayName || "User"}</h2>
-                  <p className="text-ll-100 mt-1">{user?.email}</p>
-                  <p className="text-ll-200 text-sm mt-2">Member since {new Date(user?.metadata?.creationTime).toLocaleDateString()}</p>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600">Profile Picture</p>
+                  <p className="text-xs text-gray-500">Avatar based on your initials</p>
                 </div>
               </div>
-            </div>
-
-            {/* Form Section */}
-            <div className="p-8">
-              {message.text && (
-                <div className={`mb-6 p-4 rounded-lg ${
-                  message.type === "success" 
-                    ? "bg-green-50 text-green-800 border border-green-200" 
-                    : "bg-red-50 text-red-800 border border-red-200"
-                }`}>
-                  {message.text}
-                </div>
-              )}
-
-              <form onSubmit={handleSaveProfile}>
-                <div className="space-y-6">
-                  {/* Display Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Display Name
-                    </label>
-                    <Input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      disabled={!isEditing}
-                      placeholder="Enter your display name"
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={!isEditing}
-                      placeholder="Enter your email"
-                    />
-                  </div>
-
-                  {/* Password Section - Only show when editing */}
-                  {isEditing && (
-                    <>
-                      <div className="border-t border-gray-200 pt-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h3>
-                        <p className="text-sm text-gray-600 mb-4">Leave blank to keep your current password</p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          New Password
-                        </label>
-                        <Input
-                          type="password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Enter new password (min 6 characters)"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Confirm New Password
-                        </label>
-                        <Input
-                          type="password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Confirm new password"
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200">
-                  {!isEditing ? (
-                    <Button
-                      type="button"
-                      onClick={() => setIsEditing(true)}
-                      className="bg-ll-600 hover:bg-ll-700"
-                    >
-                      Edit Profile
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        type="submit"
-                        disabled={loading}
-                        className="bg-ll-600 hover:bg-ll-700"
-                      >
-                        {loading ? "Saving..." : "Save Changes"}
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={handleCancel}
-                        disabled={loading}
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-700"
+              
+              {/* Email Field (Read-only) */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={user.email || ""}
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                />
+              </div>
+              
+              {/* Display Name Field (Editable) */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Display Name
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={displayName}
+                    disabled={!isEditingName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder={!displayName && !isEditingName ? "No name set" : ""}
+                    className={`flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent ${
+                      !isEditingName ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""
+                    }`}
+                  />
+                  {isEditingName ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={isUpdatingName}
+                        className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition disabled:opacity-60"
                       >
                         Cancel
-                      </Button>
-                    </>
+                      </button>
+                      <button
+                        onClick={handleSaveName}
+                        disabled={isUpdatingName}
+                        className="flex-1 sm:flex-none px-4 py-2 bg-ll-600 text-black rounded-lg font-medium hover:bg-ll-700 transition disabled:opacity-60"
+                      >
+                        {isUpdatingName ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleEditName}
+                      className="w-full sm:w-auto px-4 py-2 bg-ll-600 text-black rounded-lg font-medium hover:bg-ll-700 transition"
+                    >
+                      Edit
+                    </button>
                   )}
                 </div>
-              </form>
+              </div>
+              
+              {/* Status Message */}
+              {nameUpdateMessage && (
+                <Alert
+                  variant={nameUpdateMessage.variant}
+                  description={nameUpdateMessage.text}
+                />
+              )}
             </div>
-          </div>
-
-          {/* Account Info Card */}
-          <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
-            <div className="space-y-3 text-sm">
-              {/* <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600">Account ID</span>
-                <span className="font-mono text-gray-900">{user?.uid?.slice(0, 12)}...</span>
-              </div> */}
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600">Email Verified</span>
-                <span className={user?.emailVerified ? "text-green-600" : "text-orange-600"}>
-                  {user?.emailVerified ? "✓ Verified" : "⚠ Not Verified"}
-                </span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-gray-600">Last Sign In</span>
-                <span className="text-gray-900">
-                  {new Date(user?.metadata?.lastSignInTime).toLocaleDateString()}
-                </span>
-              </div>
+            
+            {/* Password Change Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Change Password</h2>
+              
+              <form onSubmit={handlePasswordChange}>
+                {/* Current Password */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      required
+                      disabled={isChangingPassword}
+                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                      placeholder="Enter your current password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      disabled={isChangingPassword}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-60"
+                      aria-label={showCurrentPassword ? "Hide current password" : "Show current password"}
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                {/* New Password */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      disabled={isChangingPassword}
+                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                      placeholder="Enter your new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      disabled={isChangingPassword}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-60"
+                      aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+                </div>
+                
+                {/* Confirm Password */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      disabled={isChangingPassword}
+                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                      placeholder="Confirm your new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={isChangingPassword}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-60"
+                      aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isChangingPassword}
+                  className="w-full px-4 py-2 bg-ll-600 text-black rounded-lg font-medium hover:bg-ll-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isChangingPassword ? "Changing Password..." : "Change Password"}
+                </button>
+              </form>
+              
+              {/* Status Message */}
+              {passwordChangeMessage && (
+                <div className="mt-4">
+                  <Alert
+                    variant={passwordChangeMessage.variant}
+                    description={passwordChangeMessage.text}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
