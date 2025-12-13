@@ -15,6 +15,7 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import LogPractice from "./pages/LogPractice";
 
 import { useAuth } from "./useAuth";
 
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
   { path: "/forgot", element: <ForgotPassword /> },
   { path: "/dashboard", element: <Protected><Dashboard /></Protected> },
   { path: "/profile", element: <Protected><Profile /></Protected> },
+  { path: "/log-practice", element: <Protected><LogPractice /></Protected> },
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
