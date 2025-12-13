@@ -1,0 +1,163 @@
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = false }) {
+  // Default data if none provided
+  const defaultData = [
+    { day: 'Mon', practice: 4, reflections: 2, blockers: 0 },
+    { day: 'Tue', practice: 6, reflections: 3, blockers: 1 },
+    { day: 'Wed', practice: 4.5, reflections: 2, blockers: 0 },
+    { day: 'Thu', practice: 7, reflections: 0, blockers: 0 },
+    { day: 'Fri', practice: 3, reflections: 4, blockers: 1 },
+    { day: 'Sat', practice: 2, reflections: 1, blockers: 1 },
+    { day: 'Sun', practice: 1, reflections: 0, blockers: 0 }
+  ];
+
+  const data = weeklyData.length > 0 ? weeklyData : defaultData;
+
+  const chartData = {
+    labels: data.map(d => d.day),
+    datasets: [
+      {
+        label: 'Practice (hours)',
+        data: data.map(d => d.practice),
+        backgroundColor: '#0284c7', // ll-600
+        borderRadius: 6,
+        barThickness: 40
+      },
+      {
+        label: 'Reflections',
+        data: data.map(d => d.reflections),
+        backgroundColor: '#10b981', // green-500
+        borderRadius: 6,
+        barThickness: 40
+      },
+      {
+        label: 'Blockers',
+        data: data.map(d => d.blockers),
+        backgroundColor: '#8b5cf6', // purple-500
+        borderRadius: 6,
+        barThickness: 40
+      }
+    ]
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          padding: 15,
+          font: {
+            size: 12,
+            family: "'Inter', sans-serif"
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: 12,
+        titleFont: {
+          size: 13,
+          weight: 'bold'
+        },
+        bodyFont: {
+          size: 12
+        },
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        displayColors: true,
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              if (context.dataset.label === 'Practice (hours)') {
+                label += context.parsed.y + 'h';
+              } else {
+                label += context.parsed.y;
+              }
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          font: {
+            size: 12,
+            family: "'Inter', sans-serif"
+          },
+          color: '#6b7280' // gray-500
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#f3f4f6', // gray-100
+          drawBorder: false
+        },
+        ticks: {
+          font: {
+            size: 12,
+            family: "'Inter', sans-serif"
+          },
+          color: '#6b7280', // gray-500
+          stepSize: 2
+        }
+      }
+    },
+    interaction: {
+      mode: 'index',
+      intersect: false
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Weekly Performance</h3>
+        <div className="h-64 flex items-center justify-center">
+          <div className="animate-pulse text-gray-400">Loading chart...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+      <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Weekly Performance</h3>
+      <div className="h-64 sm:h-80">
+        <Bar data={chartData} options={options} />
+      </div>
+    </div>
+  );
+}
