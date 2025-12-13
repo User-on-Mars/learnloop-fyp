@@ -80,15 +80,29 @@ export default function SkillProgressCard({
         <div className="w-full grid grid-cols-2 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">
-              {completedSkills}/{totalSkills}
+              {completedSkills}
             </div>
-            <div className="text-sm text-gray-600 mt-1">Skills Mastered</div>
+            <div className="text-sm text-gray-600 mt-1">Total Skills</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">
-              {hoursLogged.toFixed(1)}
+              {totalSkills}
             </div>
-            <div className="text-sm text-gray-600 mt-1">Hours Logged</div>
+            <div className="text-sm text-gray-600 mt-1">Mastered</div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full mt-6">
+          <div className="flex justify-between text-xs text-gray-600 mb-2">
+            <span>Goal: 85%</span>
+            <span>Current: {progress}%</span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-ll-600 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            ></div>
           </div>
         </div>
       </div>
