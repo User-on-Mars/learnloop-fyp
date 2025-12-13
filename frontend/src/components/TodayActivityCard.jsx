@@ -3,6 +3,18 @@ export default function TodayActivityCard({
   notesAdded = 0,
   isLoading = false 
 }) {
+  // Format minutes to hours and minutes
+  const formatTime = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0 && mins > 0) {
+      return `${hours}h ${mins}m`;
+    } else if (hours > 0) {
+      return `${hours}h`;
+    } else {
+      return `${mins}m`;
+    }
+  };
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -27,7 +39,9 @@ export default function TodayActivityCard({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-      <h3 className="text-xl font-semibold text-gray-900 mb-6">Today's Activity</h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-semibold text-gray-900">Today's Activity</h3>
+      </div>
       
       <div className="grid grid-cols-2 gap-6">
         {/* Minutes Practiced Metric */}
@@ -52,9 +66,9 @@ export default function TodayActivityCard({
           
           {/* Value with animation */}
           <div className="text-2xl font-bold text-gray-900 transition-all duration-300 ease-out">
-            {minutesPracticed}
+            {formatTime(minutesPracticed)}
           </div>
-          <div className="text-sm text-gray-600 mt-1">Minutes Practiced</div>
+          <div className="text-sm text-gray-600 mt-1">of practice logged</div>
         </div>
 
         {/* Notes Added Metric */}
@@ -81,8 +95,15 @@ export default function TodayActivityCard({
           <div className="text-2xl font-bold text-gray-900 transition-all duration-300 ease-out">
             {notesAdded}
           </div>
-          <div className="text-sm text-gray-600 mt-1">Notes Added</div>
+          <div className="text-sm text-gray-600 mt-1">notes recorded</div>
         </div>
+      </div>
+
+      {/* View Full Log Link */}
+      <div className="mt-6 pt-4 border-t border-gray-200">
+        <button className="text-sm text-ll-600 hover:text-ll-700 font-medium transition-colors">
+          View Full Log →
+        </button>
       </div>
     </div>
   );
