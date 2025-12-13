@@ -36,6 +36,22 @@ export default function Profile() {
       setOriginalDisplayName(name);
     }
   }, [user]);
+
+  // Clear password fields on component mount to prevent autofill
+  useEffect(() => {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    
+    // Additional clearing after a delay to override persistent autofill
+    const timer = setTimeout(() => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Handle edit mode
   const handleEditName = () => {
@@ -340,7 +356,11 @@ export default function Profile() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
               <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Change Password</h2>
               
-              <form onSubmit={handlePasswordChange}>
+              <form onSubmit={handlePasswordChange} autoComplete="off">
+                {/* Hidden dummy fields to prevent autofill */}
+                <input type="text" style={{display: 'none'}} />
+                <input type="password" style={{display: 'none'}} />
+                
                 {/* Current Password */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -353,6 +373,9 @@ export default function Profile() {
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       required
                       disabled={isChangingPassword}
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      name={`current-pwd-${Date.now()}`}
                       className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
                       placeholder="Enter your current password"
                     />
@@ -385,6 +408,7 @@ export default function Profile() {
                       required
                       minLength={6}
                       disabled={isChangingPassword}
+                      autoComplete="new-password"
                       className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
                       placeholder="Enter your new password"
                     />
@@ -417,6 +441,7 @@ export default function Profile() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       disabled={isChangingPassword}
+                      autoComplete="new-password"
                       className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
                       placeholder="Confirm your new password"
                     />
