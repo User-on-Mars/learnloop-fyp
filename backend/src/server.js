@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/auth.js";
+import practiceRoutes from "./routes/practice.js";
 
 dotenv.config();
 const app = express();
@@ -26,6 +27,7 @@ app.get("/api/health", (_, res) => res.json({ ok: true }));
 
 // your API routes
 app.use("/api/auth", authRoutes);
+app.use("/api/practice", practiceRoutes);
 
 // start server (keep your existing PORT/env)
 const PORT = process.env.PORT || 4000;
