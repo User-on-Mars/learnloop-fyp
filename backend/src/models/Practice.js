@@ -2,8 +2,7 @@ import mongoose from 'mongoose'
 
 const PracticeSchema = new mongoose.Schema({
   userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+    type: String, // Changed to String to support Firebase UIDs
     required: true,
     index: true 
   },
