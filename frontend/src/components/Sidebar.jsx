@@ -1,8 +1,10 @@
+import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
+import { useActiveSessions } from "../context/ActiveSessionContext";
 
-// Simple icon placeholders using SVG
+// Icons
 const HomeIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -15,62 +17,79 @@ const ClockIcon = () => (
   </svg>
 );
 
-const BookIcon = () => (
+const ReflectIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-  </svg>
-);
-
-const AlertIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-  </svg>
-);
-
-const MapIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-  </svg>
-);
-
-const ChartIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-  </svg>
-);
-
-const SettingsIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
   </svg>
 );
 
 const LogoutIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+  </svg>
+);
+
+const UserIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
+const ChevronIcon = ({ isOpen }) => (
+  <svg className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+);
+
+const AlertIcon = () => (
+  <svg className="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
   </svg>
 );
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: HomeIcon, path: '/dashboard' },
   { id: 'log-practice', label: 'Log Practice', icon: ClockIcon, path: '/log-practice' },
-  // { id: 'reflections', label: 'Reflections', icon: BookIcon, path: '/reflections' },
-  // { id: 'blockers', label: 'Blockers', icon: AlertIcon, path: '/blockers' },
-  // { id: 'skill-map', label: 'Skill Map', icon: MapIcon, path: '/skill-map' },
-  // { id: 'recap', label: 'Recap', icon: ChartIcon, path: '/recap' },
-  // { id: 'settings', label: 'Settings', icon: SettingsIcon, path: '/settings' }
+  { id: 'reflect', label: 'Reflect', icon: ReflectIcon, path: '/reflect' },
 ];
 
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const user = auth.currentUser;
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const menuRef = useRef(null);
+  
+  const { activeSessions, clearAllSessions } = useActiveSessions();
+  const hasActiveSessions = activeSessions.length > 0;
+  const runningSessions = activeSessions.filter(s => s.isRunning);
 
   const isActive = (path) => location.pathname === path;
 
-  const handleLogout = async () => {
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogoutClick = () => {
+    setShowUserMenu(false);
+    if (hasActiveSessions) {
+      setShowLogoutConfirm(true);
+    } else {
+      performLogout();
+    }
+  };
+
+  const performLogout = async () => {
     try {
+      clearAllSessions();
       await signOut(auth);
       navigate("/login", { replace: true });
     } catch (error) {
@@ -78,10 +97,12 @@ export default function Sidebar() {
     }
   };
 
-  // Get user initials for avatar fallback
   const getInitials = () => {
     if (user?.displayName) {
-      return user.displayName.charAt(0).toUpperCase();
+      const names = user.displayName.split(' ');
+      return names.length > 1 
+        ? `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase()
+        : names[0].charAt(0).toUpperCase();
     }
     if (user?.email) {
       return user.email.charAt(0).toUpperCase();
@@ -90,78 +111,157 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-60 bg-white border-r border-gray-200 sticky top-0 h-screen overflow-y-auto flex flex-col hidden md:flex">
-      <div className="p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900">LearnLoop</h2>
-      </div>
-      
-      <nav className="px-3 flex-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.path);
-          
-          return (
-            <button
-              key={item.id}
-              onClick={() => navigate(item.path)}
-              className={`
-                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors
-                ${active 
-                  ? 'bg-ll-50 text-ll-700 border-l-4 border-ll-600 -ml-3 pl-6' 
-                  : 'text-gray-700 hover:bg-gray-50'
-                }
-              `}
-            >
-              <Icon />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+    <>
+      <aside className="w-60 bg-white border-r border-gray-200 sticky top-0 h-screen overflow-y-auto flex-col hidden md:flex">
+        {/* Logo */}
+        <div className="p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">LearnLoop</h2>
+        </div>
+        
+        {/* Navigation */}
+        <nav className="px-3 flex-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            
+            return (
+              <button
+                key={item.id}
+                onClick={() => navigate(item.path)}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors
+                  ${active 
+                    ? 'bg-indigo-50 text-indigo-700 font-semibold' 
+                    : 'text-gray-700 hover:bg-gray-50'
+                  }
+                `}
+              >
+                <Icon />
+                <span className="font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-      {/* User Profile Section */}
-      <div className="p-3 border-t border-gray-200">
-        <button
-          onClick={() => navigate('/profile')}
-          className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-2 hover:bg-gray-100 transition-colors"
-        >
-          <div className="relative">
-            {user?.photoURL ? (
-              <img 
-                src={user.photoURL} 
-                alt="User avatar" 
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center">
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.displayName || user?.email || "User"}
-            </p>
-            {user?.displayName && (
-              <p className="text-xs text-gray-600 truncate">
-                {user.email}
+        {/* User Profile Section with Popup Menu */}
+        <div className="p-3 border-t border-gray-200 relative" ref={menuRef}>
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
+              showUserMenu ? 'bg-indigo-50' : 'bg-gray-50 hover:bg-gray-100'
+            }`}
+          >
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              {user?.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt="User avatar" 
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-white"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
+                  {getInitials()}
+                </div>
+              )}
+              {/* Online indicator */}
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+            </div>
+            
+            {/* User Info */}
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user?.displayName || "User"}
               </p>
-            )}
-          </div>
-        </button>
+              <p className="text-xs text-gray-500 truncate">
+                {user?.email}
+              </p>
+            </div>
+            
+            {/* Chevron */}
+            <ChevronIcon isOpen={showUserMenu} />
+          </button>
 
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors bg-red-500 text-white hover:bg-red-600"
-        >
-          <LogoutIcon />
-          <span className="font-medium">Logout</span>
-        </button>
-      </div>
-    </aside>
+          {/* Popup Menu */}
+          {showUserMenu && (
+            <div className="absolute bottom-full left-3 right-3 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    navigate('/profile');
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <UserIcon />
+                  <span>View Profile</span>
+                </button>
+                <div className="border-t border-gray-100 my-1"></div>
+                <button
+                  onClick={handleLogoutClick}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogoutIcon />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex flex-col items-center text-center">
+              <AlertIcon />
+              <h3 className="text-lg font-bold text-gray-900 mt-4 mb-2">
+                Active Sessions Running
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">
+                You have {activeSessions.length} active session{activeSessions.length > 1 ? 's' : ''}
+                {runningSessions.length > 0 && (
+                  <span className="text-amber-600 font-medium">
+                    {' '}({runningSessions.length} currently running)
+                  </span>
+                )}. 
+                Logging out will discard all unsaved progress.
+              </p>
+              
+              {/* Session Preview */}
+              <div className="w-full bg-gray-50 rounded-lg p-3 mb-4 max-h-32 overflow-y-auto">
+                {activeSessions.slice(0, 3).map(session => (
+                  <div key={session.id} className="flex items-center justify-between py-1 text-sm">
+                    <span className="text-gray-700 truncate">{session.skillName}</span>
+                    <span className={`font-mono ${session.isRunning ? 'text-green-600' : 'text-gray-500'}`}>
+                      {Math.floor(session.timer / 60)}m
+                    </span>
+                  </div>
+                ))}
+                {activeSessions.length > 3 && (
+                  <p className="text-xs text-gray-500 mt-1">+{activeSessions.length - 3} more</p>
+                )}
+              </div>
+
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={performLogout}
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                >
+                  Sign Out Anyway
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
