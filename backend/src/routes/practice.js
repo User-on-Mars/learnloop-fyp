@@ -21,22 +21,150 @@ const createPracticeSchema = z.object({
 const updatePracticeSchema = createPracticeSchema.partial()
 
 const querySchema = z.object({
-  page: z.string().transform(val => parseInt(val) || 1),
-  limit: z.string().transform(val => Math.min(parseInt(val) || 20, 100)),
+  page: z.string().optional().transform(val => parseInt(val) || 1),
+  limit: z.string().optional().transform(val => Math.min(parseInt(val) || 20, 100)),
   skillName: z.string().optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   tags: z.string().optional() // comma-separated tags
 })
 
+// ============================================
+// STATS ROUTES (must be before /:id routes!)
+// ============================================
+
+// GET /api/practice/stats/summary - Get practice statistics
+router.get('/stats/summary', async (req, res) => {
+  try {
+    console.log('📊 Getting stats summary for user:', req.user.id)
+    const userId = req.user.id
+    
+    // Get date ranges
+    const now = new Date()
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(now.getDate() - now.getDay())
+    startOfWeek.setHours(0, 0, 0, 0)
+    
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const startOfYear = new Date(now.getFullYear(), 0, 1)
+    
+    const [
+      totalSessions,
+      totalMinutes,
+      weeklyMinutes,
+      monthlyMinutes,
+      yearlyMinutes,
+      topSkills,
+      recentSessions
+    ] = await Promise.all([
+      Practice.countDocuments({ userId }),
+      
+      Practice.aggregate([
+        { $match: { userId } },
+        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
+      ]).then(result => result[0]?.total || 0),
+      
+      Practice.aggregate([
+        { $match: { userId, date: { $gte: startOfWeek } } },
+        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
+      ]).then(result => result[0]?.total || 0),
+      
+      Practice.aggregate([
+        { $match: { userId, date: { $gte: startOfMonth } } },
+        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
+      ]).then(result => result[0]?.total || 0),
+      
+      Practice.aggregate([
+        { $match: { userId, date: { $gte: startOfYear } } },
+        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
+      ]).then(result => result[0]?.total || 0),
+      
+      Practice.aggregate([
+        { $match: { userId } },
+        { $group: { 
+          _id: '$skillName', 
+          totalMinutes: { $sum: '$minutesPracticed' },
+          sessionCount: { $sum: 1 }
+        }},
+        { $sort: { totalMinutes: -1 } },
+        { $limit: 5 }
+      ]),
+      
+      Practice.find({ userId })
+        .sort({ date: -1 })
+        .limit(5)
+        .select('skillName minutesPracticed date tags')
+        .lean()
+    ])
+    
+    console.log('✅ Stats summary retrieved')
+    
+    res.json({
+      summary: {
+        totalSessions,
+        totalMinutes,
+        weeklyMinutes,
+        monthlyMinutes,
+        yearlyMinutes
+      },
+      topSkills: topSkills.map(skill => ({
+        skillName: skill._id,
+        totalMinutes: skill.totalMinutes,
+        sessionCount: skill.sessionCount
+      })),
+      recentSessions
+    })
+  } catch (error) {
+    console.error('❌ Error getting stats:', error.message)
+    res.status(500).json({ message: error.message })
+  }
+})
+
+// GET /api/practice/stats/weekly - Get weekly practice data for charts
+router.get('/stats/weekly', async (req, res) => {
+  try {
+    console.log('📈 Getting weekly stats for user:', req.user.id)
+    const userId = req.user.id
+    const weeksBack = parseInt(req.query.weeks) || 12
+    
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - (weeksBack * 7))
+    
+    const weeklyData = await Practice.aggregate([
+      { $match: { userId, date: { $gte: startDate } } },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$date' },
+            week: { $week: '$date' }
+          },
+          totalMinutes: { $sum: '$minutesPracticed' },
+          sessionCount: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.week': 1 } }
+    ])
+    
+    console.log('✅ Weekly stats retrieved')
+    res.json({ weeklyData })
+  } catch (error) {
+    console.error('❌ Error getting weekly stats:', error.message)
+    res.status(500).json({ message: error.message })
+  }
+})
+
+// ============================================
+// CRUD ROUTES
+// ============================================
+
 // GET /api/practice - Get user's practice sessions
 router.get('/', async (req, res) => {
   try {
+    console.log('📋 Getting practices for user:', req.user.id)
     const { page, limit, skillName, startDate, endDate, tags } = querySchema.parse(req.query)
     
     const filter = { userId: req.user.id }
     
-    // Add optional filters
     if (skillName) {
       filter.skillName = { $regex: skillName, $options: 'i' }
     }
@@ -65,6 +193,8 @@ router.get('/', async (req, res) => {
     
     const totalPages = Math.ceil(total / limit)
     
+    console.log(`✅ Found ${practices.length} practices for user ${req.user.id}`)
+    
     res.json({
       practices,
       pagination: {
@@ -77,6 +207,7 @@ router.get('/', async (req, res) => {
       }
     })
   } catch (error) {
+    console.error('❌ Error getting practices:', error.message)
     res.status(400).json({ message: error.message })
   }
 })
@@ -84,6 +215,7 @@ router.get('/', async (req, res) => {
 // POST /api/practice - Create new practice session
 router.post('/', async (req, res) => {
   try {
+    console.log('📝 Creating practice for user:', req.user.id, 'data:', req.body)
     const data = createPracticeSchema.parse(req.body)
     
     const practice = await Practice.create({
@@ -92,8 +224,10 @@ router.post('/', async (req, res) => {
       date: data.date ? new Date(data.date) : new Date()
     })
     
+    console.log('✅ Practice created:', practice._id)
     res.status(201).json(practice)
   } catch (error) {
+    console.error('❌ Error creating practice:', error.message)
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message })
     }
@@ -146,6 +280,7 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/practice/:id - Delete practice session
 router.delete('/:id', async (req, res) => {
   try {
+    console.log('🗑️ Deleting practice:', req.params.id, 'for user:', req.user.id)
     const practice = await Practice.findOneAndDelete({
       _id: req.params.id,
       userId: req.user.id
@@ -155,126 +290,11 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Practice session not found' })
     }
     
+    console.log('✅ Practice deleted:', req.params.id)
     res.json({ message: 'Practice session deleted successfully' })
   } catch (error) {
+    console.error('❌ Error deleting practice:', error.message)
     res.status(400).json({ message: error.message })
-  }
-})
-
-// GET /api/practice/stats/summary - Get practice statistics
-router.get('/stats/summary', async (req, res) => {
-  try {
-    const userId = req.user.id
-    
-    // Get date ranges
-    const now = new Date()
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()))
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const startOfYear = new Date(now.getFullYear(), 0, 1)
-    
-    const [
-      totalSessions,
-      totalMinutes,
-      weeklyMinutes,
-      monthlyMinutes,
-      yearlyMinutes,
-      topSkills,
-      recentSessions
-    ] = await Promise.all([
-      // Total sessions
-      Practice.countDocuments({ userId }),
-      
-      // Total minutes
-      Practice.aggregate([
-        { $match: { userId: req.user.id } },
-        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
-      ]).then(result => result[0]?.total || 0),
-      
-      // Weekly minutes
-      Practice.aggregate([
-        { $match: { userId: req.user.id, date: { $gte: startOfWeek } } },
-        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
-      ]).then(result => result[0]?.total || 0),
-      
-      // Monthly minutes
-      Practice.aggregate([
-        { $match: { userId: req.user.id, date: { $gte: startOfMonth } } },
-        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
-      ]).then(result => result[0]?.total || 0),
-      
-      // Yearly minutes
-      Practice.aggregate([
-        { $match: { userId: req.user.id, date: { $gte: startOfYear } } },
-        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
-      ]).then(result => result[0]?.total || 0),
-      
-      // Top skills by practice time
-      Practice.aggregate([
-        { $match: { userId: req.user.id } },
-        { $group: { 
-          _id: '$skillName', 
-          totalMinutes: { $sum: '$minutesPracticed' },
-          sessionCount: { $sum: 1 }
-        }},
-        { $sort: { totalMinutes: -1 } },
-        { $limit: 5 }
-      ]),
-      
-      // Recent sessions
-      Practice.find({ userId })
-        .sort({ date: -1 })
-        .limit(5)
-        .select('skillName minutesPracticed date tags')
-        .lean()
-    ])
-    
-    res.json({
-      summary: {
-        totalSessions,
-        totalMinutes,
-        weeklyMinutes,
-        monthlyMinutes,
-        yearlyMinutes
-      },
-      topSkills: topSkills.map(skill => ({
-        skillName: skill._id,
-        totalMinutes: skill.totalMinutes,
-        sessionCount: skill.sessionCount
-      })),
-      recentSessions
-    })
-  } catch (error) {
-    res.status(500).json({ message: error.message })
-  }
-})
-
-// GET /api/practice/stats/weekly - Get weekly practice data for charts
-router.get('/stats/weekly', async (req, res) => {
-  try {
-    const userId = req.user.id
-    const weeksBack = parseInt(req.query.weeks) || 12
-    
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - (weeksBack * 7))
-    
-    const weeklyData = await Practice.aggregate([
-      { $match: { userId: req.user.id, date: { $gte: startDate } } },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$date' },
-            week: { $week: '$date' }
-          },
-          totalMinutes: { $sum: '$minutesPracticed' },
-          sessionCount: { $sum: 1 }
-        }
-      },
-      { $sort: { '_id.year': 1, '_id.week': 1 } }
-    ])
-    
-    res.json({ weeklyData })
-  } catch (error) {
-    res.status(500).json({ message: error.message })
   }
 })
 
