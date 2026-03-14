@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, BookOpen, AlertTriangle, ChevronDown } from "lucide-react";
+import { Clock, BookOpen, AlertTriangle, ChevronRight, Zap, Award, Calendar } from "lucide-react";
 import { practiceAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import DashboardGreeting from "../components/DashboardGreeting";
@@ -11,146 +11,98 @@ import WeeklyPerformanceChart from "../components/WeeklyPerformanceChart";
 export default function Dashboard() {
     const navigate = useNavigate();
     
-    // State for dashboard data
     const [dashboardData, setDashboardData] = useState({
         progress: {
-            overallProgress: 75,
-            completedSkills: 12,
+            overallProgress: 0,
+            completedSkills: 0,
             totalSkills: 15,
-            totalHoursLogged: 45
+            totalHoursLogged: 0
         },
         todayActivity: {
-            minutesPracticed: 150,
-            notesAdded: 5
+            minutesPracticed: 0,
+            notesAdded: 0
         },
-        reflections: [
-            { id: 1, title: "Understanding React Hooks", snippet: "Spent an hour today refactoring an old class component into functions...", time: "2 hours ago" },
-            { id: 2, title: "Struggling with CSS Grid Layouts", snippet: "Trying to implement a complex responsive grid layout but facing issues...", time: "Yesterday" },
-            { id: 3, title: "First successful deployment!", snippet: "Finally deployed my personal portfolio website to Vercel. The entire...", time: "2 days ago" },
-        ],
-        blockers: [
-            { id: 1, title: "Difficulty with advanced TypeScript generics", priority: "High" },
-            { id: 2, title: "Time management for personal projects", priority: "Medium" },
-            { id: 3, title: "Understanding WebGL fundamentals", priority: "High" },
-        ],
-        weeklyData: [], // Placeholder for chart data
+        recentPractices: [],
+        topSkills: [],
+        weeklyData: [],
     });
     
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // Function to fetch dashboard data
     const fetchDashboardData = async () => {
-            try {
-                setIsLoading(true);
-                
-                console.log('Fetching dashboard data...');
-                const [statsResponse, practicesResponse, weeklyResponse] = await Promise.all([
-                    practiceAPI.getStats().catch(err => {
-                        console.log('Stats API error:', err);
-                        return { data: { summary: { totalMinutes: 0, totalSessions: 0, weeklyMinutes: 0, monthlyMinutes: 0, yearlyMinutes: 0 }, topSkills: [], recentSessions: [] } };
-                    }),
-                    practiceAPI.getPractices({ limit: 5 }).catch(err => {
-                        console.log('Practices API error:', err);
-                        return { data: { practices: [] } };
-                    }),
-                    practiceAPI.getWeeklyStats(12).catch(err => {
-                        console.log('Weekly stats API error:', err);
-                        return { data: { weeklyData: [] } };
-                    })
-                ]);
+        try {
+            setIsLoading(true);
+            
+            const [statsResponse, practicesResponse, weeklyResponse] = await Promise.all([
+                practiceAPI.getStats().catch(() => ({ 
+                    data: { summary: { totalMinutes: 0, totalSessions: 0 }, topSkills: [], recentSessions: [] } 
+                })),
+                practiceAPI.getPractices({ limit: 10 }).catch(() => ({ data: { practices: [] } })),
+                practiceAPI.getWeeklyStats(12).catch(() => ({ data: { weeklyData: [] } }))
+            ]);
 
-                console.log('Dashboard API responses:', { statsResponse, practicesResponse, weeklyResponse });
+            const stats = statsResponse.data;
+            const practices = practicesResponse.data.practices || [];
+            const weeklyData = weeklyResponse.data.weeklyData || [];
 
-                const stats = statsResponse.data;
-                const practices = practicesResponse.data.practices;
-                const weeklyData = weeklyResponse.data.weeklyData;
+            // Calculate today's activity
+            const today = new Date().toDateString();
+            const todayPractices = practices.filter(p => 
+                new Date(p.date).toDateString() === today
+            );
+            const todayMinutes = todayPractices.reduce((sum, p) => sum + p.minutesPracticed, 0);
 
-                // Calculate today's activity
-                const today = new Date().toDateString();
-                const todayPractices = practices.filter(p => 
-                    new Date(p.date).toDateString() === today
-                );
-                const todayMinutes = todayPractices.reduce((sum, p) => sum + p.minutesPracticed, 0);
-
-                setDashboardData({
-                    progress: {
-                        overallProgress: Math.min(Math.round((stats.summary.totalMinutes / 1000) * 100), 100) || 0,
-                        completedSkills: stats.topSkills.length || 0,
-                        totalSkills: Math.max(stats.topSkills.length, 15) || 15,
-                        totalHoursLogged: Math.round(stats.summary.totalMinutes / 60) || 0
-                    },
-                    todayActivity: {
-                        minutesPracticed: todayMinutes,
-                        notesAdded: todayPractices.filter(p => p.notes && p.notes.trim()).length
-                    },
-                    reflections: practices.length > 0 ? practices.slice(0, 3).map(p => ({
-                        id: p._id,
-                        title: `Practiced ${p.skillName}`,
-                        snippet: p.notes || `Practiced for ${p.minutesPracticed} minutes with tags: ${p.tags.join(', ')}`,
-                        time: new Date(p.date).toLocaleDateString()
-                    })) : [
-                        { id: 1, title: "No practice sessions yet", snippet: "Start logging your practice sessions to see them here!", time: "Now" }
-                    ],
-                    blockers: [
-                        { id: 1, title: "Difficulty with advanced TypeScript generics", priority: "High" },
-                        { id: 2, title: "Time management for personal projects", priority: "Medium" },
-                        { id: 3, title: "Understanding WebGL fundamentals", priority: "High" },
-                    ],
-                    weeklyData: weeklyData || []
-                });
-            } catch (err) {
-                console.error('Error fetching dashboard data:', err);
-                setError('Failed to load dashboard data');
-            } finally {
-                setIsLoading(false);
-            }
+            setDashboardData({
+                progress: {
+                    overallProgress: Math.min(Math.round((stats.summary.totalMinutes / 1000) * 100), 100) || 0,
+                    completedSkills: stats.topSkills?.length || 0,
+                    totalSkills: Math.max(stats.topSkills?.length || 0, 15),
+                    totalHoursLogged: Math.round(stats.summary.totalMinutes / 60) || 0
+                },
+                todayActivity: {
+                    minutesPracticed: todayMinutes,
+                    notesAdded: todayPractices.filter(p => p.notes && p.notes.trim()).length
+                },
+                recentPractices: practices.slice(0, 5),
+                topSkills: stats.topSkills || [],
+                weeklyData: weeklyData
+            });
+        } catch (err) {
+            console.error('Error fetching dashboard data:', err);
+            setError('Failed to load dashboard data');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    // Fetch dashboard data on component mount and when returning from other pages
     useEffect(() => {
         fetchDashboardData();
     }, []);
 
-    // Refresh data when the page becomes visible (user returns from another page)
+    // Refresh when page becomes visible
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (!document.hidden) {
                 fetchDashboardData();
             }
         };
-
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
-    // Quick action handlers - Functional logic is preserved
-    const handleLogPractice = () => {
-        navigate('/log-practice');
-    };
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
 
-    const handleAddReflection = () => {
-        console.log("Add Reflection clicked");
-        // TODO: Navigate to reflection page or open modal
-    };
-
-    const handleLogBlocker = () => {
-        console.log("Log Blocker clicked");
-        // TODO: Navigate to blocker page or open modal
-    };
-
-    // Helper to map priority to Tailwind colors (Using Red for High, Yellow/Gray for Medium/Low)
-    const getPriorityStyles = (priority) => {
-        switch (priority) {
-            case 'High':
-                return { text: 'text-white', bg: 'bg-red-600', border: 'border-red-600' };
-            case 'Medium':
-                return { text: 'text-yellow-900', bg: 'bg-yellow-300', border: 'border-yellow-300' };
-            case 'Low':
-                return { text: 'text-gray-700', bg: 'bg-gray-200', border: 'border-gray-200' };
-            default:
-                return { text: 'text-gray-700', bg: 'bg-gray-200', border: 'border-gray-200' };
-        }
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
     if (isLoading) {
@@ -193,67 +145,79 @@ export default function Dashboard() {
     }
 
     return (
-        // Main Background is light gray
         <div className="flex min-h-screen bg-gray-50">
-            {/* Sidebar Navigation (Preserved) */}
             <Sidebar />
             
-            {/* Main Content Area */}
             <main className="flex-1 overflow-y-auto w-full">
                 <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
                     
-                    {/* Header Section with Personalized Greeting and Quick Actions */}
+                    {/* Header */}
                     <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <DashboardGreeting /> {/* Component Preserved */}
-                            <button
-                                onClick={fetchDashboardData}
-                                disabled={isLoading}
-                                className="flex items-center gap-1 px-3 py-1 text-gray-600 hover:text-indigo-600 transition-colors text-sm disabled:opacity-50"
-                                title="Refresh data"
-                            >
-                                <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Refresh
-                            </button>
-                        </div>
+                        <DashboardGreeting />
                         
-                        {/* Quick Actions - Primary Indigo styling */}
+                        {/* Quick Actions */}
                         <div className="flex flex-wrap gap-2 sm:gap-3">
                             <button
-                                onClick={handleLogPractice}
-                                // Primary Button: Indigo BG
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md text-sm"
+                                onClick={() => navigate('/log-practice')}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg text-sm"
                             >
                                 <Clock className="w-5 h-5" />
                                 <span>Log Practice</span>
                             </button>
-                            
-                            <button
-                                onClick={handleAddReflection}
-                                // Secondary Button: White BG, Gray Border, Indigo Text on hover
-                                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 hover:text-indigo-600 transition-colors shadow-sm text-sm"
-                            >
-                                <BookOpen className="w-5 h-5" />
-                                <span>Add Reflection</span>
-                            </button>
-                            
-                            <button
-                                onClick={handleLogBlocker}
-                                // Secondary Button: White BG, Gray Border, Indigo Text on hover
-                                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 hover:text-indigo-600 transition-colors shadow-sm text-sm"
-                            >
-                                <AlertTriangle className="w-5 h-5" />
-                                <span>Log Blocker</span>
-                            </button>
+                        </div>
+                    </div>
+
+                    {/* Quick Stats Bar */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                    <Clock className="w-5 h-5 text-indigo-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-gray-900">{dashboardData.progress.totalHoursLogged}h</p>
+                                    <p className="text-xs text-gray-500">Total Hours</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                                    <Zap className="w-5 h-5 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-gray-900">{dashboardData.recentPractices.length}</p>
+                                    <p className="text-xs text-gray-500">Sessions</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+                                    <Award className="w-5 h-5 text-violet-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-gray-900">{dashboardData.topSkills.length}</p>
+                                    <p className="text-xs text-gray-500">Skills</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                                    <Calendar className="w-5 h-5 text-orange-600" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-gray-900">{dashboardData.progress.overallProgress}%</p>
+                                    <p className="text-xs text-gray-500">Progress</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    {/* Top Row: Skill Progress and Today's Activity (Components Preserved) */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                    {/* Main Content Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
                         <SkillProgressCard
-                            // Props Preserved. Card styling relies on internal component styling.
                             progress={dashboardData.progress.overallProgress}
                             completedSkills={dashboardData.progress.completedSkills}
                             totalSkills={dashboardData.progress.totalSkills}
@@ -262,95 +226,118 @@ export default function Dashboard() {
                         />
                         
                         <TodayActivityCard
-                            // Props Preserved. Card styling relies on internal component styling.
                             minutesPracticed={dashboardData.todayActivity.minutesPracticed}
                             notesAdded={dashboardData.todayActivity.notesAdded}
                             isLoading={isLoading}
                         />
                     </div>
 
-                    {/* Second Row: Recent Reflections and Blockers Summary - Styled as clean cards */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                    {/* Recent Activity & Top Skills */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
                         
-                        {/* Recent Reflections Card */}
+                        {/* Recent Practice Sessions */}
                         <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-                                Recent Reflections
-                            </h3>
-                            
-                            <div className="space-y-4">
-                                {dashboardData.reflections.map((item) => (
-                                    <div 
-                                        key={item.id}
-                                        // Subtle Indigo hover effect for interactivity
-                                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-indigo-50/50 transition-colors cursor-pointer border border-transparent hover:border-indigo-200"
-                                    >
-                                        {/* Indigo Bullet */}
-                                        <div className="w-2 h-2 rounded-full bg-indigo-600 mt-2 flex-shrink-0 shadow-sm"></div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="text-sm font-semibold text-gray-900 mb-0.5">{item.title}</h4>
-                                            <p className="text-xs text-gray-600 line-clamp-2">
-                                                {item.snippet}
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">{item.time}</p>
-                                        </div>
-                                        <ChevronDown className="w-4 h-4 text-gray-400 rotate-[-90deg] flex-shrink-0 mt-1" />
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            {/* View All link - Primary Indigo text */}
-                            <div className="mt-4 pt-4 border-t border-gray-100">
-                                <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-                                    View all reflections →
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-gray-900">Recent Sessions</h3>
+                                <button 
+                                    onClick={() => navigate('/log-practice')}
+                                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                                >
+                                    View all
                                 </button>
                             </div>
+                            
+                            {dashboardData.recentPractices.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <Clock className="w-8 h-8 text-gray-400" />
+                                    </div>
+                                    <p className="text-gray-500 mb-3">No practice sessions yet</p>
+                                    <button
+                                        onClick={() => navigate('/log-practice')}
+                                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                                    >
+                                        Start your first session →
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {dashboardData.recentPractices.map((practice) => (
+                                        <div 
+                                            key={practice._id}
+                                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
+                                            onClick={() => navigate('/log-practice')}
+                                        >
+                                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                                <span className="text-indigo-600 font-semibold text-sm">
+                                                    {practice.skillName?.charAt(0).toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 truncate">
+                                                    {practice.skillName}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {practice.minutesPracticed} min • {formatDate(practice.date)}
+                                                </p>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Blockers Summary Card */}
+                        {/* Top Skills */}
                         <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-                                Blockers Summary
-                            </h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-gray-900">Top Skills</h3>
+                                <span className="text-xs text-gray-500">By time spent</span>
+                            </div>
                             
-                            <div className="space-y-3">
-                                {dashboardData.blockers.map((item) => {
-                                    const styles = getPriorityStyles(item.priority);
-                                    return (
-                                        <div 
-                                            key={item.id}
-                                            className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"
-                                        >
-                                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                {/* Red icon for High priority, Gray otherwise */}
-                                                <AlertTriangle className={`w-5 h-5 ${item.priority === 'High' ? 'text-red-500' : 'text-gray-500'} flex-shrink-0`} />
-                                                <span className="text-sm text-gray-900 truncate font-medium">{item.title}</span>
+                            {dashboardData.topSkills.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <Award className="w-8 h-8 text-gray-400" />
+                                    </div>
+                                    <p className="text-gray-500">Start practicing to see your top skills</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {dashboardData.topSkills.slice(0, 5).map((skill, index) => {
+                                        const maxMinutes = dashboardData.topSkills[0]?.totalMinutes || 1;
+                                        const percentage = Math.round((skill.totalMinutes / maxMinutes) * 100);
+                                        const colors = ['indigo', 'emerald', 'violet', 'orange', 'pink'];
+                                        const color = colors[index % colors.length];
+                                        
+                                        return (
+                                            <div key={skill._id} className="group">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`w-2 h-2 rounded-full bg-${color}-500`}></span>
+                                                        <span className="text-sm font-medium text-gray-900">{skill._id}</span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-500">
+                                                        {Math.round(skill.totalMinutes / 60)}h {skill.totalMinutes % 60}m
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className={`h-full bg-${color}-500 rounded-full transition-all duration-500 group-hover:opacity-80`}
+                                                        style={{ width: `${percentage}%` }}
+                                                    />
+                                                </div>
                                             </div>
-                                            {/* Priority Tag with consistent color mapping */}
-                                            <span 
-                                                className={`px-3 py-1 text-xs font-semibold ${styles.text} ${styles.bg} rounded-full flex-shrink-0 shadow-sm`}
-                                            >
-                                                {item.priority}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* View All link - Primary Indigo text */}
-                            <div className="mt-4 pt-4 border-t border-gray-100">
-                                <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-                                    Manage all blockers →
-                                </button>
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Weekly Performance Chart (Component Preserved) */}
+                    {/* Weekly Performance Chart */}
                     <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-                            Weekly Performance
-                        </h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Weekly Performance</h3>
                         <WeeklyPerformanceChart 
                             weeklyData={dashboardData.weeklyData}
                             isLoading={isLoading}
