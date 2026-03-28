@@ -1,0 +1,68 @@
+# Production Dockerfile for Backend
+# Node System Rebuild - Optimized for Production
+
+# Use official Node.js LTS image
+FROM node:18-alpine AS base
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache \
+    curl \
+    dumb-init \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+FROM base AS dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Development dependencies for building
+FROM base AS dev-dependencies
+RUN npm ci
+
+# Build stage (if needed for any build steps)
+FROM dev-dependencies AS build
+COPY . .
+# Add any build steps here if needed
+# RUN npm run build
+
+# Production stage
+FROM base AS production
+
+# Copy production dependencies
+COPY --from=dependencies /app/node_modules ./node_modules
+
+# Copy application code
+COPY --chown=nodejs:nodejs . .
+
+# Create necessary directories
+RUN mkdir -p logs uploads && \
+    chown -R nodejs:nodejs logs uploads
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=4000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:4000/api/health || exit 1
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port
+EXPOSE 4000
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "src/server.js"]
