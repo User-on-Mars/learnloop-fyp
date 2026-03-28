@@ -66,6 +66,13 @@ export default function LogPractice() {
     const [completingSession, setCompletingSession] = useState(null);
     const [completionNotes, setCompletionNotes] = useState('');
 
+    // Delete completed practice — must type CONFIRM
+    const [practicePendingDeleteId, setPracticePendingDeleteId] = useState(null);
+    const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+
+    // Remove active session — in-app confirm (avoids silent/broken window.confirm)
+    const [activeSessionPendingRemoveId, setActiveSessionPendingRemoveId] = useState(null);
+
     // Fetch practices
     const fetchPractices = useCallback(async () => {
         try {
@@ -353,16 +360,87 @@ export default function LogPractice() {
         }
     };
 
-    // Delete completed practice
-    const handleDeletePractice = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this practice session?')) return;
+    const openDeletePracticeModal = (id) => {
+        setPracticePendingDeleteId(id);
+        setDeleteConfirmInput('');
+    };
+
+    const closeDeletePracticeModal = () => {
+        setPracticePendingDeleteId(null);
+        setDeleteConfirmInput('');
+    };
+
+    const handleDeletePracticeConfirmed = async () => {
+        if (deleteConfirmInput !== 'CONFIRM' || !practicePendingDeleteId) return;
         try {
-            await practiceAPI.deletePractice(id);
+            await practiceAPI.deletePractice(practicePendingDeleteId);
+            closeDeletePracticeModal();
             fetchPractices();
         } catch (err) {
             console.error('Error deleting practice:', err);
             setError('Failed to delete practice session');
+            closeDeletePracticeModal();
         }
+    };
+
+    const openRemoveActiveSessionModal = (sessionId) => {
+        setActiveSessionPendingRemoveId(sessionId);
+    };
+
+    const closeRemoveActiveSessionModal = () => {
+        setActiveSessionPendingRemoveId(null);
+    };
+
+    const confirmRemoveActiveSession = () => {
+        if (activeSessionPendingRemoveId == null) return;
+        removeSession(activeSessionPendingRemoveId);
+        closeRemoveActiveSessionModal();
+    };
+
+    const pendingRemoveSession =
+        activeSessionPendingRemoveId != null
+            ? activeSessions.find(
+                  (s) =>
+                      s.id === activeSessionPendingRemoveId ||
+                      s._id === activeSessionPendingRemoveId
+              )
+            : null;
+
+    const isNewModalDirty = () =>
+        Boolean(
+            formData.skillName.trim() ||
+                formData.tags.length > 0 ||
+                formData.notes.trim() ||
+                isTimerRunning
+        );
+
+    const closeNewModal = () => {
+        resetForm();
+        setShowModal(false);
+    };
+
+    const requestCloseNewModal = () => {
+        if (!isNewModalDirty()) {
+            closeNewModal();
+            return;
+        }
+        const ok = window.confirm(
+            'Are you sure you want to close? Any unsaved details in this form will be lost.'
+        );
+        if (ok) closeNewModal();
+    };
+
+    const closeCompleteModal = () => {
+        setShowCompleteModal(false);
+        setCompletingSession(null);
+        setCompletionNotes('');
+    };
+
+    const requestCloseCompleteModal = () => {
+        const ok = window.confirm(
+            'Are you sure you want to close without logging? Your session will stay active on the page.'
+        );
+        if (ok) closeCompleteModal();
     };
 
     // Reset form
@@ -383,7 +461,7 @@ export default function LogPractice() {
     };
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex min-h-screen bg-site-bg">
             <Sidebar />
 
             <main className="flex-1 overflow-y-auto w-full">
@@ -396,7 +474,7 @@ export default function LogPractice() {
                         </div>
                         <button
                             onClick={openModal}
-                            className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-md"
+                            className="flex items-center gap-2 px-5 py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-colors shadow-md"
                         >
                             <Plus className="w-5 h-5" />
                             New Practice
@@ -441,8 +519,12 @@ export default function LogPractice() {
                                                 )}
                                             </div>
                                             <button
-                                                onClick={() => removeSession(session.id)}
+                                                type="button"
+                                                onClick={() =>
+                                                    openRemoveActiveSessionModal(session._id ?? session.id)
+                                                }
                                                 className="text-gray-400 hover:text-red-500 transition-colors"
+                                                aria-label="Remove active session"
                                             >
                                                 <X className="w-4 h-4" />
                                             </button>
@@ -452,7 +534,7 @@ export default function LogPractice() {
                                         {session.isCountdown && (
                                             <div className="w-full h-2 bg-gray-100 rounded-full mb-3 overflow-hidden">
                                                 <div 
-                                                    className="h-full bg-indigo-600 rounded-full transition-all duration-1000"
+                                                    className="h-full bg-site-accent rounded-full transition-all duration-1000"
                                                     style={{ width: `${getProgress(session)}%` }}
                                                 />
                                             </div>
@@ -464,7 +546,7 @@ export default function LogPractice() {
                                                 ? 'bg-red-50 text-red-600'
                                                 : session.isRunning
                                                     ? 'bg-green-50 text-green-600'
-                                                    : 'bg-indigo-50 text-indigo-600'
+                                                    : 'bg-site-soft text-site-accent'
                                         }`}>
                                             {formatTimer(session.timer)}
                                         </div>
@@ -480,7 +562,7 @@ export default function LogPractice() {
                                                 className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg font-medium text-sm transition-colors ${
                                                     session.isRunning
                                                         ? 'bg-gray-600 text-white hover:bg-gray-700'
-                                                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                        : 'bg-site-accent text-white hover:bg-site-accent-hover'
                                                 }`}
                                             >
                                                 {session.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -488,7 +570,7 @@ export default function LogPractice() {
                                             </button>
                                             <button
                                                 onClick={() => resetSession(session.id)}
-                                                className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                                                className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-site-bg transition-colors"
                                             >
                                                 <RotateCcw className="w-4 h-4" />
                                             </button>
@@ -515,7 +597,7 @@ export default function LogPractice() {
                     {/* Completed Sessions Section */}
                     <div className="mb-6">
                         <div className="flex items-center gap-2 mb-4">
-                            <CheckCircle className="w-5 h-5 text-indigo-600" />
+                            <CheckCircle className="w-5 h-5 text-site-accent" />
                             <h2 className="text-lg font-semibold text-gray-900">Completed Sessions</h2>
                         </div>
 
@@ -529,15 +611,15 @@ export default function LogPractice() {
                                         placeholder="Search by skill or notes..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent"
                                     />
                                 </div>
                                 <button
                                     onClick={() => setShowFilters(!showFilters)}
                                     className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg font-medium transition-colors ${
                                         showFilters || filterSkill || filterTag
-                                            ? 'border-indigo-300 bg-indigo-50 text-indigo-600'
-                                            : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                                            ? 'border-site-border bg-site-soft text-site-accent'
+                                            : 'border-gray-300 text-gray-600 hover:bg-site-bg'
                                     }`}
                                 >
                                     <Filter className="w-4 h-4" />
@@ -553,7 +635,7 @@ export default function LogPractice() {
                                         <select
                                             value={filterSkill}
                                             onChange={(e) => setFilterSkill(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent text-sm"
                                         >
                                             <option value="">All Skills</option>
                                             {uniqueSkills.map(skill => (
@@ -566,7 +648,7 @@ export default function LogPractice() {
                                         <select
                                             value={filterTag}
                                             onChange={(e) => setFilterTag(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent text-sm"
                                         >
                                             <option value="">All Tags</option>
                                             {uniqueTags.map(tag => (
@@ -577,7 +659,7 @@ export default function LogPractice() {
                                     {(filterSkill || filterTag) && (
                                         <button
                                             onClick={() => { setFilterSkill(''); setFilterTag(''); }}
-                                            className="self-end px-3 py-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                                            className="self-end px-3 py-2 text-sm text-site-accent hover:text-site-accent font-medium"
                                         >
                                             Clear Filters
                                         </button>
@@ -589,7 +671,7 @@ export default function LogPractice() {
                         {/* Practice Logs Grid */}
                         {loading ? (
                             <div className="text-center py-12">
-                                <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                <div className="animate-spin w-8 h-8 border-4 border-site-accent border-t-transparent rounded-full mx-auto mb-4"></div>
                                 <p className="text-gray-500">Loading practice sessions...</p>
                             </div>
                         ) : filteredPractices.length === 0 ? (
@@ -612,8 +694,10 @@ export default function LogPractice() {
                                         <div className="flex items-start justify-between mb-3">
                                             <h3 className="font-semibold text-gray-900 truncate flex-1">{practice.skillName}</h3>
                                             <button
-                                                onClick={() => handleDeletePractice(practice._id)}
+                                                type="button"
+                                                onClick={() => openDeletePracticeModal(practice._id)}
                                                 className="text-gray-400 hover:text-red-500 transition-colors ml-2"
+                                                aria-label="Delete practice session"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -635,7 +719,7 @@ export default function LogPractice() {
                                                 {practice.tags.slice(0, 3).map((tag, idx) => (
                                                     <span
                                                         key={idx}
-                                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium"
+                                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-site-soft text-site-accent rounded-full text-xs font-medium"
                                                     >
                                                         <Tag className="w-3 h-3" />
                                                         {tag}
@@ -672,8 +756,10 @@ export default function LogPractice() {
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold text-gray-900">New Practice Session</h2>
                                 <button
-                                    onClick={() => setShowModal(false)}
+                                    type="button"
+                                    onClick={requestCloseNewModal}
                                     className="text-gray-400 hover:text-gray-600 transition-colors"
+                                    aria-label="Close"
                                 >
                                     <X className="w-6 h-6" />
                                 </button>
@@ -691,7 +777,7 @@ export default function LogPractice() {
                                         onChange={(e) => setFormData(prev => ({ ...prev, skillName: e.target.value }))}
                                         placeholder="e.g., React Hooks, Data Structures"
                                         required
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent"
                                     />
                                 </div>
 
@@ -703,7 +789,7 @@ export default function LogPractice() {
                                             {formData.tags.map((tag, index) => (
                                                 <span
                                                     key={index}
-                                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-site-soft text-site-accent rounded-full text-sm font-medium"
                                                 >
                                                     {tag}
                                                     <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-red-600">
@@ -720,12 +806,12 @@ export default function LogPractice() {
                                             onChange={(e) => setNewTag(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && handleAddTag(e)}
                                             placeholder="Add tag and press Enter"
-                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm"
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent text-sm"
                                         />
                                         <button
                                             type="button"
                                             onClick={handleAddTag}
-                                            className="px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+                                            className="px-3 py-2 bg-site-soft border border-site-border text-site-accent rounded-lg hover:bg-site-soft transition-colors"
                                         >
                                             <Plus className="w-4 h-4" />
                                         </button>
@@ -740,25 +826,25 @@ export default function LogPractice() {
                                         onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                                         placeholder="Add any notes..."
                                         rows={2}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent resize-none"
+                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent resize-none"
                                     />
                                 </div>
 
                                 {/* Timer Section */}
-                                <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-200">
+                                <div className="bg-site-soft rounded-xl p-4 border border-site-border">
                                     <div className="flex items-center justify-center gap-2 mb-3">
-                                        <Timer className="w-4 h-4 text-indigo-600" />
-                                        <span className="text-sm font-medium text-indigo-700">Practice Timer</span>
+                                        <Timer className="w-4 h-4 text-site-accent" />
+                                        <span className="text-sm font-medium text-site-accent">Practice Timer</span>
                                     </div>
 
                                     {/* Timer Mode Toggle */}
                                     <div className="flex justify-center mb-3">
-                                        <div className="bg-white rounded-lg p-1 border border-indigo-200 inline-flex">
+                                        <div className="bg-white rounded-lg p-1 border border-site-border inline-flex">
                                             <button
                                                 type="button"
                                                 onClick={() => { setIsCountdown(true); setIsTimerRunning(false); }}
                                                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                                                    isCountdown ? 'bg-indigo-600 text-white' : 'text-indigo-600 hover:bg-indigo-50'
+                                                    isCountdown ? 'bg-site-accent text-white' : 'text-site-accent hover:bg-site-soft'
                                                 }`}
                                             >
                                                 Countdown
@@ -767,7 +853,7 @@ export default function LogPractice() {
                                                 type="button"
                                                 onClick={() => { setIsCountdown(false); setIsTimerRunning(false); setTimer(0); }}
                                                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                                                    !isCountdown ? 'bg-indigo-600 text-white' : 'text-indigo-600 hover:bg-indigo-50'
+                                                    !isCountdown ? 'bg-site-accent text-white' : 'text-site-accent hover:bg-site-soft'
                                                 }`}
                                             >
                                                 Stopwatch
@@ -784,27 +870,27 @@ export default function LogPractice() {
                                                 max="12"
                                                 value={targetHours}
                                                 onChange={handleTargetHoursChange}
-                                                className="w-14 px-2 py-1.5 border border-indigo-200 rounded-md text-center text-sm"
+                                                className="w-14 px-2 py-1.5 border border-site-border rounded-md text-center text-sm"
                                                 disabled={isTimerRunning}
                                             />
-                                            <span className="text-xs text-indigo-600">h</span>
-                                            <span className="text-indigo-600 font-bold">:</span>
+                                            <span className="text-xs text-site-accent">h</span>
+                                            <span className="text-site-accent font-bold">:</span>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 max="59"
                                                 value={targetMinutes}
                                                 onChange={handleTargetMinutesChange}
-                                                className="w-14 px-2 py-1.5 border border-indigo-200 rounded-md text-center text-sm"
+                                                className="w-14 px-2 py-1.5 border border-site-border rounded-md text-center text-sm"
                                                 disabled={isTimerRunning}
                                             />
-                                            <span className="text-xs text-indigo-600">m</span>
+                                            <span className="text-xs text-site-accent">m</span>
                                         </div>
                                     )}
 
                                     {/* Timer Display */}
                                     <div className={`text-4xl font-bold font-mono text-center py-2 ${
-                                        isCountdown && timer <= 0 ? 'text-red-600' : 'text-indigo-600'
+                                        isCountdown && timer <= 0 ? 'text-red-600' : 'text-site-accent'
                                     }`}>
                                         {formatTimerLocal(timer)}
                                     </div>
@@ -822,7 +908,7 @@ export default function LogPractice() {
                                             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                                                 isTimerRunning
                                                     ? 'bg-gray-600 text-white hover:bg-gray-700'
-                                                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                    : 'bg-site-accent text-white hover:bg-site-accent-hover'
                                             } disabled:opacity-50`}
                                         >
                                             {isTimerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -835,7 +921,7 @@ export default function LogPractice() {
                                                 const totalSeconds = (targetHours * 60 * 60) + (targetMinutes * 60);
                                                 setTimer(isCountdown ? totalSeconds : 0);
                                             }}
-                                            className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                                            className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-site-bg transition-colors"
                                         >
                                             <RotateCcw className="w-4 h-4" />
                                         </button>
@@ -867,14 +953,14 @@ export default function LogPractice() {
                                     <button
                                         type="submit"
                                         disabled={isSubmitting || !formData.skillName}
-                                        className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isSubmitting ? 'Saving...' : 'Log Immediately (Skip Timer)'}
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setShowModal(false)}
-                                        className="w-full py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                                        onClick={requestCloseNewModal}
+                                        className="w-full py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-site-bg transition-colors"
                                     >
                                         Cancel
                                     </button>
@@ -894,12 +980,10 @@ export default function LogPractice() {
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold text-gray-900">Complete Session</h2>
                                 <button
-                                    onClick={() => {
-                                        setShowCompleteModal(false);
-                                        setCompletingSession(null);
-                                        setCompletionNotes('');
-                                    }}
+                                    type="button"
+                                    onClick={requestCloseCompleteModal}
                                     className="text-gray-400 hover:text-gray-600 transition-colors"
+                                    aria-label="Close"
                                 >
                                     <X className="w-6 h-6" />
                                 </button>
@@ -963,16 +1047,14 @@ export default function LogPractice() {
                             {/* Action Buttons */}
                             <div className="flex gap-3">
                                 <button
-                                    onClick={() => {
-                                        setShowCompleteModal(false);
-                                        setCompletingSession(null);
-                                        setCompletionNotes('');
-                                    }}
-                                    className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                                    type="button"
+                                    onClick={requestCloseCompleteModal}
+                                    className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-site-bg transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={handleSubmitActiveSession}
                                     disabled={isSubmitting}
                                     className="flex-1 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -990,6 +1072,74 @@ export default function LogPractice() {
                                     )}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Remove active session — confirm */}
+            {activeSessionPendingRemoveId != null && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-gray-200">
+                        <h2 className="text-lg font-bold text-gray-900 mb-2">Remove this active session?</h2>
+                        <p className="text-sm text-gray-600 mb-1">
+                            Are you sure you want to remove &ldquo;
+                            {pendingRemoveSession?.skillName || 'this session'}&rdquo;? It will be discarded and
+                            won&apos;t appear in completed history.
+                        </p>
+                        <div className="flex gap-3 mt-5">
+                            <button
+                                type="button"
+                                onClick={closeRemoveActiveSessionModal}
+                                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmRemoveActiveSession}
+                                className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete logged practice — type CONFIRM */}
+            {practicePendingDeleteId && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-red-100">
+                        <h2 className="text-lg font-bold text-gray-900 mb-2">Delete this practice session?</h2>
+                        <p className="text-sm text-gray-600 mb-4">
+                            This removes the logged session from your history permanently. To confirm, type{' '}
+                            <span className="font-mono font-semibold text-gray-900">CONFIRM</span> below.
+                        </p>
+                        <input
+                            type="text"
+                            value={deleteConfirmInput}
+                            onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                            placeholder="Type CONFIRM"
+                            autoComplete="off"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono text-sm mb-4"
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={closeDeletePracticeModal}
+                                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDeletePracticeConfirmed}
+                                disabled={deleteConfirmInput !== 'CONFIRM'}
+                                className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Delete
+                            </button>
                         </div>
                     </div>
                 </div>
