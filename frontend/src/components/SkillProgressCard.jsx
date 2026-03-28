@@ -1,4 +1,5 @@
-import { Zap, Clock } from 'lucide-react'; // Import Lucide icons for potential future use or context
+import { Link } from 'react-router-dom';
+import { Zap, Clock } from 'lucide-react';
 
 export default function SkillProgressCard({ 
     progress = 0, 
@@ -19,8 +20,7 @@ export default function SkillProgressCard({
     const skillsInProgress = totalSkills;
     const skillsMastered = completedSkills;
     
-    // Indigo-600 color for consistency
-    const primaryColor = '#4f46e5'; 
+    const primaryColor = '#2e5023';
 
     if (isLoading) {
         return (
@@ -55,8 +55,8 @@ export default function SkillProgressCard({
 
     return (
         // Consistent Card Styling
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-shadow duration-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">Overall Progress</h3>
+        <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-6 hover:shadow-lg transition-shadow duration-200">
+            <h3 className="text-xl font-bold text-site-ink mb-6">Overall Progress</h3>
             
             <div className="flex flex-col items-center">
                 {/* Circular Progress Ring */}
@@ -67,7 +67,7 @@ export default function SkillProgressCard({
                             cx="80"
                             cy="80"
                             r={radius}
-                            stroke="#e5e7eb" // gray-200
+                            stroke="#e2e8f0"
                             strokeWidth="12"
                             fill="none"
                         />
@@ -89,61 +89,62 @@ export default function SkillProgressCard({
                     {/* Center text showing percentage - UPDATED COLOR FOR PRIMARY VALUE */}
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center">
-                            <div className="text-4xl font-extrabold text-gray-900" style={{ color: primaryColor }}>{progress}%</div>
-                            <div className="text-sm text-gray-600 mt-1">Goal Progress</div>
+                            <div className="text-4xl font-extrabold" style={{ color: primaryColor }}>{progress}%</div>
+                            <div className="text-sm text-site-muted mt-1">Goal Progress</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Bottom metrics */}
-                <div className="w-full grid grid-cols-3 gap-4 border-t border-gray-100 pt-4">
+                <div className="w-full grid grid-cols-3 gap-4 border-t border-site-border pt-4">
                     
                     {/* Metric 1: Skills Mastered (Using Completed Skills) */}
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900 inline-flex items-center gap-1.5">
-                            <Zap className="w-5 h-5 text-indigo-500" />
+                        <div className="text-2xl font-bold text-site-ink inline-flex items-center gap-1.5">
+                            <Zap className="w-5 h-5 text-site-accent" />
                             {skillsMastered}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">Mastered Skills</div>
+                        <div className="text-xs text-site-faint mt-1">Mastered Skills</div>
                     </div>
 
                     {/* Metric 2: Total Skills (In Progress) */}
-                    <div className="text-center border-l border-r border-gray-100">
-                        <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-center border-l border-r border-site-border">
+                        <div className="text-2xl font-bold text-site-ink">
                             {skillsInProgress}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">Total Mapped</div>
+                        <div className="text-xs text-site-faint mt-1">Total Mapped</div>
                     </div>
                     
                     {/* Metric 3: Hours Logged */}
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900 inline-flex items-center gap-1.5">
-                            <Clock className="w-5 h-5 text-indigo-500" />
+                        <div className="text-2xl font-bold text-site-ink inline-flex items-center gap-1.5">
+                            <Clock className="w-5 h-5 text-site-accent" />
                             {hoursLogged}h
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">Hours Logged</div>
+                        <div className="text-xs text-site-faint mt-1">Hours Logged</div>
                     </div>
                 </div>
 
                 {/* Progress bar */}
                 <div className="w-full mt-6">
-                    <div className="flex justify-between text-xs font-medium text-gray-600 mb-2">
+                    <div className="flex justify-between text-xs font-medium text-site-muted mb-2">
                         <span>Completion Rate</span>
-                        <span className="text-indigo-600">Current: {progress}%</span>
+                        <span className="text-site-accent">Current: {progress}%</span>
                     </div>
-                    <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="w-full h-2.5 bg-site-bg rounded-full overflow-hidden border border-site-border">
                         <div 
-                            // Progress Bar - UPDATED COLOR
-                            className="h-full bg-indigo-600 rounded-full transition-all duration-500 ease-out shadow-inner"
+                            className="h-full bg-site-accent rounded-full transition-all duration-500 ease-out shadow-inner"
                             style={{ width: `${progress}%` }}
                         ></div>
                     </div>
                 </div>
                 
-                {/* Call to action/Context */}
-                <button className="mt-4 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-                    View Skill Tree →
-                </button>
+                <Link
+                    to="/skills"
+                    className="mt-4 inline-block text-xs font-medium text-site-ink underline-offset-2 transition-colors duration-150 hover:[color:var(--site-accent,#2e5023)] hover:underline hover:decoration-site-accent focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-site-accent"
+                >
+                    View Skill Maps
+                </Link>
             </div>
         </div>
     );
