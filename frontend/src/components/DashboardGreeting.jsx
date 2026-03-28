@@ -8,7 +8,7 @@ export default function DashboardGreeting() {
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+      <h1 className="text-2xl sm:text-3xl font-bold text-site-ink" style={{ fontFamily: "var(--font-display), system-ui, sans-serif" }}>
         {displayName ? `Welcome back, ${displayName}!` : "Welcome back!"}
       </h1>
     </div>
