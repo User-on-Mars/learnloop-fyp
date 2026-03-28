@@ -3,8 +3,7 @@ import mongoose from 'mongoose'
 const ActiveSessionSchema = new mongoose.Schema({
   userId: { 
     type: String,
-    required: true,
-    index: true 
+    required: true
   },
   skillName: { 
     type: String, 
