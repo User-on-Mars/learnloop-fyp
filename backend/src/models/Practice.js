@@ -3,8 +3,7 @@ import mongoose from 'mongoose'
 const PracticeSchema = new mongoose.Schema({
   userId: { 
     type: String, // Changed to String to support Firebase UIDs
-    required: true,
-    index: true 
+    required: true
   },
   skillName: { 
     type: String, 
@@ -30,8 +29,7 @@ const PracticeSchema = new mongoose.Schema({
   },
   date: { 
     type: Date, 
-    default: Date.now,
-    index: true
+    default: Date.now
   },
   notes: {
     type: String,
