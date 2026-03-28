@@ -1,3 +1,5 @@
+@import './styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,8 +8,9 @@
 html, body, #root { height: 100%; }
 body {
   margin: 0;
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  background-color: #f9fafb;
+  font-family: var(--font-body), "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background-color: var(--site-bg, #f8fafc);
+  color: var(--site-ink, #0f172a);
 }
 
 /* Custom Animations */
@@ -66,6 +69,19 @@ body {
   animation: slideDown 0.3s ease-out;
 }
 
+@keyframes skill-map-skeleton-shimmer {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.skill-map-skeleton-pulse {
+  animation: skill-map-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
 /* Grid Pattern Backgrounds */
 .bg-grid-pattern {
   background-image: 
@@ -79,4 +95,43 @@ body {
     linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
+}
+
+/*
+ * Filled primary controls: ensure green fill + white label even when utility
+ * order / merges leave background transparent (white-on-white).
+ * Hover still wins via .hover:bg-* rules (higher specificity with :hover).
+ */
+.bg-site-accent.text-white {
+  background-color: var(--site-accent, #2e5023);
+  color: #ffffff;
+}
+
+/* Soft outline accent buttons */
+.bg-site-soft.text-site-accent {
+  background-color: var(--site-accent-soft, #ecfdf3);
+  color: var(--site-accent, #2e5023);
+}
+
+/* Create-skill-map wizard: secondary actions (hover beats Tailwind order / gray-50 footer) */
+button.wizard-foot-back {
+  color: var(--site-ink, #0f172a);
+  background: transparent;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+button.wizard-foot-back:hover {
+  color: var(--site-accent, #2e5023) !important;
+  background-color: var(--site-accent-soft, #ecfdf3) !important;
+}
+
+button.wizard-foot-skip {
+  color: var(--site-ink, #0f172a);
+  background: var(--site-surface, #fff);
+  border: 1px solid var(--site-border, #e2e8f0);
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+button.wizard-foot-skip:hover {
+  color: var(--site-accent, #2e5023) !important;
+  background-color: var(--site-accent-soft, #ecfdf3) !important;
+  border-color: var(--site-accent-border, #a3c99a) !important;
 }
