@@ -106,7 +106,7 @@ describe('Sidebar Navigation Integration', () => {
     const reflectLink = screen.getByRole('button', { name: /reflect/i });
     
     // Check if it has the active styling classes
-    expect(reflectLink).toHaveClass('bg-indigo-50', 'text-indigo-700', 'font-semibold');
+    expect(reflectLink).toHaveClass('bg-site-soft', 'text-site-accent', 'font-semibold');
   });
 
   it('should not highlight Reflect link when on Dashboard page', async () => {
@@ -138,8 +138,8 @@ describe('Sidebar Navigation Integration', () => {
     const reflectLink = screen.getByRole('button', { name: /reflect/i });
     
     // Check that it does NOT have the active styling classes
-    expect(reflectLink).not.toHaveClass('bg-indigo-50');
-    expect(reflectLink).toHaveClass('text-gray-700');
+    expect(reflectLink).not.toHaveClass('bg-site-soft');
+    expect(reflectLink).toHaveClass('text-site-muted');
   });
 
   it('should display Reflect icon in navigation', () => {
