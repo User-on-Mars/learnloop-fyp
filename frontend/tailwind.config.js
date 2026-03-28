@@ -1,8 +1,20 @@
 export default {
-  content: ["./index.html", "./src/**/*.{js,jsx}"],
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
       colors: {
+        /** Matches CSS tokens in src/styles/tokens.css for marketing + in-app UI */
+        site: {
+          bg: "var(--site-bg, #f8fafc)",
+          surface: "var(--site-surface, #ffffff)",
+          ink: "var(--site-ink, #0f172a)",
+          muted: "var(--site-text-secondary, #475569)",
+          faint: "var(--site-text-muted, #94a3b8)",
+          border: "var(--site-border, #e2e8f0)",
+          accent: "var(--site-accent, #2e5023)",
+          "accent-hover": "var(--site-accent-hover, #4f7942)",
+          soft: "var(--site-accent-soft, #ecfdf3)",
+        },
         ll: {
           50: '#f0f9ff',
           100: '#e0f2fe',
