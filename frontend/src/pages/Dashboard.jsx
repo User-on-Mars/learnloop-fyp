@@ -107,14 +107,14 @@ export default function Dashboard() {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
+            <div className="flex min-h-screen bg-site-bg">
                 <Sidebar />
                 <main className="flex-1 overflow-y-auto">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         <div className="flex items-center justify-center h-64">
                             <div className="text-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                                <p className="text-gray-600">Loading dashboard...</p>
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-site-accent mx-auto mb-4"></div>
+                                <p className="text-site-muted">Loading dashboard...</p>
                             </div>
                         </div>
                     </div>
@@ -125,7 +125,7 @@ export default function Dashboard() {
 
     if (error) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
+            <div className="flex min-h-screen bg-site-bg">
                 <Sidebar />
                 <main className="flex-1 overflow-y-auto">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -145,7 +145,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex min-h-screen bg-site-bg">
             <Sidebar />
             
             <main className="flex-1 overflow-y-auto w-full">
@@ -159,7 +159,7 @@ export default function Dashboard() {
                         <div className="flex flex-wrap gap-2 sm:gap-3">
                             <button
                                 onClick={() => navigate('/log-practice')}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg text-sm"
+                                className="flex items-center gap-2 px-4 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-all shadow-md hover:shadow-lg text-sm"
                             >
                                 <Clock className="w-5 h-5" />
                                 <span>Log Practice</span>
@@ -169,47 +169,47 @@ export default function Dashboard() {
 
                     {/* Quick Stats Bar */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="bg-site-surface rounded-xl p-4 border border-site-border shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-indigo-600" />
+                                <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center">
+                                    <Clock className="w-5 h-5 text-site-accent" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-gray-900">{dashboardData.progress.totalHoursLogged}h</p>
-                                    <p className="text-xs text-gray-500">Total Hours</p>
+                                    <p className="text-2xl font-bold text-site-ink">{dashboardData.progress.totalHoursLogged}h</p>
+                                    <p className="text-xs text-site-faint">Total Hours</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="bg-site-surface rounded-xl p-4 border border-site-border shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                                    <Zap className="w-5 h-5 text-emerald-600" />
+                                <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center">
+                                    <Zap className="w-5 h-5 text-site-accent" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-gray-900">{dashboardData.recentPractices.length}</p>
-                                    <p className="text-xs text-gray-500">Sessions</p>
+                                    <p className="text-2xl font-bold text-site-ink">{dashboardData.recentPractices.length}</p>
+                                    <p className="text-xs text-site-faint">Sessions</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="bg-site-surface rounded-xl p-4 border border-site-border shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-                                    <Award className="w-5 h-5 text-violet-600" />
+                                <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center">
+                                    <Award className="w-5 h-5 text-site-accent" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-gray-900">{dashboardData.topSkills.length}</p>
-                                    <p className="text-xs text-gray-500">Skills</p>
+                                    <p className="text-2xl font-bold text-site-ink">{dashboardData.topSkills.length}</p>
+                                    <p className="text-xs text-site-faint">Skills</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="bg-site-surface rounded-xl p-4 border border-site-border shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                                    <Calendar className="w-5 h-5 text-orange-600" />
+                                <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center">
+                                    <Calendar className="w-5 h-5 text-site-accent" />
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-gray-900">{dashboardData.progress.overallProgress}%</p>
-                                    <p className="text-xs text-gray-500">Progress</p>
+                                    <p className="text-2xl font-bold text-site-ink">{dashboardData.progress.overallProgress}%</p>
+                                    <p className="text-xs text-site-faint">Progress</p>
                                 </div>
                             </div>
                         </div>
@@ -236,12 +236,12 @@ export default function Dashboard() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
                         
                         {/* Recent Practice Sessions */}
-                        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
+                        <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-4 sm:p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-900">Recent Sessions</h3>
+                                <h3 className="text-lg font-bold text-site-ink">Recent Sessions</h3>
                                 <button 
                                     onClick={() => navigate('/log-practice')}
-                                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                                    className="text-sm text-site-accent hover:text-site-accent-hover font-medium"
                                 >
                                     View all
                                 </button>
@@ -249,13 +249,13 @@ export default function Dashboard() {
                             
                             {dashboardData.recentPractices.length === 0 ? (
                                 <div className="text-center py-8">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <Clock className="w-8 h-8 text-gray-400" />
+                                    <div className="w-16 h-16 bg-site-bg rounded-full flex items-center justify-center mx-auto mb-3 border border-site-border">
+                                        <Clock className="w-8 h-8 text-site-faint" />
                                     </div>
-                                    <p className="text-gray-500 mb-3">No practice sessions yet</p>
+                                    <p className="text-site-muted mb-3">No practice sessions yet</p>
                                     <button
                                         onClick={() => navigate('/log-practice')}
-                                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                                        className="text-sm text-site-accent hover:text-site-accent-hover font-medium"
                                     >
                                         Start your first session →
                                     </button>
@@ -265,23 +265,23 @@ export default function Dashboard() {
                                     {dashboardData.recentPractices.map((practice) => (
                                         <div 
                                             key={practice._id}
-                                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
+                                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-site-bg transition-colors cursor-pointer group"
                                             onClick={() => navigate('/log-practice')}
                                         >
-                                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                                                <span className="text-indigo-600 font-semibold text-sm">
+                                            <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center flex-shrink-0 border border-site-border">
+                                                <span className="text-site-accent font-semibold text-sm">
                                                     {practice.skillName?.charAt(0).toUpperCase()}
                                                 </span>
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 truncate">
+                                                <p className="text-sm font-medium text-site-ink truncate">
                                                     {practice.skillName}
                                                 </p>
-                                                <p className="text-xs text-gray-500">
+                                                <p className="text-xs text-site-faint">
                                                     {practice.minutesPracticed} min • {formatDate(practice.date)}
                                                 </p>
                                             </div>
-                                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                                            <ChevronRight className="w-4 h-4 text-site-faint group-hover:text-site-accent transition-colors" />
                                         </div>
                                     ))}
                                 </div>
@@ -289,42 +289,41 @@ export default function Dashboard() {
                         </div>
 
                         {/* Top Skills */}
-                        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
+                        <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-4 sm:p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-900">Top Skills</h3>
-                                <span className="text-xs text-gray-500">By time spent</span>
+                                <h3 className="text-lg font-bold text-site-ink">Top Skills</h3>
+                                <span className="text-xs text-site-faint">By time spent</span>
                             </div>
                             
                             {dashboardData.topSkills.length === 0 ? (
                                 <div className="text-center py-8">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <Award className="w-8 h-8 text-gray-400" />
+                                    <div className="w-16 h-16 bg-site-bg rounded-full flex items-center justify-center mx-auto mb-3 border border-site-border">
+                                        <Award className="w-8 h-8 text-site-faint" />
                                     </div>
-                                    <p className="text-gray-500">Start practicing to see your top skills</p>
+                                    <p className="text-site-muted">Start practicing to see your top skills</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
                                     {dashboardData.topSkills.slice(0, 5).map((skill, index) => {
                                         const maxMinutes = dashboardData.topSkills[0]?.totalMinutes || 1;
                                         const percentage = Math.round((skill.totalMinutes / maxMinutes) * 100);
-                                        const colors = ['indigo', 'emerald', 'violet', 'orange', 'pink'];
-                                        const color = colors[index % colors.length];
+                                        const barOpacity = 1 - index * 0.12;
                                         
                                         return (
                                             <div key={skill._id} className="group">
                                                 <div className="flex items-center justify-between mb-1">
                                                     <div className="flex items-center gap-2">
-                                                        <span className={`w-2 h-2 rounded-full bg-${color}-500`}></span>
-                                                        <span className="text-sm font-medium text-gray-900">{skill._id}</span>
+                                                        <span className="w-2 h-2 rounded-full bg-site-accent" style={{ opacity: barOpacity }} />
+                                                        <span className="text-sm font-medium text-site-ink">{skill._id}</span>
                                                     </div>
-                                                    <span className="text-xs text-gray-500">
+                                                    <span className="text-xs text-site-faint">
                                                         {Math.round(skill.totalMinutes / 60)}h {skill.totalMinutes % 60}m
                                                     </span>
                                                 </div>
-                                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                <div className="h-2 bg-site-bg rounded-full overflow-hidden border border-site-border">
                                                     <div 
-                                                        className={`h-full bg-${color}-500 rounded-full transition-all duration-500 group-hover:opacity-80`}
-                                                        style={{ width: `${percentage}%` }}
+                                                        className="h-full bg-site-accent rounded-full transition-all duration-500 group-hover:opacity-90"
+                                                        style={{ width: `${percentage}%`, opacity: barOpacity }}
                                                     />
                                                 </div>
                                             </div>
@@ -336,8 +335,8 @@ export default function Dashboard() {
                     </div>
 
                     {/* Weekly Performance Chart */}
-                    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Weekly Performance</h3>
+                    <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-4 sm:p-6">
+                        <h3 className="text-lg font-bold text-site-ink mb-4">Weekly Performance</h3>
                         <WeeklyPerformanceChart 
                             weeklyData={dashboardData.weeklyData}
                             isLoading={isLoading}
