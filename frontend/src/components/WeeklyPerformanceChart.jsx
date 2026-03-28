@@ -33,10 +33,9 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
 
     const data = weeklyData.length > 0 ? weeklyData : defaultData;
 
-    // --- UPDATED COLORS FOR INDIGO THEME ---
-    const primaryIndigo = '#4f46e5'; // Indigo-600 for Practice
-    const secondaryGreen = '#10b981'; // Green-500 for Reflections
-    const tertiaryAmber = '#f59e0b'; // Amber-500 for Blockers
+    const primaryBar = '#2e5023';
+    const secondaryBar = '#4f7942';
+    const tertiaryBar = '#a3c99a';
 
     const chartData = {
         labels: data.map(d => d.day),
@@ -44,21 +43,21 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
             {
                 label: 'Practice (hours)',
                 data: data.map(d => d.practice),
-                backgroundColor: primaryIndigo, // Use Indigo-600
+                backgroundColor: primaryBar,
                 borderRadius: 6,
                 barThickness: 40
             },
             {
                 label: 'Reflections',
                 data: data.map(d => d.reflections),
-                backgroundColor: secondaryGreen, // Use Green-500
+                backgroundColor: secondaryBar,
                 borderRadius: 6,
                 barThickness: 40
             },
             {
                 label: 'Blockers',
                 data: data.map(d => d.blockers),
-                backgroundColor: tertiaryAmber, // Use Amber-500 (Caution color)
+                backgroundColor: tertiaryBar,
                 borderRadius: 6,
                 barThickness: 40
             }
@@ -76,9 +75,9 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                     padding: 15,
                     font: {
                         size: 12,
-                        family: "'Inter', sans-serif"
+                        family: "var(--font-body), system-ui, sans-serif"
                     },
-                    color: '#4b5563', // gray-700 for better contrast
+                    color: '#475569',
                 }
             },
             tooltip: {
@@ -91,7 +90,7 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                 bodyFont: {
                     size: 12
                 },
-                borderColor: '#6366f1', // Indigo Border for tooltip
+                borderColor: '#2e5023',
                 borderWidth: 1,
                 displayColors: true,
                 callbacks: {
@@ -120,23 +119,23 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                 ticks: {
                     font: {
                         size: 12,
-                        family: "'Inter', sans-serif"
+                        family: "var(--font-body), system-ui, sans-serif"
                     },
-                    color: '#4b5563' // gray-700
+                    color: '#475569'
                 }
             },
             y: {
                 beginAtZero: true,
                 grid: {
-                    color: '#e5e7eb', // gray-200 for subtle lines
+                    color: '#e2e8f0',
                     drawBorder: false
                 },
                 ticks: {
                     font: {
                         size: 12,
-                        family: "'Inter', sans-serif"
+                        family: "var(--font-body), system-ui, sans-serif"
                     },
-                    color: '#4b5563', // gray-700
+                    color: '#475569',
                     stepSize: 2
                 }
             }
@@ -150,10 +149,10 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
     if (isLoading) {
         // Updated styling for the loading state container to match Dashboard cards
         return (
-            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Weekly Performance</h3>
+            <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-bold text-site-ink mb-4">Weekly Performance</h3>
                 <div className="h-64 sm:h-80 flex items-center justify-center">
-                    <div className="animate-pulse text-indigo-400 font-medium">
+                    <div className="animate-pulse text-site-accent/60 font-medium">
                         Loading chart data...
                     </div>
                 </div>
@@ -163,8 +162,8 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
 
     // Updated styling for the main container to match Dashboard cards
     return (
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Weekly Performance</h3>
+        <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-4 sm:p-6">
+            <h3 className="text-lg sm:text-xl font-bold text-site-ink mb-4">Weekly Performance</h3>
             <div className="h-64 sm:h-80">
                 <Bar data={chartData} options={options} />
             </div>
