@@ -157,7 +157,7 @@ export default function LogPracticeModal({ isOpen, onClose, onSubmit }) {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2 bg-ll-600 text-white rounded-lg font-medium hover:bg-ll-700 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? 'Logging...' : 'Log Practice'}
               </button>
