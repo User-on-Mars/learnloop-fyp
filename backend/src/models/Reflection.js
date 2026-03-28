@@ -3,8 +3,7 @@ import mongoose from 'mongoose'
 const ReflectionSchema = new mongoose.Schema({
   userId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   content: {
     type: String,
