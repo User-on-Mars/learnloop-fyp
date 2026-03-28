@@ -1,0 +1,483 @@
+import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { auth } from '../firebase.js';
+import api from '../services/api.js';
+
+const SkillMapContext = createContext(null);
+
+const mapDetailCache = new Map();
+
+export function SkillMapProvider({ children }) {
+  const [skills, setSkills] = useState([]);
+  const [currentSkill, setCurrentSkill] = useState(null);
+  const [nodes, setNodes] = useState([]);
+  const [skillMapProgress, setSkillMapProgress] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [mapViewLoading, setMapViewLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [mapDetailError, setMapDetailError] = useState(null);
+  const loadingSkillIdRef = useRef(null);
+
+  const getAuthToken = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    return await user.getIdToken();
+  };
+
+  const invalidateSkillMapDetailCache = useCallback((skillId) => {
+    if (skillId) mapDetailCache.delete(skillId);
+  }, []);
+
+  const applyFullResponse = useCallback((skillId, { skill_map, nodes: nList, progress }) => {
+    const skillRow = {
+      _id: skill_map.id,
+      name: skill_map.title,
+      icon: skill_map.icon,
+      description: skill_map.description,
+      goal: skill_map.goal,
+      status: skill_map.status,
+      nodeCount: nList.length,
+      completionPercentage: progress.percent,
+      completedNodes: progress.completed
+    };
+    setCurrentSkill(skillRow);
+    setNodes(nList);
+    setSkillMapProgress(progress);
+    mapDetailCache.set(skillId, {
+      skill_map,
+      nodes: nList,
+      progress,
+      cachedAt: Date.now()
+    });
+    setSkills((prev) =>
+      prev.map((s) => (String(s._id) === String(skillId) ? {
+        ...s,
+        completedNodes: progress.completed,
+        completionPercentage: progress.percent,
+        nodeCount: nList.length
+      } : s))
+    );
+  }, []);
+
+  const loadSkillMapFull = useCallback(async (skillId, options = {}) => {
+    const { background = false } = options;
+    if (!skillId) return;
+
+    loadingSkillIdRef.current = skillId;
+    const cached = mapDetailCache.get(skillId);
+
+    if (!background) {
+      setMapDetailError(null);
+      if (cached) {
+        applyFullResponse(skillId, {
+          skill_map: cached.skill_map,
+          nodes: cached.nodes,
+          progress: cached.progress
+        });
+        setMapViewLoading(false);
+      } else {
+        setMapViewLoading(true);
+        setCurrentSkill(null);
+        setNodes([]);
+        setSkillMapProgress(null);
+      }
+    }
+
+    try {
+      const token = await getAuthToken();
+      const headers = { Authorization: `Bearer ${token}` };
+      let response;
+      try {
+        response = await api.get(`/skills/maps/${skillId}/full`, { headers });
+      } catch (e) {
+        if (e.response?.status === 404) {
+          response = await api.get(`/skill-maps/${skillId}/full`, { headers });
+        } else {
+          throw e;
+        }
+      }
+
+      if (loadingSkillIdRef.current !== skillId) return;
+
+      const payload = response.data;
+      applyFullResponse(skillId, payload);
+    } catch (err) {
+      if (loadingSkillIdRef.current !== skillId) return;
+      const message = err.response?.data?.message || err.message || 'Failed to load skill map';
+      if (!cached) {
+        setMapDetailError(message);
+        setError(message);
+      }
+      console.error('Error loading skill map full:', err);
+    } finally {
+      if (loadingSkillIdRef.current === skillId && !background) {
+        setMapViewLoading(false);
+      }
+    }
+  }, [applyFullResponse]);
+
+  const loadSkillNodes = useCallback(async (skillId) => {
+    await loadSkillMapFull(skillId, { background: false });
+  }, [loadSkillMapFull]);
+
+  const createSkillMap = useCallback(async (payload) => {
+    try {
+      const token = await getAuthToken();
+      const headers = { Authorization: `Bearer ${token}` };
+      let response;
+      try {
+        response = await api.post('/skills/maps', payload, { headers });
+      } catch (e) {
+        if (e.response?.status === 404) {
+          response = await api.post('/skill-maps', payload, { headers });
+        } else {
+          throw e;
+        }
+      }
+      const { skill, nodes } = response.data;
+      setSkills((prev) => [{
+        ...skill,
+        completedNodes: 0,
+        completionPercentage: 0,
+        nodeCount: nodes?.length || skill.nodeCount
+      }, ...prev]);
+      return { skill, nodes };
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create skill map';
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  const loadSkills = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const token = await getAuthToken();
+      const response = await api.get('/skills', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setSkills(response.data.skills || []);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to load skills';
+      setError(errorMessage);
+      console.error('Error loading skills:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const deleteSkill = useCallback(async (skillId) => {
+    const previousSkills = [...skills];
+    const previousCurrentSkill = currentSkill;
+    const previousNodes = [...nodes];
+
+    try {
+      setError(null);
+      invalidateSkillMapDetailCache(skillId);
+
+      setSkills((prev) => prev.filter((skill) => skill._id !== skillId));
+
+      if (currentSkill?._id === skillId) {
+        setCurrentSkill(null);
+        setNodes([]);
+        setSkillMapProgress(null);
+      }
+
+      const token = await getAuthToken();
+      await api.delete(`/skills/${skillId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      setSkills(previousSkills);
+      setCurrentSkill(previousCurrentSkill);
+      setNodes(previousNodes);
+
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to delete skill';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }, [currentSkill, skills, nodes, invalidateSkillMapDetailCache]);
+
+  const updateNodeStatus = useCallback(async (nodeId, status) => {
+    const previousNodes = [...nodes];
+    const previousSkills = [...skills];
+
+    try {
+      setError(null);
+      const sid = currentSkill?._id;
+
+      const targetNode = nodes.find((n) => n._id === nodeId);
+      if (!targetNode) {
+        throw new Error('Node not found');
+      }
+
+      let predictedNextNode = null;
+      if (status === 'Completed') {
+        const nextOrder = targetNode.order + 1;
+        predictedNextNode = nodes.find((n) => n.order === nextOrder && n.status === 'Locked');
+      }
+
+      setNodes((prev) => prev.map((node) => {
+        if (node._id === nodeId) {
+          return { ...node, status };
+        }
+        if (predictedNextNode && node._id === predictedNextNode._id) {
+          return { ...node, status: 'Unlocked' };
+        }
+        return node;
+      }));
+
+      if (currentSkill) {
+        const optimisticNodes = nodes.map((node) => {
+          if (node._id === nodeId) return { ...node, status };
+          if (predictedNextNode && node._id === predictedNextNode._id) return { ...node, status: 'Unlocked' };
+          return node;
+        });
+
+        const completedCount = optimisticNodes.filter((n) => n.status === 'Completed').length;
+        const completionPercentage = optimisticNodes.length
+          ? (completedCount / optimisticNodes.length) * 100
+          : 0;
+
+        setSkills((prev) => prev.map((skill) =>
+          skill._id === currentSkill._id
+            ? { ...skill, completedNodes: completedCount, completionPercentage }
+            : skill
+        ));
+      }
+
+      const token = await getAuthToken();
+      const response = await api.patch(`/nodes/${nodeId}/status`,
+        { status },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const updatedNode = response.data.node;
+      const nextNode = response.data.nextNode;
+
+      setNodes((prev) => prev.map((node) => {
+        if (node._id === nodeId) {
+          return updatedNode;
+        }
+        if (nextNode && node._id === nextNode._id) {
+          return nextNode;
+        }
+        return node;
+      }));
+
+      if (currentSkill) {
+        const actualNodes = nodes.map((node) => {
+          if (node._id === nodeId) return updatedNode;
+          if (nextNode && node._id === nextNode._id) return nextNode;
+          return node;
+        });
+
+        const completedCount = actualNodes.filter((n) => n.status === 'Completed').length;
+        const completionPercentage = actualNodes.length
+          ? (completedCount / actualNodes.length) * 100
+          : 0;
+
+        setSkills((prev) => prev.map((skill) =>
+          skill._id === currentSkill._id
+            ? { ...skill, completedNodes: completedCount, completionPercentage }
+            : skill
+        ));
+      }
+
+      if (sid) {
+        invalidateSkillMapDetailCache(sid);
+        loadSkillMapFull(sid, { background: true });
+      }
+
+      return { node: updatedNode, nextNode };
+    } catch (err) {
+      setNodes(previousNodes);
+      setSkills(previousSkills);
+
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update node status';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }, [currentSkill, nodes, skills, invalidateSkillMapDetailCache, loadSkillMapFull]);
+
+  const updateNodeContent = useCallback(async (nodeId, { title, description }) => {
+    const previousNodes = [...nodes];
+
+    try {
+      setError(null);
+
+      setNodes((prev) => prev.map((node) =>
+        node._id === nodeId ? { ...node, title, description } : node
+      ));
+
+      const token = await getAuthToken();
+      const response = await api.patch(`/nodes/${nodeId}/content`,
+        { title, description },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const updatedNode = response.data.node;
+
+      setNodes((prev) => prev.map((node) =>
+        node._id === nodeId ? updatedNode : node
+      ));
+
+      const sid = currentSkill?._id;
+      if (sid) {
+        invalidateSkillMapDetailCache(sid);
+        loadSkillMapFull(sid, { background: true });
+      }
+
+      return updatedNode;
+    } catch (err) {
+      setNodes(previousNodes);
+
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update node content';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }, [nodes, currentSkill, invalidateSkillMapDetailCache, loadSkillMapFull]);
+
+  const deleteNode = useCallback(async (nodeId) => {
+    try {
+      setError(null);
+
+      const token = await getAuthToken();
+      const response = await api.delete(`/nodes/${nodeId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setNodes((prev) => {
+        const filtered = prev.filter((node) => node._id !== nodeId);
+        return filtered.sort((a, b) => a.order - b.order);
+      });
+
+      if (currentSkill) {
+        const newNodeCount = nodes.length - 1;
+        setCurrentSkill((prev) => ({ ...prev, nodeCount: newNodeCount }));
+        setSkills((prev) => prev.map((skill) =>
+          skill._id === currentSkill._id
+            ? { ...skill, nodeCount: newNodeCount }
+            : skill
+        ));
+        invalidateSkillMapDetailCache(currentSkill._id);
+        loadSkillMapFull(currentSkill._id, { background: true });
+      }
+
+      return response.data;
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to delete node';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }, [currentSkill, nodes, invalidateSkillMapDetailCache, loadSkillMapFull]);
+
+  const startSession = useCallback(async (nodeId) => {
+    const previousNodes = [...nodes];
+
+    try {
+      setError(null);
+
+      const targetNode = nodes.find((n) => n._id === nodeId);
+      if (targetNode && targetNode.status === 'Unlocked') {
+        setNodes((prev) => prev.map((node) =>
+          node._id === nodeId
+            ? { ...node, status: 'In_Progress' }
+            : node
+        ));
+      }
+
+      const token = await getAuthToken();
+      const response = await api.post(`/nodes/${nodeId}/sessions`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const session = response.data;
+
+      if (session.nodeStatusUpdated) {
+        setNodes((prev) => prev.map((node) =>
+          node._id === nodeId
+            ? { ...node, status: 'In_Progress' }
+            : node
+        ));
+      }
+
+      const sid = currentSkill?._id;
+      if (sid) {
+        invalidateSkillMapDetailCache(sid);
+        loadSkillMapFull(sid, { background: true });
+      }
+
+      return session;
+    } catch (err) {
+      setNodes(previousNodes);
+
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to start session';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }, [nodes, currentSkill, invalidateSkillMapDetailCache, loadSkillMapFull]);
+
+  const getNodeDetails = useCallback(async (nodeId) => {
+    try {
+      setError(null);
+
+      const token = await getAuthToken();
+      const response = await api.get(`/nodes/${nodeId}/details`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      return response.data;
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to load node details';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+    setMapDetailError(null);
+  }, []);
+
+  const value = {
+    skills,
+    currentSkill,
+    nodes,
+    skillMapProgress,
+    isLoading,
+    mapViewLoading,
+    error,
+    mapDetailError,
+    createSkillMap,
+    loadSkills,
+    loadSkillNodes,
+    loadSkillMapFull,
+    deleteSkill,
+    updateNodeStatus,
+    updateNodeContent,
+    deleteNode,
+    startSession,
+    getNodeDetails,
+    clearError,
+    invalidateSkillMapDetailCache
+  };
+
+  return (
+    <SkillMapContext.Provider value={value}>
+      {children}
+    </SkillMapContext.Provider>
+  );
+}
+
+export function useSkillMap() {
+  const context = useContext(SkillMapContext);
+  if (!context) {
+    throw new Error('useSkillMap must be used within SkillMapProvider');
+  }
+  return context;
+}
