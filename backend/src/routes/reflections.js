@@ -1,5 +1,11 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
+import { 
+  validateReflectionInput, 
+  handleValidationErrors,
+  nodeOperationsRateLimit 
+} from '../middleware/security.js'
+import { validateRequest, reflectionDataSchema } from '../middleware/validation.js'
 import {
   createReflection,
   getReflections,
@@ -13,24 +19,30 @@ const router = Router()
 // All reflection routes require authentication
 router.use(requireAuth)
 
+// Apply rate limiting to reflection operations
+router.use(nodeOperationsRateLimit)
+
 // POST /api/reflections - Create a new reflection
-router.post('/', async (req, res) => {
-  try {
-    console.log('📝 Creating reflection for user:', req.user.id)
-    const reflection = await createReflection(req.user.id, req.body)
-    console.log('✅ Reflection created:', reflection._id)
-    res.status(201).json(reflection)
-  } catch (error) {
-    console.error('❌ Error creating reflection:', error.message)
-    res.status(400).json({ 
-      message: error.message,
-      error: {
+router.post('/', 
+  validateRequest(reflectionDataSchema),
+  async (req, res) => {
+    try {
+      console.log('📝 Creating reflection for user:', req.user.id)
+      const reflection = await createReflection(req.user.id, req.body)
+      console.log('✅ Reflection created:', reflection._id)
+      res.status(201).json(reflection)
+    } catch (error) {
+      console.error('❌ Error creating reflection:', error.message)
+      res.status(400).json({ 
         message: error.message,
-        code: 'VALIDATION_ERROR'
-      }
-    })
+        error: {
+          message: error.message,
+          code: 'VALIDATION_ERROR'
+        }
+      })
+    }
   }
-})
+)
 
 // GET /api/reflections - Get all user reflections
 router.get('/', async (req, res) => {
