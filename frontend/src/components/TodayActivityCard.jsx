@@ -34,8 +34,8 @@ export default function TodayActivityCard({
 
     if (isLoading) {
         return (
-            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Today's Activity</h3>
+            <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-6">
+                <h3 className="text-xl font-bold text-site-ink mb-6">Today's Activity</h3>
                 <div className="grid grid-cols-2 gap-4">
                     {[1, 2, 3, 4].map(i => (
                         <div key={i} className="flex flex-col items-center p-4">
@@ -55,49 +55,45 @@ export default function TodayActivityCard({
             icon: Clock,
             value: formatTime(minutesPracticed),
             label: 'Time Today',
-            color: 'indigo',
-            bgColor: 'bg-indigo-50',
-            textColor: 'text-indigo-600',
-            hoverBg: 'hover:bg-indigo-100'
+            bgColor: 'bg-site-soft',
+            textColor: 'text-site-accent',
+            hoverBg: 'hover:bg-site-soft/90'
         },
         {
             id: 'notes',
             icon: FileText,
             value: notesAdded,
             label: 'Notes Added',
-            color: 'emerald',
-            bgColor: 'bg-emerald-50',
-            textColor: 'text-emerald-600',
-            hoverBg: 'hover:bg-emerald-100'
+            bgColor: 'bg-site-bg',
+            textColor: 'text-site-accent',
+            hoverBg: 'hover:bg-site-soft/50'
         },
         {
             id: 'streak',
             icon: Flame,
             value: streak,
             label: 'Day Streak',
-            color: 'orange',
-            bgColor: 'bg-orange-50',
-            textColor: 'text-orange-600',
-            hoverBg: 'hover:bg-orange-100'
+            bgColor: 'bg-site-soft',
+            textColor: 'text-site-accent',
+            hoverBg: 'hover:bg-site-soft/90'
         },
         {
             id: 'goal',
             icon: Target,
             value: `${goalProgress}%`,
             label: 'Daily Goal',
-            color: 'violet',
-            bgColor: 'bg-violet-50',
-            textColor: 'text-violet-600',
-            hoverBg: 'hover:bg-violet-100'
+            bgColor: 'bg-site-bg',
+            textColor: 'text-site-accent',
+            hoverBg: 'hover:bg-site-soft/50'
         }
     ];
 
     return (
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-shadow duration-200">
+        <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-6 hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-center justify-between mb-5">
-                <h3 className="text-xl font-bold text-gray-900">Today's Activity</h3>
+                <h3 className="text-xl font-bold text-site-ink">Today's Activity</h3>
                 {minutesPracticed > 0 && (
-                    <span className="flex items-center gap-1 text-sm text-green-600 font-medium">
+                    <span className="flex items-center gap-1 text-sm text-site-accent font-medium">
                         <TrendingUp className="w-4 h-4" />
                         Active
                     </span>
@@ -120,22 +116,22 @@ export default function TodayActivityCard({
                             }`}
                         >
                             <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm`}>
+                                <div className="w-10 h-10 rounded-full bg-site-surface flex items-center justify-center shadow-sm border border-site-border">
                                     <Icon className={`w-5 h-5 ${stat.textColor}`} />
                                 </div>
                                 <div>
                                     <div className={`text-2xl font-bold ${stat.textColor}`}>
                                         {stat.value}
                                     </div>
-                                    <div className="text-xs text-gray-600">{stat.label}</div>
+                                    <div className="text-xs text-site-muted">{stat.label}</div>
                                 </div>
                             </div>
                             
                             {/* Animated indicator for goal */}
                             {stat.id === 'goal' && (
-                                <div className="mt-2 h-1.5 bg-white rounded-full overflow-hidden">
+                                <div className="mt-2 h-1.5 bg-site-bg rounded-full overflow-hidden border border-site-border">
                                     <div 
-                                        className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                                        className="h-full bg-site-accent rounded-full transition-all duration-500"
                                         style={{ width: `${goalProgress}%` }}
                                     />
                                 </div>
@@ -147,9 +143,9 @@ export default function TodayActivityCard({
 
             {/* Active Sessions Preview */}
             {activeSessions.length > 0 && (
-                <div className="border-t border-gray-100 pt-4 mb-4">
+                <div className="border-t border-site-border pt-4 mb-4">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-gray-700">Active Sessions</span>
+                        <span className="text-sm font-medium text-site-muted">Active Sessions</span>
                         <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
                             {activeSessions.filter(s => s.isRunning).length} running
                         </span>
@@ -158,7 +154,7 @@ export default function TodayActivityCard({
                         {activeSessions.slice(0, 2).map(session => (
                             <div 
                                 key={session.id}
-                                className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                                className="flex items-center justify-between p-2 bg-site-bg rounded-lg border border-site-border"
                             >
                                 <div className="flex items-center gap-2">
                                     {session.isRunning ? (
@@ -166,11 +162,11 @@ export default function TodayActivityCard({
                                     ) : (
                                         <span className="w-2 h-2 bg-gray-400 rounded-full" />
                                     )}
-                                    <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                                    <span className="text-sm font-medium text-site-ink truncate max-w-[120px]">
                                         {session.skillName}
                                     </span>
                                 </div>
-                                <span className="text-sm font-mono text-indigo-600">
+                                <span className="text-sm font-mono text-site-accent">
                                     {formatTimer(session.timer)}
                                 </span>
                             </div>
@@ -182,7 +178,7 @@ export default function TodayActivityCard({
             {/* Quick Action */}
             <button 
                 onClick={() => navigate('/log-practice')}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors"
             >
                 <Play className="w-4 h-4" />
                 {activeSessions.length > 0 ? 'View Sessions' : 'Start Practice'}
