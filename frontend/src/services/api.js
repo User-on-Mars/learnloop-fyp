@@ -1,7 +1,17 @@
 import axios from 'axios';
 import { auth } from '../firebase.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+/** Ensure requests hit /api/... even when VITE_API_URL omits /api (avoids 404 on POST /skill-maps). */
+function normalizeApiBase(envUrl) {
+  const fallback = 'http://localhost:4000/api';
+  if (envUrl == null || String(envUrl).trim() === '') return fallback;
+  const trimmed = String(envUrl).trim().replace(/\/+$/, '');
+  if (trimmed === '') return fallback;
+  if (/\/api$/i.test(trimmed)) return trimmed;
+  return `${trimmed}/api`;
+}
+
+const API_BASE_URL = normalizeApiBase(import.meta.env.VITE_API_URL);
 
 // Logger utility
 const logger = {
@@ -132,6 +142,75 @@ export const activeSessionAPI = {
   
   // Delete all active sessions
   deleteAllSessions: () => api.delete('/active-sessions'),
+};
+
+// Node Progression API
+export const nodeProgressionAPI = {
+  // Complete a node and trigger progression
+  completeNode: (skillId, nodeId, reflectionData) => 
+    api.post(`/skills/${skillId}/nodes/${nodeId}/complete`, { reflectionData }),
+  
+  // Get linear progression path for skill
+  getProgressionPath: (skillId) => 
+    api.get(`/skills/${skillId}/progression-path`),
+  
+  // Get all nodes for a skill with current status
+  getSkillNodes: (skillId) => 
+    api.get(`/skills/${skillId}/nodes`),
+};
+
+// Session Management API
+export const sessionAPI = {
+  // Start a new learning session
+  startSession: (nodeId, skillId) => 
+    api.post('/sessions/start', { nodeId, skillId }),
+  
+  // Update session progress
+  updateProgress: (sessionId, progress, action, metadata) => 
+    api.put(`/sessions/${sessionId}/progress`, { progress, action, metadata }),
+  
+  // Complete session with reflection
+  completeSession: (sessionId, reflectionData) => 
+    api.post(`/sessions/${sessionId}/complete`, { reflection: reflectionData }),
+  
+  // Get current active session
+  getActiveSession: () => 
+    api.get('/sessions/active'),
+  
+  // Get session history for node
+  getSessionHistory: (nodeId) => 
+    api.get(`/sessions/history/${nodeId}`),
+  
+  // Recover and resume abandoned session
+  recoverSession: (sessionId) => 
+    api.post(`/sessions/${sessionId}/recover`),
+  
+  // Manually abandon session
+  abandonSession: (sessionId) => 
+    api.post(`/sessions/${sessionId}/abandon`),
+};
+
+// Skill Map API
+export const skillMapAPI = {
+  // Create new skill map
+  createSkillMap: (data) => 
+    api.post('/skills/maps', data),
+  
+  // Get all skill maps for user
+  getAllSkillMaps: () => 
+    api.get('/skill-maps'),
+  
+  // Get skill map configuration
+  getConfig: (skillMapId) => 
+    api.get(`/skill-maps/${skillMapId}/config`),
+  
+  // Update skill map theme
+  updateTheme: (skillMapId, theme) => 
+    api.put(`/skill-maps/${skillMapId}/theme`, { theme }),
+  
+  // Toggle skill map activation
+  toggleActivation: (skillMapId, isActive) => 
+    api.put(`/skill-maps/${skillMapId}/activate`, { isActive }),
 };
 
 export default api;
