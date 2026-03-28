@@ -220,7 +220,7 @@ export default function Profile() {
     // Show loading state while user is being fetched
     if (user === undefined) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
+            <div className="flex min-h-screen bg-site-bg">
                 <Sidebar />
                 <main className="flex-1 overflow-y-auto flex items-center justify-center">
                     <p className="text-gray-600">Loading...</p>
@@ -232,7 +232,7 @@ export default function Profile() {
     // Show message if no user is logged in
     if (!user) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
+            <div className="flex min-h-screen bg-site-bg">
                 <Sidebar />
                 <main className="flex-1 overflow-y-auto flex items-center justify-center">
                     <p className="text-gray-600">Please log in to view your profile.</p>
@@ -242,7 +242,7 @@ export default function Profile() {
     }
     
     return (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex min-h-screen bg-site-bg">
             {/* Sidebar Navigation - Hidden on mobile */}
             <Sidebar />
             
@@ -277,7 +277,7 @@ export default function Profile() {
                             
                             {/* Avatar Section - Styled with Indigo theme */}
                             <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xl sm:text-2xl font-semibold flex-shrink-0 shadow-lg">
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-site-accent text-white flex items-center justify-center text-xl sm:text-2xl font-semibold flex-shrink-0 shadow-lg">
                                     {getInitials()}
                                 </div>
                                 <div className="min-w-0">
@@ -312,7 +312,7 @@ export default function Profile() {
                                         onChange={(e) => setDisplayName(e.target.value)}
                                         placeholder={!displayName && !isEditingName ? "No name set" : ""}
                                         // Use Indigo focus ring
-                                        className={`flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent ${
+                                        className={`flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent ${
                                             !isEditingName ? "bg-gray-100 text-gray-600 cursor-not-allowed border-gray-200" : "bg-white text-gray-900 border-gray-300"
                                         }`}
                                     />
@@ -329,7 +329,7 @@ export default function Profile() {
                                             <button
                                                 onClick={handleSaveName}
                                                 disabled={isUpdatingName}
-                                                className="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-60 shadow-md"
+                                                className="flex-1 sm:flex-none px-4 py-2 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition disabled:opacity-60 shadow-md"
                                             >
                                                 {isUpdatingName ? "Saving..." : "Save"}
                                             </button>
@@ -338,7 +338,7 @@ export default function Profile() {
                                         // Edit Button - Primary Indigo
                                         <button
                                             onClick={handleEditName}
-                                            className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition shadow-md"
+                                            className="w-full sm:w-auto px-4 py-2 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition shadow-md"
                                         >
                                             Edit
                                         </button>
@@ -380,14 +380,14 @@ export default function Profile() {
                                             data-lpignore="true"
                                             name={`current-pwd-${Date.now()}`}
                                             // Use Indigo focus ring
-                                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
                                             placeholder="Enter your current password"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                                             disabled={isChangingPassword}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600 disabled:opacity-60"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-site-accent disabled:opacity-60"
                                             aria-label={showCurrentPassword ? "Hide current password" : "Show current password"}
                                         >
                                             {showCurrentPassword ? (
@@ -414,14 +414,14 @@ export default function Profile() {
                                             disabled={isChangingPassword}
                                             autoComplete="new-password"
                                             // Use Indigo focus ring
-                                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
                                             placeholder="Enter your new password"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowNewPassword(!showNewPassword)}
                                             disabled={isChangingPassword}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600 disabled:opacity-60"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-site-accent disabled:opacity-60"
                                             aria-label={showNewPassword ? "Hide new password" : "Show new password"}
                                         >
                                             {showNewPassword ? (
@@ -448,14 +448,14 @@ export default function Profile() {
                                             disabled={isChangingPassword}
                                             autoComplete="new-password"
                                             // Use Indigo focus ring
-                                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
                                             placeholder="Confirm your new password"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                             disabled={isChangingPassword}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600 disabled:opacity-60"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-site-accent disabled:opacity-60"
                                             aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
                                         >
                                             {showConfirmPassword ? (
@@ -471,7 +471,7 @@ export default function Profile() {
                                 <button
                                     type="submit"
                                     disabled={isChangingPassword}
-                                    className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-60 disabled:cursor-not-allowed shadow-md"
+                                    className="w-full px-4 py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition disabled:opacity-60 disabled:cursor-not-allowed shadow-md"
                                 >
                                     {isChangingPassword ? "Changing Password..." : "Change Password"}
                                 </button>
