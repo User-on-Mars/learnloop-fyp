@@ -1,0 +1,66 @@
+:root {
+  /**
+   * Site-wide palette (marketing pages, chrome, CTAs).
+   * Neutrals = readable slate; accent = brand green (learning / growth).
+   */
+  --site-bg: #f8fafc;
+  --site-surface: #ffffff;
+  --site-ink: #0f172a;
+  --site-text-secondary: #475569;
+  --site-text-muted: #94a3b8;
+  --site-border: #e2e8f0;
+  --site-accent: #2e5023;
+  --site-accent-hover: #4f7942;
+  --site-accent-soft: #ecfdf3;
+  --site-accent-border: #a3c99a;
+
+  --color-brand: #4f7942;
+  --color-brand-light: #edf5e9;
+  --color-brand-mid: #a3c99a;
+  --color-brand-dark: #2e5023;
+
+  --color-active: #3b6fa0;
+  --color-active-light: #eaf2fb;
+  --color-active-mid: #90bce0;
+
+  --color-goal: #b5600a;
+  --color-goal-light: #fdf2e7;
+
+  --color-locked: #b0b5ae;
+
+  --color-surface: #ffffff;
+  --color-surface-2: #f8f9f6;
+  --color-surface-3: #f0f2ed;
+
+  --color-text-1: #1c1f1a;
+  --color-text-2: #565c52;
+  --color-text-3: #9aa094;
+
+  --color-border: #e2e6dc;
+  --color-border-strong: #c8cec0;
+
+  --color-danger: #c0392b;
+  --color-danger-light: #fdecea;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --shadow-card:
+    0 1px 4px rgba(0, 0, 0, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-active: 0 0 0 4px rgba(59, 111, 160, 0.1);
+
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--site-accent);
+  outline-offset: 2px;
+}

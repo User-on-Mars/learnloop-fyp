@@ -1,0 +1,462 @@
+/**
+ * Animation System CSS - Supporting styles for the animation system
+ * 
+ * Requirements addressed:
+ * - 4.2: Unlock animation sequences with timing control
+ * - 4.3: 60fps performance without frame drops
+ * - 12.2: Particle effects for node unlocks
+ * - 12.3: Progress update animations
+ */
+
+/* Pixel-perfect rendering */
+.pixelated {
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Unlock Animation Keyframes */
+@keyframes unlock-glow {
+  0% {
+    filter: drop-shadow(0 0 0px rgba(59, 130, 246, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.8));
+  }
+  100% {
+    filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.4));
+  }
+}
+
+@keyframes unlock-scale {
+  0% {
+    transform: scale(1.0);
+  }
+  30% {
+    transform: scale(1.2);
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1.0);
+  }
+}
+
+@keyframes unlock-burst {
+  0% {
+    filter: brightness(1.0) saturate(1.0);
+  }
+  50% {
+    filter: brightness(1.5) saturate(1.3);
+  }
+  100% {
+    filter: brightness(1.0) saturate(1.0);
+  }
+}
+
+/* Particle Effects */
+@keyframes particle-float {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(var(--particle-x, 0)) translateY(var(--particle-y, 0)) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes sparkle-twinkle {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.5);
+  }
+}
+
+/* Progress Animation Keyframes */
+@keyframes progress-fill {
+  0% {
+    width: var(--progress-start, 0%);
+  }
+  100% {
+    width: var(--progress-end, 100%);
+  }
+}
+
+@keyframes progress-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+  }
+}
+
+@keyframes progress-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(360deg);
+  }
+}
+
+/* State Transition Animations */
+@keyframes state-transition-glow {
+  0% {
+    filter: drop-shadow(0 0 0px rgba(59, 130, 246, 0));
+  }
+  100% {
+    filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.8));
+  }
+}
+
+@keyframes state-bounce {
+  0%, 100% {
+    transform: scale(1.0);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes completion-celebration {
+  0% {
+    transform: scale(1.0) rotate(0deg);
+    filter: brightness(1.0) hue-rotate(0deg);
+  }
+  25% {
+    transform: scale(1.3) rotate(5deg);
+    filter: brightness(1.3) hue-rotate(90deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(-3deg);
+    filter: brightness(1.5) hue-rotate(180deg);
+  }
+  75% {
+    transform: scale(1.2) rotate(2deg);
+    filter: brightness(1.2) hue-rotate(270deg);
+  }
+  100% {
+    transform: scale(1.0) rotate(0deg);
+    filter: brightness(1.0) hue-rotate(360deg);
+  }
+}
+
+/* Screen Flash Effect */
+@keyframes screen-flash {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Celebration Effects */
+@keyframes celebration-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes celebration-pulse {
+  0%, 100% {
+    transform: scale(1.0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* Animation Classes */
+.unlock-animation {
+  animation: unlock-glow 1.2s ease-in-out, unlock-scale 1.2s ease-in-out;
+}
+
+.unlock-burst {
+  animation: unlock-burst 0.6s ease-out;
+}
+
+.progress-animation {
+  animation: progress-fill var(--animation-duration, 1s) ease-in-out;
+}
+
+.progress-glow {
+  animation: progress-glow 2s ease-in-out infinite;
+}
+
+.state-transition {
+  animation: state-transition-glow 0.8s ease-in-out, state-bounce 0.8s ease-in-out;
+}
+
+.completion-celebration {
+  animation: completion-celebration 2s ease-in-out;
+}
+
+.screen-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+  z-index: 9998;
+  animation: screen-flash 0.3s ease-out;
+}
+
+.celebration-bounce {
+  animation: celebration-bounce 0.6s ease-in-out;
+}
+
+.celebration-pulse {
+  animation: celebration-pulse 1s ease-in-out infinite;
+}
+
+/* Particle Container Styles */
+.unlock-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.unlock-particles .particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #3B82F6;
+  border-radius: 50%;
+  animation: particle-float 2s ease-out forwards;
+}
+
+.celebration-confetti {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.celebration-confetti > div {
+  position: absolute;
+  animation: confetti-fall linear forwards;
+}
+
+/* Progress Bar Styles */
+.progress-container {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3B82F6, #1D4ED8);
+  border-radius: 4px;
+  transition: width 0.3s ease-in-out;
+  position: relative;
+}
+
+.progress-bar.animated {
+  animation: progress-glow 2s ease-in-out infinite;
+}
+
+.progress-sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+  animation: sparkle-twinkle 0.5s ease-in-out;
+}
+
+/* Node Status Indicators */
+.node-status-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  transition: all 0.3s ease-in-out;
+}
+
+.node-status-indicator.locked {
+  background: #6B7280;
+}
+
+.node-status-indicator.not-started {
+  background: #3B82F6;
+  animation: celebration-pulse 2s ease-in-out infinite;
+}
+
+.node-status-indicator.in-progress {
+  background: #F59E0B;
+  animation: celebration-pulse 1s ease-in-out infinite;
+}
+
+.node-status-indicator.completed {
+  background: #10B981;
+}
+
+/* Performance Optimizations */
+.animation-performance-mode .unlock-particles {
+  display: none;
+}
+
+.animation-performance-mode .celebration-confetti {
+  display: none;
+}
+
+.animation-performance-mode .progress-sparkle {
+  display: none;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .unlock-animation,
+  .unlock-burst,
+  .progress-animation,
+  .progress-glow,
+  .state-transition,
+  .completion-celebration,
+  .celebration-bounce,
+  .celebration-pulse {
+    animation: none;
+  }
+  
+  .unlock-particles,
+  .celebration-confetti {
+    display: none;
+  }
+  
+  .progress-bar {
+    transition: width 0.1s ease-in-out;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .progress-bar {
+    background: #000;
+  }
+  
+  .node-status-indicator {
+    border-width: 3px;
+  }
+  
+  .unlock-particles .particle {
+    background: #000;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .progress-container {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .screen-flash {
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .unlock-particles .particle {
+    width: 3px;
+    height: 3px;
+  }
+  
+  .celebration-confetti > div {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .progress-sparkle {
+    width: 3px;
+    height: 3px;
+  }
+}
+
+/* Utility Classes */
+.animate-on-hover:hover {
+  animation: state-bounce 0.3s ease-in-out;
+}
+
+.glow-effect {
+  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
+}
+
+.pulse-effect {
+  animation: celebration-pulse 1s ease-in-out infinite;
+}
+
+.no-animations * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* GPU Acceleration for Performance */
+.unlock-animation,
+.progress-animation,
+.state-transition,
+.completion-celebration {
+  will-change: transform, filter, opacity;
+  transform: translateZ(0);
+}
+
+.unlock-particles,
+.celebration-confetti {
+  will-change: transform;
+  transform: translateZ(0);
+}
