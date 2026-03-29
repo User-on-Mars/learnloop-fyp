@@ -11,29 +11,32 @@ export default function SkillList() {
   const { skills, deleteSkill, isLoading } = useSkillMap();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [deletingSkillId, setDeletingSkillId] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [skillPendingDeleteId, setSkillPendingDeleteId] = useState(null);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
 
-  const handleDeleteClick = (skillId, e) => {
+  const openDeleteSkillModal = (skillId, e) => {
     e.stopPropagation();
-    setShowDeleteConfirm(skillId);
+    setSkillPendingDeleteId(skillId);
+    setDeleteConfirmInput('');
   };
 
-  const handleDeleteConfirm = async (skillId, e) => {
-    e.stopPropagation();
+  const closeDeleteSkillModal = () => {
+    setSkillPendingDeleteId(null);
+    setDeleteConfirmInput('');
+  };
+
+  const handleDeleteSkillConfirmed = async () => {
+    if (deleteConfirmInput !== 'CONFIRM' || !skillPendingDeleteId) return;
     try {
-      setDeletingSkillId(skillId);
-      await deleteSkill(skillId);
-      setShowDeleteConfirm(null);
+      setDeletingSkillId(skillPendingDeleteId);
+      await deleteSkill(skillPendingDeleteId);
+      closeDeleteSkillModal();
     } catch (error) {
       console.error('Error deleting skill:', error);
+      closeDeleteSkillModal();
     } finally {
       setDeletingSkillId(null);
     }
-  };
-
-  const handleDeleteCancel = (e) => {
-    e.stopPropagation();
-    setShowDeleteConfirm(null);
   };
 
   const handleSkillClick = (skillId) => {
@@ -82,32 +85,13 @@ export default function SkillList() {
               className="bg-white rounded-xl shadow-md border border-gray-100 p-5 sm:p-6 hover:shadow-lg transition-all cursor-pointer group relative min-h-[140px] touch-manipulation"
             >
               {/* Delete Button - touch-friendly */}
-              {showDeleteConfirm === skill._id ? (
-                <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex gap-2 z-10">
-                  <button
-                    onClick={(e) => handleDeleteConfirm(skill._id, e)}
-                    disabled={deletingSkillId === skill._id}
-                    className="px-3 py-2 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 active:bg-red-800 transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  >
-                    {deletingSkillId === skill._id ? '...' : 'Yes'}
-                  </button>
-                  <button
-                    onClick={handleDeleteCancel}
-                    disabled={deletingSkillId === skill._id}
-                    className="px-3 py-2 bg-gray-200 text-gray-700 text-xs rounded-lg hover:bg-gray-300 active:bg-gray-400 transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  >
-                    No
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={(e) => handleDeleteClick(skill._id, e)}
-                  className="absolute top-3 sm:top-4 right-3 sm:right-4 p-2.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 rounded-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  aria-label="Delete skill"
-                >
-                  <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
-                </button>
-              )}
+              <button
+                onClick={(e) => openDeleteSkillModal(skill._id, e)}
+                className="absolute top-3 sm:top-4 right-3 sm:right-4 p-2.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 rounded-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Delete skill"
+              >
+                <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+              </button>
 
               {/* Title + icon */}
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 pr-12 sm:pr-8 break-words flex items-center gap-2">
@@ -142,13 +126,9 @@ export default function SkillList() {
               </div>
 
               <div className="mt-3 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                <button
-                  type="button"
-                  onClick={() => navigate(`/maps/${skill._id}`)}
-                  className="text-xs sm:text-sm font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
-                >
-                  Open gamified map view →
-                </button>
+                <span className="text-xs sm:text-sm font-medium text-emerald-700/80" title="Coming soon">
+                  Open gamified map view
+                </span>
               </div>
             </div>
           ))}
@@ -161,9 +141,47 @@ export default function SkillList() {
         onClose={() => setIsCreateModalOpen(false)}
         onCreated={({ skillId, title }) => {
           showSuccess(`Skill map ${title} created! Start from the first node.`);
-          navigate(`/maps/${skillId}`);
+          navigate(`/skills/${skillId}`);
         }}
       />
+
+      {/* Delete Skill Map — type CONFIRM */}
+      {skillPendingDeleteId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-red-100">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Delete this skill map?</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              This removes the skill map and all its nodes permanently. To confirm, type{' '}
+              <span className="font-mono font-semibold text-gray-900">CONFIRM</span> below.
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmInput}
+              onChange={(e) => setDeleteConfirmInput(e.target.value)}
+              placeholder="Type CONFIRM"
+              autoComplete="off"
+              className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-red-500 transition-colors bg-gray-50 focus:bg-white font-mono text-sm mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteSkillModal}
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSkillConfirmed}
+                disabled={deleteConfirmInput !== 'CONFIRM'}
+                className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
