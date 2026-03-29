@@ -13,6 +13,14 @@ body {
   color: var(--site-ink, #0f172a);
 }
 
+/* Remove default focus outlines globally for inputs, textareas, and selects */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Custom Animations */
 @keyframes blob {
   0%, 100% {
