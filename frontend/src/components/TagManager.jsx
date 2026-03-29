@@ -31,7 +31,7 @@ export function TagManager({ tags, onTagAdd, onTagRemove }) {
         onKeyPress={handleKeyPress}
         placeholder="Add a tag and press Enter"
         maxLength={50}
-        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ll-600 focus:border-transparent transition-shadow"
+        className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
       />
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-3">
