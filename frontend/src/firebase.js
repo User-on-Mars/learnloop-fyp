@@ -8,17 +8,21 @@ import {
   browserLocalPersistence,
 } from "firebase/auth";
 
-// ⚙️ Replace these with your actual Firebase config from Firebase Console → Project Settings → Web App
+// Firebase configuration using environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyDJxbmfoHA0Rc1Mqj5CA7G0zV0kwx7B_uY",
-  authDomain: "learnloop-ab17a.firebaseapp.com",
-  projectId: "learnloop-ab17a",
-  appId: "1:251484257905:web:e8c9a778cfb7c1aa7ca5d0",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Configure Google provider
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
 
 // make sure login persists
 setPersistence(auth, browserLocalPersistence);
