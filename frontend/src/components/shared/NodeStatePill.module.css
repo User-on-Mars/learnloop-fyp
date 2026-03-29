@@ -1,0 +1,37 @@
+.pill {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+}
+
+.not_started {
+  background: var(--color-active-light);
+  color: var(--color-active);
+}
+
+.in_progress {
+  background: var(--color-active-light);
+  color: var(--color-active);
+}
+
+.completed {
+  background: var(--color-brand-light);
+  color: var(--color-brand-dark);
+}
+
+.locked {
+  background: var(--color-surface-3);
+  color: var(--color-locked);
+}
+
+.start {
+  background: var(--color-goal-light);
+  color: var(--color-goal);
+}
+
+.goal {
+  background: var(--color-brand-light);
+  color: var(--color-brand-dark);
+}

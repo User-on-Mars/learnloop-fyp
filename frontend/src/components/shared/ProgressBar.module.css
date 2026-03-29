@@ -1,0 +1,35 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.label {
+  color: var(--color-text-2);
+}
+
+.count {
+  font-weight: 500;
+  color: var(--color-text-1);
+}
+
+.track {
+  height: 7px;
+  background: var(--color-surface-3);
+  border-radius: var(--radius-full);
+  border: 0.5px solid var(--color-border);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--color-brand);
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease;
+}
