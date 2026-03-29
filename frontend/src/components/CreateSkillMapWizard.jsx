@@ -205,7 +205,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value.slice(0, 60))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-site-accent focus:border-site-accent"
+                  className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
                   placeholder="My learning path"
                   maxLength={60}
                 />
@@ -224,7 +224,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
                   value={description}
                   onChange={(e) => setDescription(e.target.value.slice(0, 120))}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-site-accent focus:border-site-accent"
+                  className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
                   placeholder="What will this skill map help you learn?"
                   maxLength={120}
                 />
@@ -263,7 +263,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
                 value={goal}
                 onChange={(e) => setGoal(e.target.value.slice(0, 200))}
                 rows={4}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-site-accent focus:border-site-accent"
+                className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
                 placeholder="e.g. Build and deploy a working ML model from scratch using Python…"
                 maxLength={200}
               />
@@ -291,7 +291,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
                       type="text"
                       value={val}
                       onChange={(e) => updateNodeRow(i, e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-0"
+                      className="flex-1 border-2 border-transparent rounded-lg px-3 py-2 text-sm min-w-0 outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
                       placeholder={`Node ${i + 1}`}
                     />
                     <button
