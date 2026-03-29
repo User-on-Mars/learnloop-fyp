@@ -311,9 +311,9 @@ export default function Profile() {
                                         disabled={!isEditingName}
                                         onChange={(e) => setDisplayName(e.target.value)}
                                         placeholder={!displayName && !isEditingName ? "No name set" : ""}
-                                        // Use Indigo focus ring
-                                        className={`flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent ${
-                                            !isEditingName ? "bg-gray-100 text-gray-600 cursor-not-allowed border-gray-200" : "bg-white text-gray-900 border-gray-300"
+                                        // Use site-accent focus border
+                                        className={`flex-1 px-4 py-2 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white ${
+                                            !isEditingName ? "bg-gray-100 text-gray-600 cursor-not-allowed" : "text-gray-900"
                                         }`}
                                     />
                                     {isEditingName ? (
@@ -379,8 +379,8 @@ export default function Profile() {
                                             autoComplete="new-password"
                                             data-lpignore="true"
                                             name={`current-pwd-${Date.now()}`}
-                                            // Use Indigo focus ring
-                                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                                            // Use site-accent focus border
+                                            className="w-full px-4 py-2 pr-10 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
                                             placeholder="Enter your current password"
                                         />
                                         <button
@@ -413,8 +413,8 @@ export default function Profile() {
                                             minLength={6}
                                             disabled={isChangingPassword}
                                             autoComplete="new-password"
-                                            // Use Indigo focus ring
-                                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                                            // Use site-accent focus border
+                                            className="w-full px-4 py-2 pr-10 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
                                             placeholder="Enter your new password"
                                         />
                                         <button
@@ -447,8 +447,8 @@ export default function Profile() {
                                             required
                                             disabled={isChangingPassword}
                                             autoComplete="new-password"
-                                            // Use Indigo focus ring
-                                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+                                            // Use site-accent focus border
+                                            className="w-full px-4 py-2 pr-10 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
                                             placeholder="Confirm your new password"
                                         />
                                         <button
