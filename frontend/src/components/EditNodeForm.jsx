@@ -122,7 +122,11 @@ export default function EditNodeForm({ node, onUpdate }) {
             <span className="font-medium">Title:</span> {node.title || 'No title set'}
           </p>
           <p className="break-words">
-            <span className="font-medium">Description:</span> {node.description || 'No description set'}
+            <span className="font-medium">Description:</span> {node.description || (
+              <span className="text-site-accent cursor-pointer hover:underline" onClick={handleEdit}>
+                Add description
+              </span>
+            )}
           </p>
         </div>
       )}
@@ -142,7 +146,7 @@ export default function EditNodeForm({ node, onUpdate }) {
               onChange={handleChange}
               maxLength={201}
               placeholder="Enter node title"
-              className={`w-full px-3 sm:px-4 py-2.5 sm:py-2 border rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent text-sm ${
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-2 border-2 rounded-lg outline-none focus:border-site-accent transition-colors text-sm ${
                 errors.title ? 'border-red-500' : 'border-gray-300'
               }`}
             />
@@ -167,7 +171,7 @@ export default function EditNodeForm({ node, onUpdate }) {
               maxLength={2001}
               rows={4}
               placeholder="Enter node description"
-              className={`w-full px-3 sm:px-4 py-2.5 sm:py-2 border rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent resize-none text-sm ${
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-2 border-2 rounded-lg outline-none focus:border-site-accent transition-colors resize-none text-sm ${
                 errors.description ? 'border-red-500' : 'border-gray-300'
               }`}
             />
@@ -187,7 +191,7 @@ export default function EditNodeForm({ node, onUpdate }) {
           )}
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
             <button
               type="button"
               onClick={handleCancel}
