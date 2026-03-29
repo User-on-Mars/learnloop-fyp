@@ -431,6 +431,83 @@ class SkillService {
     };
   }
 
+  /**
+   * Update skill details
+   * @param {string} skillId - Skill ID
+   * @param {string} userId - User ID
+   * @param {Object} updates - Fields to update (name, description, goal, icon)
+   * @returns {Promise<Object>}
+   */
+  async updateSkill(skillId, userId, updates) {
+    if (!skillId) {
+      throw new ValidationError('skillId', skillId, { type: 'required' });
+    }
+    
+    if (!userId) {
+      throw new ValidationError('userId', userId, { type: 'required' });
+    }
+
+    try {
+      // Verify ownership
+      const skill = await Skill.findOne({ _id: skillId, userId });
+      
+      if (!skill) {
+        const skillExists = await Skill.findById(skillId);
+        if (skillExists) {
+          throw new PermissionError('Skill', 'update', userId, { skillId });
+        }
+        throw new NotFoundError('Skill', skillId, { userId });
+      }
+
+      // Update fields
+      if (updates.name !== undefined) skill.name = updates.name.trim();
+      if (updates.description !== undefined) skill.description = updates.description.trim();
+      if (updates.goal !== undefined) skill.goal = updates.goal.trim();
+      if (updates.icon !== undefined) skill.icon = updates.icon;
+
+      await dbMonitor.monitorWrite(
+        () => skill.save(),
+        'SkillService.updateSkill - save skill'
+      );
+
+      // Invalidate cache
+      if (cacheService.isAvailable()) {
+        await cacheService.invalidateSkillMap(skillId, userId);
+        await cacheService.invalidateUserProgression(userId, 'all_skills');
+      }
+
+      await ErrorLoggingService.logSystemEvent('skill_updated', {
+        skillId,
+        userId,
+        updatedFields: Object.keys(updates),
+        timestamp: new Date().toISOString()
+      });
+
+      return skill.toObject();
+    } catch (error) {
+      if (error instanceof PermissionError || error instanceof NotFoundError) {
+        throw error;
+      }
+      
+      await ErrorLoggingService.logError(error, {
+        userId,
+        skillId,
+        operation: 'updateSkill',
+        timestamp: new Date().toISOString()
+      });
+      
+      if (error.name === 'CastError') {
+        throw new ValidationError('skillId', skillId, { type: 'format', format: 'ObjectId' });
+      }
+      
+      if (error.name === 'MongoError' || error.name === 'MongoServerError') {
+        throw new DatabaseError('updateSkill', error, { userId, skillId });
+      }
+      
+      throw error;
+    }
+  }
+
   async deleteSkill(skillId, userId) {
     if (!skillId) {
       throw new ValidationError('skillId', skillId, { type: 'required' });
