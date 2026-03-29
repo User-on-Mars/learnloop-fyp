@@ -1,16 +1,9 @@
-import { useState } from 'react';
-import { useSkillMap } from '../context/SkillMapContext';
-import { useActiveSessions } from '../context/ActiveSessionContext';
-import NodeDetailModal from './NodeDetailModal';
+import { useNavigate, useParams } from 'react-router-dom';
 
-export default function NodeCard({ node }) {
-  const [showLockedMessage, setShowLockedMessage] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const { startSession, currentSkill } = useSkillMap();
-  const { addSession } = useActiveSessions();
+export default function NodeCard({ node, compact = false }) {
+  const { skillId } = useParams();
+  const navigate = useNavigate();
 
-  // Determine if node is clickable
-  const isClickable = ['Unlocked', 'In_Progress', 'Completed'].includes(node.status);
   const isLocked = node.status === 'Locked';
 
   // Status icon rendering
@@ -18,25 +11,25 @@ export default function NodeCard({ node }) {
     switch (node.status) {
       case 'Locked':
         return (
-          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         );
       case 'Completed':
         return (
-          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
       case 'In_Progress':
         return (
-          <svg className="w-6 h-6 text-ll-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         );
       case 'Unlocked':
         return (
-          <svg className="w-6 h-6 text-ll-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
           </svg>
         );
@@ -45,52 +38,83 @@ export default function NodeCard({ node }) {
     }
   };
 
-  // Handle card click
-  const handleClick = () => {
-    if (isLocked) {
-      setShowLockedMessage(true);
-      setTimeout(() => setShowLockedMessage(false), 3000);
-    } else if (isClickable) {
-      setShowDetailModal(true);
-    }
+  const handleGoToNodePage = () => {
+    if (!skillId) return;
+    navigate(`/maps/${skillId}/nodes/${node._id}`);
   };
 
-  // Handle session start
-  const handleStartSession = async (e) => {
-    e.stopPropagation(); // Prevent card click
-    try {
-      // Start session in backend (updates node status)
-      const sessionData = await startSession(node._id);
-      
-      // Add session to active sessions popup with node and skill context
-      addSession({
-        skillName: currentSkill?.name || `Node ${node.order}`,
-        nodeId: node._id,
-        skillId: node.skillId,
-        tags: [currentSkill?.name || 'Skill Map'],
-        notes: node.title || `Node ${node.order}`,
-        timer: 0,
-        targetTime: 0,
-        isCountdown: false,
-        isRunning: true
-      });
-      
-      console.log('Session started for node:', node._id);
-    } catch (error) {
-      console.error('Failed to start session:', error);
-    }
+  const handleStartSession = (e) => {
+    e.stopPropagation();
+    if (!skillId) return;
+    navigate(`/maps/${skillId}/nodes/${node._id}/session`);
   };
 
   // Show session button for Unlocked and In_Progress nodes
   const showSessionButton = ['Unlocked', 'In_Progress'].includes(node.status);
 
+  if (compact) {
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleGoToNodePage}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleGoToNodePage();
+          }
+        }}
+        className={`bg-white rounded-lg p-3 transition-all duration-200 border-2 cursor-pointer hover:shadow-md ${
+          node.status === 'Completed'
+            ? 'border-green-500 bg-green-50'
+            : node.status === 'Unlocked' || node.status === 'In_Progress'
+            ? 'border-blue-500 bg-blue-50'
+            : 'border-gray-300 bg-gray-50 opacity-75'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1">
+            {renderStatusIcon()}
+            <h3 className="text-sm font-bold text-gray-900 truncate">
+              {node.title || `Node ${node.order}`}
+            </h3>
+          </div>
+          
+          {showSessionButton && (
+            <button
+              type="button"
+              onClick={handleStartSession}
+              className="px-3 py-1.5 bg-site-accent text-white text-xs font-medium rounded-lg hover:bg-site-accent-hover transition shrink-0"
+            >
+              Start Session
+            </button>
+          )}
+        </div>
+
+        {node.description && (
+          <p className="text-xs text-gray-600 mt-2 line-clamp-1">
+            {node.description}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <>
       <div
-        onClick={handleClick}
-        className={`relative bg-white rounded-lg shadow-md p-4 sm:p-6 transition-all duration-200 ${
-          isClickable ? 'cursor-pointer hover:shadow-lg hover:scale-105' : 'cursor-not-allowed'
-        } ${isLocked ? 'opacity-75' : ''} min-h-[120px]`}
+        role="button"
+        tabIndex={0}
+        onClick={handleGoToNodePage}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleGoToNodePage();
+          }
+        }}
+        className={`relative bg-white rounded-lg p-4 sm:p-6 transition-colors duration-200 border border-site-accent-border outline-none focus-visible:ring-2 focus-visible:ring-site-accent focus-visible:ring-offset-0 cursor-pointer hover:border-site-accent hover:shadow-sm active:border-site-accent ${
+          isLocked ? 'opacity-75' : ''
+        } min-h-[120px]`}
       >
       {/* START/GOAL labels */}
       {node.isStart && (
@@ -147,8 +171,9 @@ export default function NodeCard({ node }) {
         {/* Start Practice Session button - touch-friendly */}
         {showSessionButton && (
           <button
+            type="button"
             onClick={handleStartSession}
-            className="px-3 sm:px-4 py-2 sm:py-1.5 bg-site-accent text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-site-accent-hover active:opacity-90 transition min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
+            className="px-3 sm:px-4 py-2 sm:py-1.5 bg-site-accent text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-site-accent-hover active:opacity-90 transition min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-site-accent"
           >
             <span className="hidden sm:inline">Start Session</span>
             <span className="sm:hidden">Start</span>
@@ -156,28 +181,7 @@ export default function NodeCard({ node }) {
         )}
       </div>
 
-      {/* Locked message */}
-      {showLockedMessage && (
-        <div className="absolute inset-0 bg-black bg-opacity-75 rounded-lg flex items-center justify-center p-4">
-          <div className="text-white text-center">
-            <svg className="w-10 sm:w-12 h-10 sm:h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <p className="font-medium text-sm sm:text-base">This node is locked</p>
-            <p className="text-xs sm:text-sm text-gray-300 mt-1">
-              Complete previous nodes to unlock
-            </p>
-          </div>
-        </div>
-      )}
     </div>
-
-    {/* Node Detail Modal */}
-    <NodeDetailModal
-      isOpen={showDetailModal}
-      onClose={() => setShowDetailModal(false)}
-      nodeId={node._id}
-    />
   </>
   );
 }
