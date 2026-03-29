@@ -439,6 +439,51 @@ export function SkillMapProvider({ children }) {
     }
   }, []);
 
+  const updateSkillMap = useCallback(async (skillId, updates) => {
+    const previousSkills = [...skills];
+    const previousCurrentSkill = currentSkill;
+
+    try {
+      setError(null);
+
+      // Optimistic update
+      if (currentSkill?._id === skillId) {
+        setCurrentSkill((prev) => ({ ...prev, ...updates }));
+      }
+      setSkills((prev) => prev.map((skill) =>
+        skill._id === skillId ? { ...skill, ...updates } : skill
+      ));
+
+      const token = await getAuthToken();
+      const response = await api.patch(`/skills/${skillId}`,
+        updates,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const updatedSkill = response.data.skill;
+
+      // Update with server response
+      if (currentSkill?._id === skillId) {
+        setCurrentSkill((prev) => ({ ...prev, ...updatedSkill }));
+      }
+      setSkills((prev) => prev.map((skill) =>
+        skill._id === skillId ? { ...skill, ...updatedSkill } : skill
+      ));
+
+      invalidateSkillMapDetailCache(skillId);
+      loadSkillMapFull(skillId, { background: true });
+
+      return updatedSkill;
+    } catch (err) {
+      setSkills(previousSkills);
+      setCurrentSkill(previousCurrentSkill);
+
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update skill map';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }, [currentSkill, skills, invalidateSkillMapDetailCache, loadSkillMapFull]);
+
   const clearError = useCallback(() => {
     setError(null);
     setMapDetailError(null);
@@ -458,6 +503,7 @@ export function SkillMapProvider({ children }) {
     loadSkillNodes,
     loadSkillMapFull,
     deleteSkill,
+    updateSkillMap,
     updateNodeStatus,
     updateNodeContent,
     deleteNode,
