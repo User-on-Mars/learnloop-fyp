@@ -1,0 +1,107 @@
+.pathWrap {
+  width: 100%;
+}
+
+.lockedHint {
+  color: var(--color-danger);
+  font-size: 13px;
+  margin-bottom: 8px;
+  animation: shake 0.35s ease;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+.path {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.circleDone {
+  background: var(--color-brand-light);
+  border-color: var(--color-brand);
+  color: var(--color-brand-dark);
+}
+
+.circleActive {
+  border-color: var(--color-brand);
+  box-shadow: none;
+}
+
+.circleLocked {
+  opacity: 0.5;
+  border-color: var(--color-locked);
+}
+
+.circleShake {
+  animation: nodeShake 0.38s ease;
+}
+
+@keyframes nodeShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.connector {
+  width: 28px;
+  height: 3px;
+  background: var(--color-border);
+  margin: 0 2px;
+}
+
+.connectorDone {
+  background: var(--color-brand);
+}
+
+.connectorDashed {
+  border-bottom: 2px dashed var(--color-active-mid);
+  height: 0;
+  background: transparent;
+}

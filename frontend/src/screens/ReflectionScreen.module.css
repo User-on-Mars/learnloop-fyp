@@ -1,0 +1,147 @@
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px 16px 40px;
+  font-family: var(--font-body);
+  background: var(--color-surface-2);
+  min-height: 100vh;
+}
+
+.centered {
+  text-align: center;
+  padding: 2rem;
+}
+
+.savedStrip {
+  background: var(--color-brand-light);
+  color: var(--color-brand-dark);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  border: 0.5px solid var(--color-brand-mid);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.sub {
+  color: var(--color-text-2);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.fieldset {
+  border: none;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+.legend {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.moodRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.moodBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  min-width: 72px;
+}
+
+.moodBtnSelected {
+  border-color: var(--color-brand);
+  background: var(--color-brand-light);
+}
+
+.moodEmoji {
+  font-size: 22px;
+}
+
+.moodLabel {
+  font-size: 11px;
+  color: var(--color-text-2);
+}
+
+.fieldError {
+  color: var(--color-danger);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.blockLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-2);
+  margin-bottom: 16px;
+}
+
+.textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--color-border-strong);
+  resize: vertical;
+}
+
+.charCount {
+  font-size: 12px;
+  color: var(--color-text-3);
+}
+
+.charCountWarn {
+  font-size: 12px;
+  color: var(--color-goal);
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.primary {
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-brand);
+  color: #fff;
+  font-weight: 600;
+}
+
+.primaryBlue {
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-active);
+  color: #fff;
+  font-weight: 600;
+}
+
+.skip {
+  background: none;
+  border: none;
+  color: var(--color-text-2);
+  font-size: 14px;
+  padding: 8px;
+}
