@@ -159,7 +159,7 @@ export default function ReflectPage() {
                   placeholder="What did you learn today? How did your practice session go? What insights did you gain?"
                   maxLength={10000}
                   rows={12}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ll-600 focus:border-transparent resize-none transition-shadow text-gray-900 placeholder:text-gray-400"
+                  className="w-full px-4 py-3 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white resize-none text-gray-900 placeholder:text-gray-400"
                 />
                 <div className="mt-2 text-sm text-gray-500 text-right">
                   {content.length} / 10,000 characters
@@ -167,7 +167,7 @@ export default function ReflectPage() {
               </div>
 
               {/* Mood Selector */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
                 <MoodSelector selectedMood={mood} onMoodSelect={handleMoodSelect} />
               </div>
 
