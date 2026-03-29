@@ -437,10 +437,7 @@ export default function LogPractice() {
     };
 
     const requestCloseCompleteModal = () => {
-        const ok = window.confirm(
-            'Are you sure you want to close without logging? Your session will stay active on the page.'
-        );
-        if (ok) closeCompleteModal();
+        closeCompleteModal();
     };
 
     // Reset form
@@ -507,8 +504,8 @@ export default function LogPractice() {
                                 {activeSessions.map(session => (
                                     <div
                                         key={session.id}
-                                        className={`bg-white rounded-xl border-2 p-5 shadow-sm ${
-                                            session.isRunning ? 'border-green-200' : 'border-gray-200'
+                                        className={`bg-white rounded-xl border p-5 shadow-sm ${
+                                            session.isRunning ? 'border-site-accent' : 'border-site-accent-border'
                                         }`}
                                     >
                                         <div className="flex items-start justify-between mb-3">
@@ -602,7 +599,7 @@ export default function LogPractice() {
                         </div>
 
                         {/* Search and Filters */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm">
+                        <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <div className="relative flex-1">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -611,7 +608,7 @@ export default function LogPractice() {
                                         placeholder="Search by skill or notes..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent"
+                                        className="w-full pl-10 pr-4 py-2.5o border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
                                     />
                                 </div>
                                 <button
@@ -635,7 +632,7 @@ export default function LogPractice() {
                                         <select
                                             value={filterSkill}
                                             onChange={(e) => setFilterSkill(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent text-sm"
+                                            className="w-full px-3 py-2 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white text-sm"
                                         >
                                             <option value="">All Skills</option>
                                             {uniqueSkills.map(skill => (
@@ -648,7 +645,7 @@ export default function LogPractice() {
                                         <select
                                             value={filterTag}
                                             onChange={(e) => setFilterTag(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent text-sm"
+                                            className="w-full px-3 py-2 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white text-sm"
                                         >
                                             <option value="">All Tags</option>
                                             {uniqueTags.map(tag => (
@@ -777,7 +774,7 @@ export default function LogPractice() {
                                         onChange={(e) => setFormData(prev => ({ ...prev, skillName: e.target.value }))}
                                         placeholder="e.g., React Hooks, Data Structures"
                                         required
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent"
+                                        className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
                                     />
                                 </div>
 
@@ -806,7 +803,7 @@ export default function LogPractice() {
                                             onChange={(e) => setNewTag(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && handleAddTag(e)}
                                             placeholder="Add tag and press Enter"
-                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent text-sm"
+                                            className="flex-1 px-3 py-2 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white text-sm"
                                         />
                                         <button
                                             type="button"
@@ -826,7 +823,7 @@ export default function LogPractice() {
                                         onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                                         placeholder="Add any notes..."
                                         rows={2}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-site-accent focus:border-transparent resize-none"
+                                        className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white resize-none"
                                     />
                                 </div>
 
@@ -1040,7 +1037,7 @@ export default function LogPractice() {
                                     onChange={(e) => setCompletionNotes(e.target.value)}
                                     placeholder="e.g., Completed 3 exercises on React hooks, struggled with useCallback but understood it better after reading docs..."
                                     rows={4}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent resize-none"
+                                    className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-green-600 transition-colors bg-gray-50 focus:bg-white resize-none"
                                 />
                             </div>
 
@@ -1065,10 +1062,7 @@ export default function LogPractice() {
                                             Saving...
                                         </>
                                     ) : (
-                                        <>
-                                            <CheckCircle className="w-4 h-4" />
-                                            Log Session
-                                        </>
+                                        'Log Session'
                                     )}
                                 </button>
                             </div>
@@ -1122,7 +1116,7 @@ export default function LogPractice() {
                             onChange={(e) => setDeleteConfirmInput(e.target.value)}
                             placeholder="Type CONFIRM"
                             autoComplete="off"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono text-sm mb-4"
+                            className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-red-500 transition-colors bg-gray-50 focus:bg-white font-mono text-sm mb-4"
                         />
                         <div className="flex gap-3">
                             <button
