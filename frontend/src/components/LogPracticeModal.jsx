@@ -87,7 +87,7 @@ export default function LogPracticeModal({ isOpen, onClose, onSubmit }) {
                 value={formData.date}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent"
+                className="w-full px-4 py-2 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
               />
             </div>
 
@@ -106,7 +106,7 @@ export default function LogPracticeModal({ isOpen, onClose, onSubmit }) {
                 max="1440"
                 required
                 placeholder="e.g., 30"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent"
+                className="w-full px-4 py-2 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
               />
               <p className="text-xs text-gray-500 mt-1">Enter the number of minutes you practiced</p>
             </div>
@@ -124,7 +124,7 @@ export default function LogPracticeModal({ isOpen, onClose, onSubmit }) {
                 onChange={handleChange}
                 required
                 placeholder="e.g., React Hooks, CSS Grid"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent"
+                className="w-full px-4 py-2 border-2 border-transparent rounded-lg outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
               />
             </div>
 
@@ -140,7 +140,7 @@ export default function LogPracticeModal({ isOpen, onClose, onSubmit }) {
                 onChange={handleChange}
                 rows="3"
                 placeholder="What did you learn or work on?"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ll-600 focus:border-transparent resize-none"
+                className="w-full px-4 py-2 border-gray-300 rounded-lg outline-none focus:border-site-accent transition-colors resize-none"
               ></textarea>
             </div>
 
