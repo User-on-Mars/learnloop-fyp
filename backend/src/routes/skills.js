@@ -243,6 +243,65 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// PATCH /api/skills/:id - Update skill details
+const updateSkillSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, 'Skill name is required')
+    .max(100, 'Skill name must be 100 characters or less')
+    .optional(),
+  description: z.string().max(500, 'Description must be 500 characters or less').optional(),
+  goal: z.string().max(200, 'Goal must be 200 characters or less').optional(),
+  icon: z.string().max(10, 'Icon must be 10 characters or less').optional()
+});
+
+router.patch('/:id', validateRequest(updateSkillSchema), async (req, res) => {
+  try {
+    console.log('✏️ Updating skill:', req.params.id, 'for user:', req.user.id);
+    
+    const updatedSkill = await SkillService.updateSkill(req.params.id, req.user.id, req.body);
+    
+    console.log('✅ Skill updated');
+    res.json({ 
+      skill: updatedSkill,
+      message: 'Skill updated successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error updating skill:', error.message);
+    
+    const errorContext = {
+      userId: req.user.id,
+      skillId: req.params.id,
+      operation: 'update_skill',
+      timestamp: new Date().toISOString()
+    };
+    
+    console.error('Error context:', errorContext);
+    
+    let statusCode = 500;
+    let errorType = 'SERVER_ERROR';
+    
+    if (error.message === 'Skill not found') {
+      statusCode = 404;
+      errorType = 'NOT_FOUND';
+    } else if (error.name === 'CastError') {
+      statusCode = 400;
+      errorType = 'INVALID_ID';
+    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+      statusCode = 503;
+      errorType = 'DATABASE_ERROR';
+    }
+    
+    res.status(statusCode).json({
+      type: errorType,
+      message: error.message,
+      timestamp: new Date().toISOString(),
+      ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    });
+  }
+});
+
 // DELETE /api/skills/:id - Delete skill with cascade
 router.delete('/:id', async (req, res) => {
   try {
