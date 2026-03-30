@@ -35,6 +35,24 @@ const PracticeSchema = new mongoose.Schema({
     type: String,
     maxlength: 1000,
     trim: true
+  },
+  confidence: {
+    type: Number,
+    min: 1,
+    max: 5,
+    default: null
+  },
+  blockers: {
+    type: String,
+    maxlength: 500,
+    trim: true,
+    default: ''
+  },
+  nextStep: {
+    type: String,
+    maxlength: 500,
+    trim: true,
+    default: ''
   }
 }, { 
   timestamps: true 
