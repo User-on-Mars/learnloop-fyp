@@ -126,6 +126,13 @@ export const practiceAPI = {
   getWeeklyStats: (weeks = 12) => api.get('/practice/stats/weekly', { params: { weeks } }),
 };
 
+// Skills API (for dashboard)
+export const skillsAPI = {
+  getAll: () => api.get('/skills'),
+  getById: (id) => api.get(`/skills/${id}`),
+  getNodes: (skillId) => api.get(`/skills/${skillId}/nodes`),
+};
+
 // Active Sessions API
 export const activeSessionAPI = {
   // Get all active sessions for user
