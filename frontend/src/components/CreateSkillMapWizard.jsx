@@ -1,8 +1,8 @@
 import { Fragment, useMemo, useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useSkillMap } from '../context/SkillMapContext';
-
-const ICON_OPTIONS = ['🗺️', '📚', '⚙️', '🎯', '💻', '🎨', '🔬', '🏆', '🧠', '📐', '🌐', '🚀'];
+import IconPicker, { SkillIcon } from './IconPicker';
+import { DEFAULT_ICONS } from '../utils/iconLibrary';
 
 const STEPS = [
   { id: 1, label: 'Name & icon' },
@@ -21,7 +21,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [icon, setIcon] = useState(ICON_OPTIONS[0]);
+  const [icon, setIcon] = useState(DEFAULT_ICONS[0]);
   const [goal, setGoal] = useState('');
   const [nodeInputs, setNodeInputs] = useState(['', '', '']);
   const [attemptedNext, setAttemptedNext] = useState({});
@@ -38,7 +38,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
     setStep(1);
     setTitle('');
     setDescription('');
-    setIcon(ICON_OPTIONS[0]);
+    setIcon(DEFAULT_ICONS[0]);
     setGoal('');
     setNodeInputs(['', '', '']);
     setAttemptedNext({});
@@ -85,7 +85,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
   const contentCount = filledSketchTitles.length;
 
   const addNodeRow = () => {
-    if (nodeInputs.length >= 6) return;
+    if (nodeInputs.length >= 15) return;
     setNodeInputs((prev) => [...prev, '']);
   };
 
@@ -95,6 +95,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
   };
 
   const updateNodeRow = (index, value) => {
+    if (value.length > 16) return;
     setNodeInputs((prev) => prev.map((v, i) => (i === index ? value : v)));
   };
 
@@ -204,12 +205,12 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
                 <input
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value.slice(0, 60))}
+                  onChange={(e) => setTitle(e.target.value.slice(0, 30))}
                   className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
                   placeholder="My learning path"
-                  maxLength={60}
+                  maxLength={30}
                 />
-                <div className="flex justify-end mt-1 text-xs text-gray-500">{title.length}/60</div>
+                <div className="flex justify-end mt-1 text-xs text-gray-500">{title.length}/30</div>
                 {attemptedNext[1] && !title.trim() && (
                   <p className="text-sm text-red-600 mt-1">Title is required</p>
                 )}
@@ -233,25 +234,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
-                <div className="grid grid-cols-6 gap-2">
-                  {ICON_OPTIONS.map((em) => {
-                    const selected = icon === em;
-                    return (
-                      <button
-                        key={em}
-                        type="button"
-                        onClick={() => setIcon(em)}
-                        className={`text-2xl h-11 w-full rounded-lg border-2 flex items-center justify-center transition-colors outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--site-accent,#2e5023)] focus-visible:ring-offset-2 ${
-                          selected
-                            ? 'border-[var(--site-accent,#2e5023)] bg-site-soft shadow-[0_0_0_3px_rgba(46,80,35,0.18)]'
-                            : 'border-gray-200 bg-white hover:border-[var(--site-accent,#2e5023)] hover:bg-site-soft/70'
-                        }`}
-                      >
-                        {em}
-                      </button>
-                    );
-                  })}
-                </div>
+                <IconPicker value={icon} onChange={setIcon} />
               </div>
             </div>
           )}
@@ -261,13 +244,13 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
               <label className="block text-sm font-medium text-gray-700">Goal</label>
               <textarea
                 value={goal}
-                onChange={(e) => setGoal(e.target.value.slice(0, 200))}
-                rows={4}
+                onChange={(e) => setGoal(e.target.value.slice(0, 16))}
+                rows={2}
                 className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
-                placeholder="e.g. Build and deploy a working ML model from scratch using Python…"
-                maxLength={200}
+                placeholder="e.g. Master Python basics"
+                maxLength={16}
               />
-              <div className="flex justify-end text-xs text-gray-500">{goal.length}/200</div>
+              <div className="flex justify-end text-xs text-gray-500">{goal.length}/16</div>
               {attemptedNext[2] && !goal.trim() && (
                 <p className="text-sm text-red-600">Goal is required</p>
               )}
@@ -281,19 +264,23 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
           {step === 3 && (
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                Optional: add up to six titles to block out your path. Empty rows are ignored.
+                Add up to 15 node titles for your learning path. Node 1 is your starting point. Empty rows are ignored.
               </p>
               <div className="space-y-2">
                 {nodeInputs.map((val, i) => (
                   <div key={i} className="flex gap-2 items-center">
                     <span className="text-xs text-gray-500 w-5 text-right shrink-0">{i + 1}.</span>
-                    <input
-                      type="text"
-                      value={val}
-                      onChange={(e) => updateNodeRow(i, e.target.value)}
-                      className="flex-1 border-2 border-transparent rounded-lg px-3 py-2 text-sm min-w-0 outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
-                      placeholder={`Node ${i + 1}`}
-                    />
+                    <div className="flex-1 min-w-0">
+                      <input
+                        type="text"
+                        value={val}
+                        onChange={(e) => updateNodeRow(i, e.target.value)}
+                        className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
+                        placeholder={`Node ${i + 1}`}
+                        maxLength={16}
+                      />
+                      <div className="text-right text-[10px] text-gray-400 mt-0.5">{val.length}/16</div>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeNodeRow(i)}
@@ -309,10 +296,10 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
               <button
                 type="button"
                 onClick={addNodeRow}
-                disabled={nodeInputs.length >= 6}
+                disabled={nodeInputs.length >= 15}
                 className="text-sm font-medium text-site-accent hover:text-site-accent-hover disabled:text-gray-400 disabled:cursor-not-allowed"
               >
-                ＋ Add node ({nodeInputs.length}/6)
+                ＋ Add node ({nodeInputs.length}/15)
               </button>
               {attemptedNext[3] && sketchTitlesNonUnique() && (
                 <p className="text-sm text-red-600">Node titles must be unique</p>
@@ -321,27 +308,15 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
               <div className="rounded-lg border border-site-border bg-site-bg/80 p-3 sm:p-4 overflow-x-auto">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-site-muted mb-2">Path preview</p>
                 <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap min-w-0 text-xs sm:text-sm">
-                  <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-site-border bg-site-surface px-2 py-1 font-semibold text-site-accent">
-                    <span aria-hidden>🚩</span> START
-                  </span>
                   {nodeInputs.map((val, i) => (
                     <span key={i} className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                      <span className="text-site-accent font-semibold" aria-hidden>
-                        →
-                      </span>
-                      <span className="inline-flex max-w-[9rem] sm:max-w-[11rem] truncate rounded-md border border-dashed border-site-accent/40 bg-site-soft px-2 py-1 font-medium text-site-ink">
-                        {truncate(val.trim() || `Node ${i + 1}`, 20)}
+                      {i > 0 && <span className="text-site-accent font-semibold" aria-hidden>→</span>}
+                      <span className={`inline-flex max-w-[9rem] sm:max-w-[11rem] truncate rounded-md border px-2 py-1 font-medium text-site-ink ${i === 0 ? 'border-site-accent bg-site-soft' : 'border-dashed border-site-accent/40 bg-site-soft'}`}>
+                        {i === 0 && <span className="mr-1">🚩</span>}
+                        {truncate(val.trim() || `Node ${i + 1}`, 16)}
                       </span>
                     </span>
                   ))}
-                  <span className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                    <span className="text-site-accent font-semibold" aria-hidden>
-                      →
-                    </span>
-                    <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-site-border bg-site-surface px-2 py-1 font-semibold text-site-accent">
-                      <span aria-hidden>🏆</span> GOAL
-                    </span>
-                  </span>
                 </div>
               </div>
             </div>
@@ -350,7 +325,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
           {step === 4 && (
             <div className="space-y-4 text-sm">
               <div className="flex items-start gap-2">
-                <span className="text-2xl">{icon}</span>
+                <SkillIcon name={icon} size={28} className="text-site-accent shrink-0" />
                 <div>
                   <p className="font-semibold text-gray-900 text-base">{title.trim() || '—'}</p>
                   {(description || '').trim() ? (
@@ -382,8 +357,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
                 )}
               </div>
               <p className="text-xs text-gray-500 border-t border-gray-100 pt-3">
-                START and GOAL nodes are auto-created. {contentCount} content node{contentCount === 1 ? '' : 's'}{' '}
-                will be added as &apos;not started&apos;.
+                Node 1 is your starting point. {contentCount} node{contentCount === 1 ? '' : 's'} will be created.
               </p>
             </div>
           )}
