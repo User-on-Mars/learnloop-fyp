@@ -33,12 +33,14 @@ import { store } from "./store";
 import ErrorBoundary from "./components/ErrorBoundary";
 import SkillMapPage from "./pages/SkillMapPage";
 import Sidebar from "./components/Sidebar";
+import MobileNav from "./components/MobileNav";
 import { SkillMapTsProvider } from "./context/SkillMapTsContext";
 import SkillMapScreen from "./screens/SkillMapScreen";
 import NodeDetailScreen from "./screens/NodeDetailScreen";
 import SessionScreen from "./screens/SessionScreen";
 import ReflectionScreen from "./screens/ReflectionScreen";
 import NodeCompleteScreen from "./screens/NodeCompleteScreen";
+import WeeklySummary from "./pages/WeeklySummary";
 
 // Protect routes that require auth
 function Protected({ children }) {
@@ -64,6 +66,7 @@ function AppLayout() {
           <ActiveSessionProvider>
             <SkillMapProvider>
               <Outlet />
+              <MobileNav />
             </SkillMapProvider>
           </ActiveSessionProvider>
         </ToastProvider>
@@ -108,6 +111,7 @@ const router = createBrowserRouter([
       { path: "/log-practice", element: <Protected><LogPractice /></Protected> },
       { path: "/reflect", element: <Protected><ReflectPage /></Protected> },
       { path: "/reflections", element: <Protected><ReflectionHistory /></Protected> },
+      { path: "/weekly-summary", element: <Protected><WeeklySummary /></Protected> },
       { path: "/skills", element: <Protected><SkillMapPage /></Protected> },
       { path: "/skills/:skillId", element: <Protected><SkillMapPage /></Protected> },
       {
