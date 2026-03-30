@@ -5,6 +5,12 @@ const ReflectionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  title: {
+    type: String,
+    maxlength: 200,
+    trim: true,
+    default: ''
+  },
   content: {
     type: String,
     required: true,
