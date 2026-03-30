@@ -309,13 +309,19 @@ export function SkillMapProvider({ children }) {
     try {
       setError(null);
 
+      // Build update payload with only defined values
+      const updates = {};
+      if (title !== undefined) updates.title = title;
+      if (description !== undefined) updates.description = description;
+
+      // Optimistic update with only the fields being changed
       setNodes((prev) => prev.map((node) =>
-        node._id === nodeId ? { ...node, title, description } : node
+        node._id === nodeId ? { ...node, ...updates } : node
       ));
 
       const token = await getAuthToken();
       const response = await api.patch(`/nodes/${nodeId}/content`,
-        { title, description },
+        updates,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -340,6 +346,40 @@ export function SkillMapProvider({ children }) {
       throw new Error(errorMessage);
     }
   }, [nodes, currentSkill, invalidateSkillMapDetailCache, loadSkillMapFull]);
+
+  const createNode = useCallback(async (skillId, { title, description }) => {
+    try {
+      setError(null);
+
+      const token = await getAuthToken();
+      const response = await api.post(`/skills/${skillId}/nodes`,
+        { title, description: description || '' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const newNode = response.data.node;
+
+      // Refresh the full skill map to get updated nodes with correct order
+      if (currentSkill && currentSkill._id === skillId) {
+        invalidateSkillMapDetailCache(skillId);
+        await loadSkillMapFull(skillId, { background: false });
+        
+        // Update node count
+        setCurrentSkill((prev) => ({ ...prev, nodeCount: (prev.nodeCount || 0) + 1 }));
+        setSkills((prev) => prev.map((skill) =>
+          skill._id === skillId
+            ? { ...skill, nodeCount: (skill.nodeCount || 0) + 1 }
+            : skill
+        ));
+      }
+
+      return newNode;
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create node';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }, [currentSkill, invalidateSkillMapDetailCache, loadSkillMapFull]);
 
   const deleteNode = useCallback(async (nodeId) => {
     try {
@@ -506,6 +546,7 @@ export function SkillMapProvider({ children }) {
     updateSkillMap,
     updateNodeStatus,
     updateNodeContent,
+    createNode,
     deleteNode,
     startSession,
     getNodeDetails,
