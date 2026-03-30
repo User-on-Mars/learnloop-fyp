@@ -13,6 +13,10 @@ body {
   color: var(--site-ink, #0f172a);
 }
 
+select {
+  accent-color: var(--site-accent, #2e5023);
+}
+
 /* Remove default focus outlines globally for inputs, textareas, and selects */
 input:focus,
 textarea:focus,
@@ -105,8 +109,19 @@ select:focus {
   background-size: 40px 40px;
 }
 
-/*
- * Filled primary controls: ensure green fill + white label even when utility
+/* Mobile bottom nav safe area */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Add bottom padding on mobile so content isn't hidden behind bottom nav */
+@media (max-width: 767px) {
+  main {
+    padding-bottom: 4.5rem;
+  }
+}
+
+/* Filled primary controls: ensure green fill + white label even when utility
  * order / merges leave background transparent (white-on-white).
  * Hover still wins via .hover:bg-* rules (higher specificity with :hover).
  */
