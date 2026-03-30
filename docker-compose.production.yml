@@ -1,4 +1,4 @@
-# Production Docker Compose Configuration
+j# Production Docker Compose Configuration
 # Node System Rebuild - Complete Production Stack
 
 version: '3.8'
