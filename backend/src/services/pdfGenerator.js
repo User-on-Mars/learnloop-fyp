@@ -1,114 +1,112 @@
 import PDFDocument from 'pdfkit';
 
-/**
- * PDF Generator Service for Reflection Feature
- * Generates PDF documents from reflection data
- */
+// Brand colors
+const GREEN = '#2e5023';
+const GREEN_LIGHT = '#4f7942';
+const GRAY = '#475569';
+const GRAY_LIGHT = '#94a3b8';
+const BLACK = '#0f172a';
 
-/**
- * Generates a PDF document from reflection data
- * @param {Object} reflection - The reflection object containing content, mood, tags, and timestamps
- * @returns {Promise<Buffer>} - PDF buffer for download
- */
+// Mood labels (no emojis — PDFKit can't render them)
+const MOOD_LABELS = {
+  Happy: 'Feeling Happy',
+  Neutral: 'Feeling Neutral',
+  Sad: 'Feeling Challenged',
+  Energized: 'Feeling Energized',
+  Thoughtful: 'Feeling Thoughtful',
+};
+
 export async function generateReflectionPDF(reflection) {
   return new Promise((resolve, reject) => {
     try {
-      // Create a new PDF document
       const doc = new PDFDocument({
         size: 'A4',
-        margins: {
-          top: 50,
-          bottom: 50,
-          left: 50,
-          right: 50
-        }
+        margins: { top: 60, bottom: 60, left: 60, right: 60 },
       });
 
-      // Buffer to store PDF data
       const chunks = [];
-      
       doc.on('data', (chunk) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', (err) => reject(err));
 
-      // Add title
-      doc.fontSize(24)
-         .font('Helvetica-Bold')
-         .text('Reflection', { align: 'center' });
-      
-      doc.moveDown(1);
+      const pageWidth = 595.28; // A4
+      const contentWidth = pageWidth - 120; // margins
 
-      // Add date and time
-      const formattedDate = new Date(reflection.createdAt).toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      // ── Header bar ──
+      doc.rect(0, 0, pageWidth, 100).fill(GREEN);
+      doc.fontSize(28).font('Helvetica-Bold').fillColor('#ffffff')
+         .text('LearnLoop', 60, 30, { width: contentWidth });
+      doc.fontSize(11).font('Helvetica').fillColor('#ffffff')
+         .text('Reflection Journal', 60, 65, { width: contentWidth, opacity: 0.85 });
+
+      doc.fillColor(BLACK);
+      let y = 120;
+
+      // ── Title ──
+      const title = reflection.title || 'Untitled Reflection';
+      doc.fontSize(20).font('Helvetica-Bold').fillColor(BLACK)
+         .text(title, 60, y, { width: contentWidth });
+      y = doc.y + 10;
+
+      // ── Date ──
+      const date = new Date(reflection.createdAt).toLocaleString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
       });
-      
-      doc.fontSize(12)
-         .font('Helvetica')
-         .text(`Date: ${formattedDate}`, { align: 'left' });
-      
-      doc.moveDown(0.5);
+      doc.fontSize(10).font('Helvetica').fillColor(GRAY)
+         .text(date, 60, y, { width: contentWidth });
+      y = doc.y + 15;
 
-      // Add mood if present
+      // ── Mood ──
       if (reflection.mood) {
-        const moodEmojis = {
-          'Happy': '😊',
-          'Neutral': '😐',
-          'Sad': '😢',
-          'Energized': '⚡',
-          'Thoughtful': '🤔'
-        };
-        
-        const emoji = moodEmojis[reflection.mood] || '';
-        doc.fontSize(12)
-           .font('Helvetica-Bold')
-           .text(`Mood: ${emoji} ${reflection.mood}`, { align: 'left' });
-        
-        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(GREEN)
+           .text(MOOD_LABELS[reflection.mood] || reflection.mood, 60, y);
+        y = doc.y + 12;
       }
 
-      // Add tags if present
+      // ── Tags ──
       if (reflection.tags && reflection.tags.length > 0) {
-        doc.fontSize(12)
-           .font('Helvetica-Bold')
-           .text('Tags: ', { continued: true })
-           .font('Helvetica')
-           .text(reflection.tags.join(', '));
-        
-        doc.moveDown(1);
-      } else {
-        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').fillColor(GRAY_LIGHT)
+           .text('Tags:', 60, y, { continued: false });
+        y = doc.y + 4;
+
+        // Draw tag pills
+        let tagX = 60;
+        for (const tag of reflection.tags) {
+          const tagWidth = doc.widthOfString(tag) + 16;
+          if (tagX + tagWidth > pageWidth - 60) {
+            tagX = 60;
+            y += 22;
+          }
+          // pill background
+          doc.roundedRect(tagX, y, tagWidth, 18, 9).fill('#ecfdf3');
+          doc.fontSize(9).font('Helvetica').fillColor(GREEN)
+             .text(tag, tagX + 8, y + 4, { width: tagWidth - 16 });
+          tagX += tagWidth + 6;
+        }
+        y += 30;
       }
 
-      // Add separator line
-      doc.moveTo(50, doc.y)
-         .lineTo(545, doc.y)
-         .stroke();
-      
-      doc.moveDown(1);
+      // ── Divider ──
+      doc.moveTo(60, y).lineTo(pageWidth - 60, y).lineWidth(0.5).strokeColor('#e2e8f0').stroke();
+      y += 20;
 
-      // Add reflection content
-      doc.fontSize(11)
-         .font('Helvetica')
-         .text(reflection.content, {
-           align: 'left',
-           lineGap: 5
+      // ── Content ──
+      doc.fontSize(11).font('Helvetica').fillColor(BLACK)
+         .text(reflection.content, 60, y, {
+           width: contentWidth,
+           lineGap: 6,
+           paragraphGap: 8,
          });
 
-      // Add footer
-      doc.moveDown(2);
-      doc.fontSize(9)
-         .font('Helvetica-Oblique')
-         .text('Generated by LearnLoop Practice Tracker', {
-           align: 'center'
+      // ── Footer ──
+      const footerY = doc.page.height - 40;
+      doc.fontSize(8).font('Helvetica').fillColor(GRAY_LIGHT)
+         .text('Generated by LearnLoop — Reflective Skill Development Tracker', 60, footerY, {
+           width: contentWidth,
+           align: 'center',
          });
 
-      // Finalize the PDF
       doc.end();
     } catch (error) {
       reject(error);
