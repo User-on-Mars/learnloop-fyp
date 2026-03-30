@@ -18,7 +18,7 @@ const NodeSchema = new mongoose.Schema({
   title: {
     type: String,
     default: '',
-    maxlength: 200,
+    maxlength: 16,
     trim: true
   },
   description: {
@@ -54,8 +54,8 @@ NodeSchema.pre('save', function(next) {
   }
   
   // Validate title length
-  if (this.title && this.title.length > 200) {
-    const error = new Error('Node title must not exceed 200 characters');
+  if (this.title && this.title.length > 16) {
+    const error = new Error('Node title must not exceed 16 characters');
     return next(error);
   }
   
