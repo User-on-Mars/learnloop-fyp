@@ -14,11 +14,11 @@ const createSkillSchema = z.object({
   name: z.string()
     .trim()
     .min(1, 'Skill name is required')
-    .max(100, 'Skill name must be 100 characters or less'),
+    .max(30, 'Skill name must be 30 characters or less'),
   nodeCount: z.number()
     .int('Node count must be an integer')
     .min(2, 'Node count must be at least 2')
-    .max(16, 'Node count must be at most 16')
+    .max(15, 'Node count must be at most 15')
 });
 
 // Validation middleware
@@ -181,6 +181,22 @@ router.get('/:id/nodes', async (req, res) => {
   }
 });
 
+// POST /api/skills/:id/nodes - Create a new node for a skill
+router.post('/:id/nodes', async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    if (!title || !title.trim()) return res.status(400).json({ type: 'VALIDATION_ERROR', message: 'Node title is required' });
+    if (title.trim().length > 16) return res.status(400).json({ type: 'VALIDATION_ERROR', message: 'Node title must be 16 characters or less' });
+    
+    const node = await NodeService.createNode(req.params.id, req.user.id, { title: title.trim(), description: description || '' });
+    res.status(201).json({ node });
+  } catch (error) {
+    console.error('❌ Error creating node:', error.message);
+    const statusCode = error.message.includes('not found') ? 404 : error.message.includes('Cannot add') ? 400 : 500;
+    res.status(statusCode).json({ type: 'ERROR', message: error.message });
+  }
+});
+
 // GET /api/skills/:id - Get skill with all nodes (OPTIMIZED)
 router.get('/:id', async (req, res) => {
   try {
@@ -252,7 +268,7 @@ const updateSkillSchema = z.object({
     .optional(),
   description: z.string().max(500, 'Description must be 500 characters or less').optional(),
   goal: z.string().max(200, 'Goal must be 200 characters or less').optional(),
-  icon: z.string().max(10, 'Icon must be 10 characters or less').optional()
+  icon: z.string().max(30, 'Icon must be 30 characters or less').optional()
 });
 
 router.patch('/:id', validateRequest(updateSkillSchema), async (req, res) => {
