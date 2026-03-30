@@ -262,18 +262,18 @@ export default function Profile() {
                     </div>
                 </div>
 
-                <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Page Header - Hidden on mobile, shown on desktop */}
                     <div className="mb-6 sm:mb-8 hidden md:block">
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile Settings</h1>
-                        <p className="text-sm sm:text-base text-gray-600 mt-2">Manage your account information and preferences</p>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-site-ink">Profile Settings</h1>
+                        <p className="text-sm sm:text-base text-site-muted mt-2">Manage your account information and preferences</p>
                     </div>
                     
                     {/* Profile content */}
                     <div className="space-y-4 sm:space-y-6">
                         {/* Profile Information Card - Consistent Card Style */}
                         <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                            <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-gray-800">Profile Information</h2>
+                            <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-site-ink">Profile Information</h2>
                             
                             {/* Avatar Section - Styled with Indigo theme */}
                             <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -357,7 +357,7 @@ export default function Profile() {
                         
                         {/* Password Change Card - Consistent Card Style */}
                         <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                            <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-gray-800">Change Password</h2>
+                            <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-site-ink">Change Password</h2>
                             
                             <form onSubmit={handlePasswordChange} autoComplete="off">
                                 {/* Hidden dummy fields to prevent autofill */}
