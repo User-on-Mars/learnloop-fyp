@@ -82,7 +82,7 @@ function mapFullResponse(data: Record<string, unknown>): SkillMapFull {
       id: skillMapId,
       title: String(sm.title ?? ''),
       description: sm.description ? String(sm.description) : undefined,
-      icon: String(sm.icon ?? '🗺️'),
+      icon: String(sm.icon ?? 'Map'),
       goal: String(sm.goal ?? ''),
       status: sm.status === 'completed' ? 'completed' : 'active',
       createdAt: sm.createdAt ? new Date(sm.createdAt as string).toISOString() : new Date().toISOString(),
@@ -172,6 +172,16 @@ export async function abandonSession(sessionId: string): Promise<void> {
 export async function completeNode(nodeId: string, skillMapId: string): Promise<SkillMapFull> {
   await client.patch(`/nodes/${nodeId}/status`, { status: 'Completed' })
   return fetchSkillMapFull(skillMapId)
+}
+
+/** Creates a new node in a skill map. */
+export async function createNode(skillMapId: string, data: { title: string; description?: string }): Promise<SkillNode> {
+  const { data: res } = await client.post(`/skills/${skillMapId}/nodes`, {
+    title: data.title,
+    description: data.description || ''
+  })
+  const body = res as { node: Record<string, unknown> }
+  return mapApiNode(body.node, skillMapId)
 }
 
 /** Loads session rows for one node (lazy). */
