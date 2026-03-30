@@ -27,6 +27,17 @@ const updateContentSchema = z.object({
   message: 'At least one of title or description must be provided'
 });
 
+const createNodeSchema = z.object({
+  title: z.string()
+    .trim()
+    .min(1, 'Node title is required')
+    .max(200, 'Node title must not exceed 200 characters'),
+  description: z.string()
+    .max(2000, 'Node description must not exceed 2000 characters')
+    .optional()
+    .default('')
+});
+
 // Validation middleware
 const validateRequest = (schema) => {
   return (req, res, next) => {
@@ -83,6 +94,66 @@ router.get('/skills/:skillId/nodes', async (req, res) => {
     let errorType = 'SERVER_ERROR';
     
     if (error.name === 'CastError') {
+      statusCode = 400;
+      errorType = 'INVALID_ID';
+    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+      statusCode = 503;
+      errorType = 'DATABASE_ERROR';
+    }
+    
+    res.status(statusCode).json({
+      type: errorType,
+      message: error.message,
+      timestamp: new Date().toISOString(),
+      ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    });
+  }
+});
+
+// POST /api/skills/:skillId/nodes - Create a new node
+router.post('/skills/:skillId/nodes', validateRequest(createNodeSchema), async (req, res) => {
+  try {
+    console.log('➕ Creating node for skill:', req.params.skillId, 'user:', req.user.id);
+    
+    const node = await NodeService.createNode(
+      req.params.skillId,
+      req.user.id,
+      {
+        title: req.body.title,
+        description: req.body.description
+      }
+    );
+    
+    console.log('✅ Node created:', node._id);
+    res.status(201).json({ node });
+  } catch (error) {
+    console.error('❌ Error creating node:', error.message);
+    
+    // Enhanced error logging with context
+    const errorContext = {
+      userId: req.user.id,
+      skillId: req.params.skillId,
+      nodeData: req.body,
+      operation: 'create_node',
+      timestamp: new Date().toISOString()
+    };
+    
+    console.error('Error context:', errorContext);
+    
+    // Determine error type
+    let statusCode = 500;
+    let errorType = 'SERVER_ERROR';
+    
+    if (error.message === 'Skill not found') {
+      statusCode = 404;
+      errorType = 'NOT_FOUND';
+    } else if (error.message.includes('Cannot add more than')) {
+      statusCode = 400;
+      errorType = 'LIMIT_EXCEEDED';
+    } else if (error.message.includes('Permission denied')) {
+      statusCode = 403;
+      errorType = 'PERMISSION_DENIED';
+    } else if (error.name === 'CastError') {
       statusCode = 400;
       errorType = 'INVALID_ID';
     } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
