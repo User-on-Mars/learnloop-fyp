@@ -4,6 +4,7 @@ import { useSkillMap } from '../context/SkillMapContext';
 import { Pencil, Check, X, ChevronRight, ChevronLeft, FileText, Target } from 'lucide-react';
 import NodeCard from './NodeCard';
 import SkillMapPageSkeleton from './SkillMapPageSkeleton';
+import IconPicker, { SkillIcon } from './IconPicker';
 
 export default function ProgressionPath() {
   const { skillId } = useParams();
@@ -28,13 +29,6 @@ export default function ProgressionPath() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
-  const commonEmojis = [
-    '🗺️', '📚', '💻', '🎯', '🚀', '⚡', '🔥', '💡',
-    '🎨', '🎵', '🏃', '🧠', '📝', '🔧', '🌟', '🎓',
-    '💪', '🎮', '📱', '🌈', '🔬', '🎪', '🏆', '✨'
-  ];
 
   useEffect(() => {
     if (skillId) loadSkillMapFull(skillId);
@@ -46,7 +40,7 @@ export default function ProgressionPath() {
         name: currentSkill.name || '',
         goal: currentSkill.goal || '',
         description: currentSkill.description || '',
-        icon: currentSkill.icon || '🗺️'
+        icon: currentSkill.icon || 'Map'
       });
     }
   }, [currentSkill]);
@@ -57,13 +51,12 @@ export default function ProgressionPath() {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setShowEmojiPicker(false);
     if (currentSkill) {
       setEditForm({
         name: currentSkill.name || '',
         goal: currentSkill.goal || '',
         description: currentSkill.description || '',
-        icon: currentSkill.icon || '🗺️'
+        icon: currentSkill.icon || 'Map'
       });
     }
   };
@@ -80,7 +73,6 @@ export default function ProgressionPath() {
         icon: editForm.icon
       });
       setIsEditing(false);
-      setShowEmojiPicker(false);
     } catch (error) {
       console.error('Failed to update skill map:', error);
     } finally {
@@ -127,7 +119,7 @@ export default function ProgressionPath() {
     skillMapProgress?.percent ??
     (nodes.length > 0 ? Math.round((completedCount / nodes.length) * 100) : 0);
 
-  const icon = currentSkill.icon || '🗺️';
+  const icon = currentSkill.icon || 'Map';
 
   return (
     <div className="flex min-h-screen bg-[#8BC34A] relative overflow-hidden">
@@ -183,8 +175,8 @@ export default function ProgressionPath() {
           <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 flex-1">
-                <span className="text-3xl" aria-hidden>
-                  {icon}
+                <span className="shrink-0" aria-hidden>
+                  <SkillIcon name={icon} size={28} className="text-site-accent" />
                 </span>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{currentSkill.name}</h1>
               </div>
@@ -302,34 +294,10 @@ export default function ProgressionPath() {
                 
                 {/* Icon Section */}
                 <div className="mb-3">
-                  <div className="relative inline-block">
-                    <button
-                      type="button"
-                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="w-20 h-20 text-4xl flex items-center justify-center border-2 border-gray-300 rounded-xl hover:border-site-accent transition-colors bg-white"
-                    >
-                      {editForm.icon}
-                    </button>
-                    {showEmojiPicker && (
-                      <div className="absolute top-full left-0 mt-2 bg-white border-2 border-site-accent-border rounded-lg shadow-xl p-3 z-50 w-64">
-                        <div className="grid grid-cols-6 gap-2">
-                          {commonEmojis.map((emoji) => (
-                            <button
-                              key={emoji}
-                              type="button"
-                              onClick={() => {
-                                setEditForm({ ...editForm, icon: emoji });
-                                setShowEmojiPicker(false);
-                              }}
-                              className="w-10 h-10 text-2xl flex items-center justify-center hover:bg-site-soft rounded-lg transition-colors"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <IconPicker
+                    value={editForm.icon}
+                    onChange={(iconName) => setEditForm({ ...editForm, icon: iconName })}
+                  />
                 </div>
 
                 {/* Name Section */}
@@ -400,8 +368,8 @@ export default function ProgressionPath() {
               {/* Icon and Name Display */}
               <div className="bg-white rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl" aria-hidden>
-                    {icon}
+                  <span className="shrink-0" aria-hidden>
+                    <SkillIcon name={icon} size={32} className="text-site-accent" />
                   </span>
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 break-words">{currentSkill.name}</h3>
