@@ -10,13 +10,13 @@ const SkillSchema = new mongoose.Schema({
     required: true,
     trim: true,
     minlength: 1,
-    maxlength: 100
+    maxlength: 30
   },
   nodeCount: {
     type: Number,
     required: true,
     min: 2,
-    max: 16
+    max: 15
   },
   description: {
     type: String,
@@ -26,14 +26,14 @@ const SkillSchema = new mongoose.Schema({
   },
   icon: {
     type: String,
-    default: '🗺️',
+    default: 'Map',
     trim: true,
-    maxlength: 16
+    maxlength: 30
   },
   goal: {
     type: String,
     default: '',
-    maxlength: 2000,
+    maxlength: 16,
     trim: true
   },
   status: {
@@ -47,13 +47,13 @@ const SkillSchema = new mongoose.Schema({
 
 // Validation middleware
 SkillSchema.pre('save', function(next) {
-  if (!this.name || this.name.length < 1 || this.name.length > 100) {
-    const error = new Error('Skill name must be 1-100 characters');
+  if (!this.name || this.name.length < 1 || this.name.length > 30) {
+    const error = new Error('Skill name must be 1-30 characters');
     return next(error);
   }
   
-  if (!this.nodeCount || this.nodeCount < 2 || this.nodeCount > 16) {
-    const error = new Error('Node count must be between 2 and 16');
+  if (!this.nodeCount || this.nodeCount < 2 || this.nodeCount > 15) {
+    const error = new Error('Node count must be between 2 and 15');
     return next(error);
   }
   
