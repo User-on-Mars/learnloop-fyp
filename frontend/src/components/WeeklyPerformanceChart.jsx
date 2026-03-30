@@ -147,26 +147,18 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
     };
 
     if (isLoading) {
-        // Updated styling for the loading state container to match Dashboard cards
         return (
-            <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-4 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-bold text-site-ink mb-4">Weekly Performance</h3>
-                <div className="h-64 sm:h-80 flex items-center justify-center">
-                    <div className="animate-pulse text-site-accent/60 font-medium">
-                        Loading chart data...
-                    </div>
+            <div className="h-64 sm:h-80 flex items-center justify-center">
+                <div className="animate-pulse text-site-accent/60 font-medium">
+                    Loading chart data...
                 </div>
             </div>
         );
     }
 
-    // Updated styling for the main container to match Dashboard cards
     return (
-        <div className="bg-site-surface rounded-xl shadow-md border border-site-border p-4 sm:p-6">
-            <h3 className="text-lg sm:text-xl font-bold text-site-ink mb-4">Weekly Performance</h3>
-            <div className="h-64 sm:h-80">
-                <Bar data={chartData} options={options} />
-            </div>
+        <div className="h-64 sm:h-80">
+            <Bar data={chartData} options={options} />
         </div>
     );
 }
