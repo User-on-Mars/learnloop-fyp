@@ -5,7 +5,7 @@ import {
   handleValidationErrors,
   nodeOperationsRateLimit 
 } from '../middleware/security.js'
-import { validateRequest, reflectionDataSchema } from '../middleware/validation.js'
+import { z } from 'zod'
 import {
   createReflection,
   getReflections,
@@ -16,6 +16,22 @@ import { generateReflectionPDF } from '../services/pdfGenerator.js'
 
 const router = Router()
 
+// Validation schema for journal reflections
+const journalReflectionSchema = z.object({
+  title: z.string().max(200, 'Title must be 200 characters or less').trim().optional().default(''),
+  content: z.string().min(1, 'Content is required').max(10000, 'Content must be 10,000 characters or less').trim(),
+  mood: z.enum(['Happy', 'Neutral', 'Sad', 'Energized', 'Thoughtful']).nullable().optional().default(null),
+  tags: z.array(z.string().max(50).trim()).max(10).optional().default([])
+})
+
+const validateBody = (schema) => (req, res, next) => {
+  try { req.body = schema.parse(req.body); next(); }
+  catch (err) {
+    if (err instanceof z.ZodError) return res.status(422).json({ message: 'Validation failed', errors: err.errors.map(e => ({ field: e.path.join('.'), message: e.message })) });
+    return res.status(500).json({ message: 'Validation error' });
+  }
+}
+
 // All reflection routes require authentication
 router.use(requireAuth)
 
@@ -24,7 +40,7 @@ router.use(nodeOperationsRateLimit)
 
 // POST /api/reflections - Create a new reflection
 router.post('/', 
-  validateRequest(reflectionDataSchema),
+  validateBody(journalReflectionSchema),
   async (req, res) => {
     try {
       console.log('📝 Creating reflection for user:', req.user.id)
