@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSkillMap } from '../context/SkillMapContext';
-import { Pencil, Check, X, ChevronRight, ChevronLeft, FileText, Target, Rocket, Trophy, Lock, Unlock, CheckCircle } from 'lucide-react';
+import { Pencil, Check, X, ChevronRight, ChevronLeft, FileText, Target, Rocket, Trophy, Lock, Unlock, CheckCircle, Trash2 } from 'lucide-react';
 import SkillMapPageSkeleton from './SkillMapPageSkeleton';
+import IconPicker, { SkillIcon } from './IconPicker';
 
 export default function ProgressionPathGamefied() {
   const { skillId } = useParams();
@@ -16,10 +17,14 @@ export default function ProgressionPathGamefied() {
     loadSkillMapFull,
     updateSkillMap,
     updateNodeContent,
+    createNode,
+    deleteNode,
     clearError
   } = useSkillMap();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [deletingNodeId, setDeletingNodeId] = useState(null);
+  const [isDeletingNode, setIsDeletingNode] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
     goal: '',
@@ -28,16 +33,13 @@ export default function ProgressionPathGamefied() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [lockedNodeId, setLockedNodeId] = useState(null);
   const [editingNodeId, setEditingNodeId] = useState(null);
   const [editingNodeTitle, setEditingNodeTitle] = useState('');
-
-  const commonEmojis = [
-    '🗺️', '📚', '💻', '🎯', '🚀', '⚡', '🔥', '💡',
-    '🎨', '🎵', '🏃', '🧠', '📝', '🔧', '🌟', '🎓',
-    '💪', '🎮', '📱', '🌈', '🔬', '🎪', '🏆', '✨'
-  ];
+  const [isAddingNode, setIsAddingNode] = useState(false);
+  const [newNodeTitle, setNewNodeTitle] = useState('');
+  const [showAddNodeForm, setShowAddNodeForm] = useState(false);
+  const [nodeError, setNodeError] = useState('');
 
   useEffect(() => {
     if (skillId) loadSkillMapFull(skillId);
@@ -49,7 +51,7 @@ export default function ProgressionPathGamefied() {
         name: currentSkill.name || '',
         goal: currentSkill.goal || '',
         description: currentSkill.description || '',
-        icon: currentSkill.icon || '🗺️'
+        icon: currentSkill.icon || 'Map'
       });
     }
   }, [currentSkill]);
@@ -93,19 +95,67 @@ export default function ProgressionPathGamefied() {
     setEditingNodeTitle('');
   };
 
+  const handleAddNode = async () => {
+    if (!newNodeTitle.trim() || !skillId) return;
+    setNodeError('');
+    
+    // Check for duplicate node name
+    const isDuplicate = nodes.some(n => n.title.toLowerCase() === newNodeTitle.trim().toLowerCase());
+    if (isDuplicate) {
+      setNodeError('A node with this name already exists.');
+      return;
+    }
+    
+    // Check max nodes
+    if (nodes.length >= 15) {
+      setNodeError('Maximum 15 nodes reached.');
+      return;
+    }
+    
+    setIsAddingNode(true);
+    try {
+      await createNode(skillId, { title: newNodeTitle.trim() });
+      setNewNodeTitle('');
+      setShowAddNodeForm(false);
+      setNodeError('');
+    } catch (error) {
+      console.error('Error adding node:', error);
+      setNodeError(error.message || 'Failed to add node.');
+    } finally {
+      setIsAddingNode(false);
+    }
+  };
+
+  const handleCancelAddNode = () => {
+    setNewNodeTitle('');
+    setShowAddNodeForm(false);
+  };
+
+  const handleDeleteNode = async (nodeId) => {
+    setIsDeletingNode(true);
+    try {
+      await deleteNode(nodeId);
+      setDeletingNodeId(null);
+    } catch (error) {
+      setNodeError(error.message || 'Cannot delete this node.');
+      setDeletingNodeId(null);
+    } finally {
+      setIsDeletingNode(false);
+    }
+  };
+
   const handleEditClick = () => {
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setShowEmojiPicker(false);
     if (currentSkill) {
       setEditForm({
         name: currentSkill.name || '',
         goal: currentSkill.goal || '',
         description: currentSkill.description || '',
-        icon: currentSkill.icon || '🗺️'
+        icon: currentSkill.icon || 'Map'
       });
     }
   };
@@ -122,7 +172,6 @@ export default function ProgressionPathGamefied() {
         icon: editForm.icon
       });
       setIsEditing(false);
-      setShowEmojiPicker(false);
     } catch (error) {
       console.error('Failed to update skill map:', error);
     } finally {
@@ -137,7 +186,7 @@ export default function ProgressionPathGamefied() {
 
   if (mapDetailError && !currentSkill) {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4 bg-[#8BC34A]">
+      <div className="flex items-center justify-center min-h-screen px-4 bg-site-bg">
         <div className="text-center text-white max-w-md bg-red-500/90 p-6 rounded-xl border-4 border-red-700">
           <p className="font-bold">{mapDetailError}</p>
           <button
@@ -157,7 +206,7 @@ export default function ProgressionPathGamefied() {
 
   if (!currentSkill) {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4 bg-[#8BC34A]">
+      <div className="flex items-center justify-center min-h-screen px-4 bg-site-bg">
         <div className="text-white font-bold">Skill not found</div>
       </div>
     );
@@ -169,10 +218,10 @@ export default function ProgressionPathGamefied() {
     skillMapProgress?.percent ??
     (nodes.length > 0 ? Math.round((completedCount / nodes.length) * 100) : 0);
 
-  const icon = currentSkill.icon || '🗺️';
+  const icon = currentSkill.icon || 'Map';
 
   return (
-    <div className="flex min-h-screen bg-[#8BC34A] relative overflow-hidden">
+    <div className="flex min-h-screen bg-site-bg relative overflow-hidden">
       {/* Pixel Art Background Pattern */}
       <div 
         className="absolute inset-0 pointer-events-none opacity-30"
@@ -215,7 +264,7 @@ export default function ProgressionPathGamefied() {
             </button>
             {skillId && (
               <span
-                className="inline-flex items-center px-4 sm:px-6 py-2.5 rounded-lg font-medium bg-white/90 text-[#2e5023] text-sm sm:text-base min-h-[44px] border-2 border-[#2e5023]"
+                className="inline-flex items-center px-4 sm:px-6 py-2.5 rounded-lg font-medium bg-white/90 text-[#2e5023] text-sm sm:text-base min-h-[44px] border-2 border-site-accent"
               >
                 Gamified map view
               </span>
@@ -223,17 +272,17 @@ export default function ProgressionPathGamefied() {
           </div>
 
           {/* Compact Header */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl border-4 border-[#2e5023] p-4 mb-4 shadow-lg">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl border-4 border-site-accent p-4 mb-4 shadow-lg overflow-hidden">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-1">
-                <span className="text-3xl" aria-hidden>
-                  {icon}
+              <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
+                <span className="shrink-0" aria-hidden>
+                  <SkillIcon name={icon} size={28} className="text-site-accent" />
                 </span>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{currentSkill.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate min-w-0">{currentSkill.name}</h1>
               </div>
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="p-2 text-gray-400 hover:text-[#2e5023] hover:bg-green-100 rounded-lg transition-colors lg:hidden"
+                className="p-2 text-gray-400 hover:text-site-accent hover:bg-site-soft rounded-lg transition-colors lg:hidden"
                 aria-label="Toggle details"
               >
                 {isSidebarOpen ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
@@ -242,7 +291,7 @@ export default function ProgressionPathGamefied() {
           </div>
 
           {/* Progress Bar */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg border-4 border-[#2e5023] p-4 mb-6 shadow-lg">
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg border-4 border-site-accent p-4 mb-6 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs sm:text-sm font-bold text-gray-700">Progress</span>
               <span className="text-xs sm:text-sm font-bold text-gray-900">
@@ -272,30 +321,32 @@ export default function ProgressionPathGamefied() {
                 <div key={node._id} className="relative mb-24">
                   {/* Simple connecting line to next node */}
                   {!isLast && (
-                    <div className="absolute left-0 right-0 top-32 h-24 pointer-events-none" style={{ zIndex: 1 }}>
-                      {/* Vertical line down */}
+                    <div className="absolute left-0 right-0 pointer-events-none" style={{ top: '64px', height: '140px', zIndex: 1 }}>
+                      {/* Vertical line down from current node (extends below node name) */}
                       <div 
-                        className={`absolute w-1 h-12 ${node.status === 'Completed' ? 'bg-green-600' : 'bg-black/40'}`}
+                        className={`absolute w-2 ${node.status === 'Completed' ? 'bg-site-accent' : 'bg-black/50'}`}
                         style={{ 
-                          left: isLeft ? '15%' : '85%',
-                          top: 0
+                          left: isLeft ? 'calc(15% - 4px)' : 'calc(85% - 4px)',
+                          top: 0,
+                          height: '70px'
                         }}
                       />
                       {/* Horizontal line across */}
                       <div 
-                        className={`absolute h-1 ${node.status === 'Completed' ? 'bg-green-600' : 'bg-black/40'}`}
+                        className={`absolute h-2 ${node.status === 'Completed' ? 'bg-site-accent' : 'bg-black/50'}`}
                         style={{ 
-                          left: isLeft ? '15%' : '15%',
-                          right: isLeft ? '15%' : '15%',
-                          top: '48px'
+                          left: isLeft ? 'calc(15% - 4px)' : 'calc(15% - 4px)',
+                          right: isLeft ? 'calc(15% - 4px)' : 'calc(15% - 4px)',
+                          top: '70px'
                         }}
                       />
-                      {/* Vertical line down to next */}
+                      {/* Vertical line down to next node */}
                       <div 
-                        className={`absolute w-1 h-12 ${node.status === 'Completed' ? 'bg-green-600' : 'bg-black/40'}`}
+                        className={`absolute w-2 ${node.status === 'Completed' ? 'bg-site-accent' : 'bg-black/50'}`}
                         style={{ 
-                          left: isLeft ? '85%' : '15%',
-                          top: '48px'
+                          left: isLeft ? 'calc(85% - 4px)' : 'calc(15% - 4px)',
+                          top: '70px',
+                          height: '70px'
                         }}
                       />
                     </div>
@@ -320,7 +371,7 @@ export default function ProgressionPathGamefied() {
                             : isGoal
                             ? 'bg-cyan-400 border-4 border-cyan-600 rounded-full'
                             : node.status === 'Completed'
-                            ? 'bg-green-500 border-4 border-green-700'
+                            ? 'bg-site-soft0 border-4 border-green-700'
                             : node.status === 'Unlocked' || node.status === 'In_Progress'
                             ? 'bg-blue-400 border-4 border-blue-600'
                             : 'bg-gray-400 border-4 border-gray-600 opacity-75'
@@ -383,18 +434,18 @@ export default function ProgressionPathGamefied() {
 
       {/* Right Sidebar - Details Panel */}
       <div
-        className={`fixed lg:fixed top-0 right-0 h-full bg-white border-l-4 border-[#2e5023] shadow-xl transition-transform duration-300 z-40 ${
+        className={`fixed lg:fixed top-0 right-0 h-full bg-white border-l-4 border-site-accent shadow-xl transition-transform duration-300 z-40 ${
           isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
         } w-80 flex flex-col`}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4 border-b-4 border-[#2e5023] bg-gradient-to-r from-green-100 to-emerald-100">
+        <div className="flex items-center justify-between p-4 border-b-4 border-site-accent bg-gradient-to-r from-green-100 to-emerald-100">
           <h2 className="text-lg font-bold text-gray-900">Details</h2>
           <div className="flex items-center gap-2">
             {!isEditing && (
               <button
                 onClick={handleEditClick}
-                className="p-2 text-gray-400 hover:text-[#2e5023] hover:bg-white rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-site-accent hover:bg-white rounded-lg transition-colors"
                 aria-label="Edit details"
               >
                 <Pencil className="w-4 h-4" />
@@ -411,49 +462,26 @@ export default function ProgressionPathGamefied() {
         </div>
 
         {/* Sidebar Content - same as before */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6">
           {isEditing ? (
             <div className="space-y-4">
               <div className="bg-gray-50 rounded-lg border-2 border-gray-300 p-4">
                 <label className="block text-sm font-bold text-gray-700 mb-3">Icon & Name</label>
                 <div className="mb-3">
-                  <div className="relative inline-block">
-                    <button
-                      type="button"
-                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="w-20 h-20 text-4xl flex items-center justify-center border-4 border-gray-400 rounded-xl hover:border-[#2e5023] transition-colors bg-white shadow-md"
-                    >
-                      {editForm.icon}
-                    </button>
-                    {showEmojiPicker && (
-                      <div className="absolute top-full left-0 mt-2 bg-white border-4 border-[#2e5023] rounded-lg shadow-xl p-3 z-50 w-64">
-                        <div className="grid grid-cols-6 gap-2">
-                          {commonEmojis.map((emoji) => (
-                            <button
-                              key={emoji}
-                              type="button"
-                              onClick={() => {
-                                setEditForm({ ...editForm, icon: emoji });
-                                setShowEmojiPicker(false);
-                              }}
-                              className="w-10 h-10 text-2xl flex items-center justify-center hover:bg-green-100 rounded-lg transition-colors"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <IconPicker
+                    value={editForm.icon}
+                    onChange={(iconName) => setEditForm({ ...editForm, icon: iconName })}
+                  />
                 </div>
                 <input
                   type="text"
                   value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  onChange={(e) => { if (e.target.value.length <= 30) setEditForm({ ...editForm, name: e.target.value }); }}
                   placeholder="Skill map name"
-                  className="w-full text-lg font-bold text-gray-900 border-2 border-gray-300 rounded-lg px-4 py-3 focus:border-[#2e5023] outline-none bg-white"
-                  maxLength={100}
+                  className="w-full text-lg font-bold text-gray-900 border-2 border-gray-300 rounded-lg px-4 py-3 focus:border-site-accent outline-none bg-white"
+                  maxLength={30}
                 />
+                <div className="text-right text-[10px] text-gray-400 mt-0.5">{editForm.name.length}/30</div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -462,12 +490,13 @@ export default function ProgressionPathGamefied() {
                 </label>
                 <textarea
                   value={editForm.goal}
-                  onChange={(e) => setEditForm({ ...editForm, goal: e.target.value })}
-                  placeholder="What do you want to achieve?"
-                  className="w-full text-sm text-gray-600 border-2 border-gray-300 rounded-lg px-3 py-3 focus:border-[#2e5023] outline-none resize-none"
-                  rows={3}
-                  maxLength={200}
+                  onChange={(e) => { if (e.target.value.length <= 16) setEditForm({ ...editForm, goal: e.target.value }); }}
+                  placeholder="What's your goal?"
+                  className="w-full text-sm text-gray-600 border-2 border-gray-300 rounded-lg px-3 py-2 focus:border-site-accent outline-none resize-none"
+                  rows={1}
+                  maxLength={16}
                 />
+                <div className="text-right text-[10px] text-gray-400 mt-0.5">{editForm.goal.length}/16</div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -478,41 +507,80 @@ export default function ProgressionPathGamefied() {
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   placeholder="Additional details"
-                  className="w-full text-sm text-gray-600 border-2 border-gray-300 rounded-lg px-3 py-3 focus:border-[#2e5023] outline-none resize-none"
+                  className="w-full text-sm text-gray-600 border-2 border-gray-300 rounded-lg px-3 py-3 focus:border-site-accent outline-none resize-none"
                   rows={4}
                   maxLength={500}
                 />
               </div>
 
               {/* Nodes Section - Edit Mode */}
-              <div className="bg-green-50 rounded-lg p-4 border-2 border-green-300 shadow-md">
+              <div className="bg-site-soft rounded-lg p-4 border-2 border-site-border shadow-md">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.length})</h3>
-                  <button
-                    onClick={() => {
-                      alert('Add node feature requires backend implementation. Coming soon!');
-                    }}
-                    className="px-3 py-1 bg-[#2e5023] text-white text-xs font-bold rounded hover:bg-[#1f3518] transition"
-                  >
-                    + Add Node
-                  </button>
+                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.length}/15)</h3>
+                  {nodes.length < 15 ? (
+                    <button
+                      onClick={() => { setShowAddNodeForm(true); setNodeError(''); }}
+                      className="px-3 py-1 bg-[#2e5023] text-white text-xs font-bold rounded hover:bg-[#1f3518] transition"
+                    >
+                      + Add Node
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-amber-600 font-medium">Max reached</span>
+                  )}
                 </div>
+                
+                {/* Add Node Form */}
+                {showAddNodeForm && nodes.length < 15 && (
+                  <div className="mb-3 bg-white rounded p-3 border-2 border-site-border">
+                    <label className="block text-xs font-bold text-gray-700 mb-2">New Node Title</label>
+                    <input
+                      type="text"
+                      value={newNodeTitle}
+                      onChange={(e) => { if (e.target.value.length <= 16) { setNewNodeTitle(e.target.value); setNodeError(''); } }}
+                      placeholder="Max 16 characters"
+                      className="w-full px-2 py-1 border border-site-border rounded text-xs focus:outline-none focus:border-site-accent mb-1"
+                      maxLength={16}
+                      autoFocus
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-2">
+                      <span>{nodeError && <span className="text-red-500">{nodeError}</span>}</span>
+                      <span>{newNodeTitle.length}/16</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleAddNode}
+                        disabled={!newNodeTitle.trim() || isAddingNode}
+                        className="flex-1 px-3 py-1 bg-[#2e5023] text-white text-xs font-bold rounded hover:bg-[#1f3518] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isAddingNode ? 'Adding...' : 'Add'}
+                      </button>
+                      <button
+                        onClick={handleCancelAddNode}
+                        disabled={isAddingNode}
+                        className="flex-1 px-3 py-1 border border-gray-400 text-gray-700 text-xs font-bold rounded hover:bg-gray-100 transition disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {nodes.map((node, index) => (
-                    <div key={node._id} className="bg-white rounded p-2 border border-green-300 text-xs">
+                    <div key={node._id} className="bg-white rounded p-2 border border-site-border text-xs">
                       {editingNodeId === node._id ? (
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
                             value={editingNodeTitle}
-                            onChange={(e) => setEditingNodeTitle(e.target.value)}
-                            className="flex-1 px-2 py-1 border border-green-400 rounded text-xs focus:outline-none focus:border-[#2e5023]"
-                            maxLength={200}
+                            onChange={(e) => { if (e.target.value.length <= 16) setEditingNodeTitle(e.target.value); }}
+                            className="flex-1 px-2 py-1 border border-green-400 rounded text-xs focus:outline-none focus:border-site-accent"
+                            maxLength={16}
                             autoFocus
                           />
                           <button
                             onClick={() => handleSaveNodeName(node._id)}
-                            className="text-green-600 hover:text-green-800"
+                            className="text-site-accent hover:text-site-accent-hover"
                             title="Save"
                           >
                             <Check className="w-3 h-3" />
@@ -526,8 +594,8 @@ export default function ProgressionPathGamefied() {
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-gray-700">
+                        <div className="flex items-center justify-between min-w-0">
+                          <span className="font-semibold text-gray-700 truncate">
                             {index + 1}. {node.title}
                           </span>
                           <button
@@ -567,52 +635,67 @@ export default function ProgressionPathGamefied() {
             <div className="space-y-6">
               <div className="bg-white rounded-lg p-4 border-2 border-gray-300 shadow-md">
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl" aria-hidden>{icon}</span>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900 break-words">{currentSkill.name}</h3>
+                  <span className="shrink-0" aria-hidden><SkillIcon name={icon} size={32} className="text-site-accent" /></span>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <h3 className="text-lg font-bold text-gray-900 truncate">{currentSkill.name}</h3>
                   </div>
                 </div>
               </div>
               
               {/* Goal Section - Always visible */}
-              <div className="bg-emerald-50 rounded-lg p-4 border-2 border-emerald-300 shadow-md">
+              <div className="bg-site-soft rounded-lg p-4 border-2 border-site-border shadow-md overflow-hidden">
                 <div className="flex items-center gap-2 mb-2">
-                  <Target className="w-4 h-4 text-emerald-600" />
+                  <Target className="w-4 h-4 text-site-accent" />
                   <h3 className="text-sm font-bold text-gray-900">Goal</h3>
                 </div>
                 {currentSkill.goal ? (
-                  <p className="text-sm text-gray-700 leading-relaxed">{currentSkill.goal}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed break-words">{currentSkill.goal}</p>
                 ) : (
                   <p className="text-sm text-gray-400 italic">No goal set yet. Click edit to add one.</p>
                 )}
               </div>
               
               {/* Description Section - Always visible */}
-              <div className="bg-white rounded-lg p-4 border-2 border-gray-300 shadow-md">
+              <div className="bg-white rounded-lg p-4 border-2 border-gray-300 shadow-md overflow-hidden">
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="w-4 h-4 text-gray-500" />
                   <h3 className="text-sm font-bold text-gray-900">Description</h3>
                 </div>
                 {currentSkill.description ? (
-                  <p className="text-sm text-gray-600 leading-relaxed">{currentSkill.description}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed break-words">{currentSkill.description}</p>
                 ) : (
                   <p className="text-sm text-gray-400 italic">No description yet. Click edit to add one.</p>
                 )}
               </div>
 
               {/* Nodes Section - View Mode */}
-              <div className="bg-green-50 rounded-lg p-4 border-2 border-green-300 shadow-md">
+              <div className="bg-site-soft rounded-lg p-4 border-2 border-site-border shadow-md">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.length})</h3>
+                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.length}/15)</h3>
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {nodes.map((node, index) => (
-                    <div key={node._id} className="bg-white rounded p-2 border border-green-300 text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-700">
-                          {index + 1}. {node.title}
-                        </span>
-                      </div>
+                    <div key={node._id} className="bg-white rounded p-2 border border-site-border text-xs">
+                      {deletingNodeId === node._id ? (
+                        <div>
+                          <p className="text-xs text-red-600 mb-2">Delete "{node.title}"?</p>
+                          <div className="flex gap-2">
+                            <button onClick={() => handleDeleteNode(node._id)} disabled={isDeletingNode} className="flex-1 px-2 py-1 bg-red-600 text-white text-xs rounded font-medium hover:bg-red-700 disabled:opacity-50">{isDeletingNode ? '...' : 'Delete'}</button>
+                            <button onClick={() => setDeletingNodeId(null)} className="flex-1 px-2 py-1 border border-gray-300 text-gray-600 text-xs rounded font-medium hover:bg-gray-50">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between min-w-0">
+                          <span className="font-semibold text-gray-700 truncate flex-1">
+                            {index + 1}. {node.title}
+                          </span>
+                          {!node.isStart && !node.isGoal && (
+                            <button onClick={() => setDeletingNodeId(node._id)} className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors shrink-0" title="Delete node">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -626,7 +709,7 @@ export default function ProgressionPathGamefied() {
       {!isSidebarOpen && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="fixed right-4 top-20 p-3 bg-white border-4 border-[#2e5023] rounded-lg shadow-lg hover:shadow-xl transition-all z-30 hover:bg-emerald-50"
+          className="fixed right-4 top-20 p-3 bg-white border-4 border-site-accent rounded-lg shadow-lg hover:shadow-xl transition-all z-30 hover:bg-site-soft"
           aria-label="Open details"
         >
           <ChevronLeft className="w-5 h-5 text-[#2e5023]" />
