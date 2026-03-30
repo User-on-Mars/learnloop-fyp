@@ -15,7 +15,10 @@ const createPracticeSchema = z.object({
   tags: z.array(z.string().max(50).trim()).max(10).default([]),
   timerSeconds: z.number().min(0).default(0),
   date: z.string().datetime().optional(),
-  notes: z.string().max(1000).trim().optional()
+  notes: z.string().max(1000).trim().optional(),
+  confidence: z.number().int().min(1).max(5).optional().nullable(),
+  blockers: z.string().max(500).trim().optional().default(''),
+  nextStep: z.string().max(500).trim().optional().default('')
 })
 
 const updatePracticeSchema = createPracticeSchema.partial()
