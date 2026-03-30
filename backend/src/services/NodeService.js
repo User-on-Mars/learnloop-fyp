@@ -440,6 +440,149 @@ class NodeService {
   }
 
   /**
+   * Create a new node in a skill map
+   * @param {string} skillId - Skill ID
+   * @param {string} userId - User ID
+   * @param {Object} nodeData - Node data (title, description)
+   * @returns {Promise<Object>} Created node
+   */
+  async createNode(skillId, userId, { title, description = '' }) {
+    // Validation
+    if (!skillId) {
+      throw new ValidationError('skillId', skillId, { type: 'required' });
+    }
+    
+    if (!userId) {
+      throw new ValidationError('userId', userId, { type: 'required' });
+    }
+
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      throw new ValidationError('title', title, { type: 'required' });
+    }
+
+    if (title.length > 200) {
+      throw new ValidationError('title', title, { type: 'maxLength', max: 200 });
+    }
+
+    if (description && description.length > 2000) {
+      throw new ValidationError('description', description, { type: 'maxLength', max: 2000 });
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Import Skill model
+      const Skill = mongoose.model('Skill');
+      
+      // Verify skill exists and belongs to user
+      const skill = await Skill.findOne({ _id: skillId, userId }).session(session);
+      if (!skill) {
+        const skillExists = await Skill.findById(skillId).session(session);
+        if (skillExists) {
+          throw new PermissionError('Skill', 'update', userId, { skillId });
+        }
+        throw new NotFoundError('Skill', skillId, { userId });
+      }
+
+      // Check node count limit (max 15 nodes total)
+      const currentNodeCount = await Node.countDocuments({ skillId, userId }).session(session);
+      if (currentNodeCount >= 15) {
+        throw new ValidationError('nodes', currentNodeCount, { 
+          type: 'maxLength', 
+          max: 15,
+          message: 'Cannot add more than 15 nodes to a skill map'
+        });
+      }
+
+      // Find the goal node (last node)
+      const goalNode = await Node.findOne({ skillId, userId, isGoal: true }).session(session);
+      if (!goalNode) {
+        throw new NotFoundError('Goal node', skillId, { userId });
+      }
+
+      const goalOrder = goalNode.order;
+      const newNodeOrder = goalOrder; // Insert before goal
+      
+      // Shift goal node order by 1
+      goalNode.order = goalOrder + 1;
+      await dbMonitor.monitorWrite(
+        () => goalNode.save({ session }),
+        'NodeService.createNode - update goal node order'
+      );
+
+      // Create new node
+      const newNode = new Node({
+        skillId,
+        userId,
+        order: newNodeOrder,
+        title: title.trim(),
+        description: description ? description.trim() : '',
+        status: 'Locked', // New nodes start locked
+        isStart: false,
+        isGoal: false
+      });
+
+      await dbMonitor.monitorWrite(
+        () => newNode.save({ session }),
+        'NodeService.createNode - save new node'
+      );
+
+      // Update skill nodeCount
+      skill.nodeCount = currentNodeCount + 1;
+      await dbMonitor.monitorWrite(
+        () => skill.save({ session }),
+        'NodeService.createNode - update skill nodeCount'
+      );
+
+      await session.commitTransaction();
+
+      // Invalidate cache
+      if (cacheService.isAvailable()) {
+        await cacheService.invalidateSkillMapCache(skillId, userId);
+      }
+
+      // Log successful creation
+      await ErrorLoggingService.logSystemEvent('node_created', {
+        nodeId: newNode._id,
+        skillId,
+        userId,
+        order: newNodeOrder,
+        timestamp: new Date().toISOString()
+      });
+
+      return newNode.toObject();
+    } catch (error) {
+      await session.abortTransaction();
+      
+      // Log error with context
+      await ErrorLoggingService.logError(error, {
+        userId,
+        skillId,
+        operation: 'createNode',
+        timestamp: new Date().toISOString()
+      });
+      
+      if (error instanceof ValidationError || error instanceof PermissionError || 
+          error instanceof NotFoundError) {
+        throw error;
+      }
+      
+      if (error.name === 'CastError') {
+        throw new ValidationError('skillId', skillId, { type: 'format', format: 'ObjectId' });
+      }
+      
+      if (error.name === 'MongoError' || error.name === 'MongoServerError') {
+        throw new DatabaseError('createNode', error, { userId, skillId });
+      }
+      
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  /**
    * Delete a node with validation and order recalculation
    * @param {string} nodeId - Node ID
    * @param {string} userId - User ID
