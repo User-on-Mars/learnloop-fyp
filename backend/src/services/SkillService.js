@@ -41,8 +41,8 @@ class SkillService {
       throw new ValidationError('nodeCount', nodeCount, { type: 'required', format: 'integer' });
     }
     
-    if (nodeCount < 2 || nodeCount > 16) {
-      throw new ValidationError('nodeCount', nodeCount, { type: 'range', min: 2, max: 16 });
+    if (nodeCount < 2 || nodeCount > 15) {
+      throw new ValidationError('nodeCount', nodeCount, { type: 'range', min: 2, max: 15 });
     }
 
     const session = await mongoose.startSession();
@@ -304,8 +304,8 @@ class SkillService {
 
     const contentCount = titles.length;
     const totalNodes = 1 + contentCount + 1;
-    if (totalNodes > 16) {
-      throw new ValidationError('sketchTitles', titles, { type: 'maxLength', max: 6 });
+    if (totalNodes > 15) {
+      throw new ValidationError('sketchTitles', titles, { type: 'maxLength', max: 15 });
     }
 
     const session = await mongoose.startSession();
@@ -317,7 +317,7 @@ class SkillService {
         name: cleanTitle,
         nodeCount: totalNodes,
         description: description == null ? '' : String(description).trim(),
-        icon: icon || '🗺️',
+        icon: icon || 'Map',
         goal: goal.trim(),
         status: 'active'
       });
@@ -418,7 +418,7 @@ class SkillService {
         id: skill._id.toString(),
         title: skill.name,
         description: skill.description || null,
-        icon: skill.icon || '🗺️',
+        icon: skill.icon || 'Map',
         goal: skill.goal || '',
         status: skill.status || 'active'
       },
