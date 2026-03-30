@@ -231,8 +231,12 @@ export function ActiveSessionProvider({ children }) {
         return () => clearInterval(interval);
     }, [activeSessions, soundEnabled]);
 
-    // Add a new session
+    // Add a new session (max 6)
     const addSession = useCallback((session) => {
+        if (activeSessions.length >= 6) {
+            console.warn('Max 6 active sessions reached');
+            return null;
+        }
         const newSession = {
             id: Date.now(),
             ...session,
@@ -263,7 +267,7 @@ export function ActiveSessionProvider({ children }) {
         }
         
         return newSession;
-    }, []);
+    }, [activeSessions.length]);
 
     // Remove a session
     const removeSession = useCallback((sessionId) => {
