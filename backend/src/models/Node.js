@@ -39,6 +39,17 @@ const NodeSchema = new mongoose.Schema({
   isGoal: {
     type: Boolean,
     default: false
+  },
+  sessionDefinitions: {
+    type: [{
+      title: { type: String, maxlength: 100 },
+      description: { type: String, maxlength: 500 }
+    }],
+    default: undefined
+  },
+  completedSessions: {
+    type: [Number],
+    default: undefined
   }
 }, {
   timestamps: true
