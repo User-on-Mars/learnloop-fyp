@@ -4,7 +4,8 @@ import { useActiveSessions } from '../context/ActiveSessionContext';
 import Sidebar from '../components/Sidebar';
 import { Play, Pause, RotateCcw, Plus, X, Search, FileText, Trash2, CheckCircle, Star, AlertTriangle, ArrowRight, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Flame, Info } from 'lucide-react';
 const CONF = ['','Not confident','Slightly','Moderate','Confident','Very confident'];
-const PER_PAGE = 10;
+const PER_PAGE = 5;
+const SESSIONS_PER_PAGE = 3;
 export default function LogPractice() {
   const [practices, setPractices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,8 @@ export default function LogPractice() {
   const [removeId, setRemoveId] = useState(null);
   const [blockMsg, setBlockMsg] = useState('');
   const [skillNames, setSkillNames] = useState([]);
+  const [skillSessionPage, setSkillSessionPage] = useState(1);
+  const [freeSessionPage, setFreeSessionPage] = useState(1);
   const doFetch = useCallback(async () => {
     try { setLoading(true); const [r, sk] = await Promise.all([practiceAPI.getPractices({ limit:200 }), skillsAPI.getAll().catch(()=>({data:{skills:[]}}))]); setPractices(r.data.practices||r.data||[]); setSkillNames((sk.data.skills||[]).map(s=>s.name)); }
     catch { setError('Failed to load'); setTimeout(()=>setError(''),6000); }
@@ -52,6 +55,7 @@ export default function LogPractice() {
   const totPages = Math.max(1,Math.ceil(filtered.length/PER_PAGE));
   const paged = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
   useEffect(()=>{ setPage(1); },[search,fSkill,fConf,fDate]);
+  useEffect(()=>{ const skillS = activeSessions.filter(s => s.skillId || s.nodeId); const freeS = activeSessions.filter(s => !s.skillId && !s.nodeId); const maxSkill = Math.max(1, Math.ceil(skillS.length / SESSIONS_PER_PAGE)); const maxFree = Math.max(1, Math.ceil(freeS.length / SESSIONS_PER_PAGE)); if (skillSessionPage > maxSkill) setSkillSessionPage(maxSkill); if (freeSessionPage > maxFree) setFreeSessionPage(maxFree); },[activeSessions.length, skillSessionPage, freeSessionPage]);
   const resetForm=()=>{setForm({skillName:'',tags:[],notes:''});setNewTag('');setTgtH(0);setTgtM(25);setCountdown(true);};
   const addTagH=(e)=>{e.preventDefault();const t=newTag.trim();if(t&&!form.tags.includes(t))setForm(p=>({...p,tags:[...p.tags,t]}));setNewTag('');};
   const getDur=(s)=>{if(!s)return{m:0,sec:0};const t=s.isCountdown?Math.max(0,s.targetTime-s.timer):s.timer;return{m:Math.max(1,Math.floor(t/60)),sec:t};};
@@ -59,7 +63,7 @@ export default function LogPractice() {
   const canComp=(s)=>s.isCountdown?s.timer<s.targetTime:s.timer>0;
   const fmtDate=(d)=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   const hasFilters=search||fSkill||fConf||fDate;
-  const tryStart=(now)=>{if(!form.skillName.trim())return;if(activeSessions.length>=6){setBlockMsg('You can have at most 6 active sessions. Complete or remove one first.');setTimeout(()=>setBlockMsg(''),5000);return;}if(now&&running){setBlockMsg(`"${running.skillName}" is running. Pause or complete it first.`);setTimeout(()=>setBlockMsg(''),5000);return;}addSession({skillName:form.skillName.trim(),tags:form.tags,notes:form.notes,timer:countdown?tgtTime:0,targetTime:tgtTime,isCountdown:countdown,isRunning:now});resetForm();setShowNew(false);setSuccess(now?'Session started!':'Session saved.');setTimeout(()=>setSuccess(''),3000);};
+  const tryStart=(now)=>{if(!form.skillName.trim())return;if(now&&running){setBlockMsg(`"${running.skillName}" is running. Pause or complete it first.`);setTimeout(()=>setBlockMsg(''),5000);return;}addSession({skillName:form.skillName.trim(),tags:form.tags,notes:form.notes,timer:countdown?tgtTime:0,targetTime:tgtTime,isCountdown:countdown,isRunning:now});resetForm();setShowNew(false);setSuccess(now?'Session started!':'Session saved.');setTimeout(()=>setSuccess(''),3000);};
   const tryToggle=(s)=>{if(!s.isRunning&&running&&running.id!==s.id){setBlockMsg(`"${running.skillName}" is running. Pause it first.`);setTimeout(()=>setBlockMsg(''),5000);return;}toggleSession(s.id);};
   const openComp=(s)=>{if(s.isCountdown&&s.timer===s.targetTime){setError('Start the timer first.');setTimeout(()=>setError(''),4000);return;}if(s.isRunning)toggleSession(s.id);setCompSess(s);setComp({notes:s.notes||'',confidence:3,blockers:'',nextStep:''});setShowComp(true);};
   const submitComp=async()=>{if(!compSess)return;setSubmitting(true);try{const{m,sec}=getDur(compSess);await practiceAPI.createPractice({skillName:compSess.skillName,minutesPracticed:m,tags:compSess.tags,timerSeconds:sec,notes:comp.notes,confidence:comp.confidence,blockers:comp.blockers,nextStep:comp.nextStep,date:new Date().toISOString()});removeSession(compSess.id);setShowComp(false);setCompSess(null);doFetch();setSuccess('Practice logged!');setTimeout(()=>setSuccess(''),3000);}catch(err){setError(err.response?.data?.message||'Failed');setTimeout(()=>setError(''),5000);}finally{setSubmitting(false);}};
@@ -69,16 +73,31 @@ export default function LogPractice() {
   {success&&<div className="mb-4 bg-green-50 border border-green-300 text-green-700 p-3 rounded-lg text-sm">{success}</div>}
   {error&&<div className="mb-4 bg-red-50 border border-red-300 text-red-700 p-3 rounded-lg text-sm">{error}</div>}
   {blockMsg&&<div className="mb-4 bg-amber-50 border border-amber-300 text-amber-800 p-3 rounded-lg text-sm flex items-center gap-2"><Info className="w-4 h-4 flex-shrink-0" />{blockMsg}</div>}
-  {activeSessions.length>0&&(<div className="mb-8"><div className="flex items-center gap-2 mb-4"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/><h2 className="text-lg font-semibold text-site-ink">Active Sessions</h2><span className="text-xs text-site-faint">({activeSessions.length}/6)</span></div>
-  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{activeSessions.map(s=>{const isR=s.isRunning;return(<div key={s.id} className={`rounded-2xl border-2 p-6 shadow-sm transition-all ${isR?'border-green-500 bg-green-50/50 shadow-green-100':'border-site-border bg-site-surface'}`}>
-  <div className="flex items-start justify-between mb-1"><div className="flex-1 min-w-0"><h3 className="font-bold text-site-ink text-lg truncate">{s.skillName}</h3>{isR&&<p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-0.5"><Flame className="w-3 h-3"/>Focus mode — you got this!</p>}{!isR&&s.timer===s.targetTime&&s.isCountdown&&<p className="text-xs text-amber-600 font-medium mt-0.5">Ready to start</p>}</div><button onClick={()=>setRemoveId(s._id??s.id)} className="text-site-faint hover:text-red-500 ml-2 p-1"><X className="w-4 h-4"/></button></div>
-  {s.isCountdown&&<div className="w-full h-1.5 bg-gray-200 rounded-full my-3 overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ${isR?'bg-green-500':'bg-site-accent'}`} style={{width:`${getProgress(s)}%`}}/></div>}
-  <div className={`text-4xl font-bold font-mono text-center py-4 rounded-xl mb-4 ${s.isCountdown&&s.timer<=0?'bg-red-100 text-red-600':isR?'bg-green-100 text-green-700':'bg-site-bg text-site-ink'}`}>{formatTimer(s.timer)}</div>
-  {s.isCountdown&&s.timer<=0&&<p className="text-center text-red-600 text-sm font-medium mb-3">Time's up! 🎉</p>}
-  <div className="flex gap-2 mb-3"><button onClick={()=>tryToggle(s)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-medium text-sm ${isR?'bg-gray-700 text-white hover:bg-gray-800':'bg-site-accent text-white hover:bg-site-accent-hover'}`}>{isR?<Pause className="w-4 h-4"/>:<Play className="w-4 h-4"/>}{isR?'Pause':'Start'}</button><button onClick={()=>resetSession(s.id)} className="px-3 py-2.5 border border-site-border text-site-muted rounded-lg hover:bg-site-bg"><RotateCcw className="w-4 h-4"/></button></div>
-  <button onClick={()=>openComp(s)} disabled={!canComp(s)} className={`w-full py-2.5 rounded-lg font-semibold text-sm ${canComp(s)?'bg-green-600 text-white hover:bg-green-700':'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>Complete & Log</button>
-  {s.tags?.length>0&&<div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-site-border">{s.tags.map(t=><span key={t} className="px-2 py-0.5 bg-site-soft text-site-accent text-[10px] rounded-full">{t}</span>)}</div>}
-  </div>);})}</div></div>)}
+  {activeSessions.length>0&&(()=>{
+  const skillSessions = activeSessions.filter(s => s.skillId || s.nodeId);
+  const freeSessions = activeSessions.filter(s => !s.skillId && !s.nodeId);
+  const renderCard = (s) => { const isR=s.isRunning; const isFree = !s.skillId && !s.nodeId; return (
+    <div key={s.id} className={`rounded-2xl border-2 p-5 shadow-sm transition-all ${isR?'border-green-500 bg-green-50/50 shadow-green-100': isFree ? 'border-purple-200 bg-purple-50/30' : 'border-site-border bg-site-surface'}`}>
+    <div className="flex items-start justify-between mb-1"><div className="flex-1 min-w-0"><h3 className="font-bold text-site-ink text-base truncate">{s.skillName}</h3>{isR&&<p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-0.5"><Flame className="w-3 h-3"/>Focus mode — you got this!</p>}{!isR&&s.timer===s.targetTime&&s.isCountdown&&<p className="text-xs text-amber-600 font-medium mt-0.5">Ready to start</p>}</div><button onClick={()=>setRemoveId(s._id??s.id)} className="text-site-faint hover:text-red-500 ml-2 p-1"><X className="w-4 h-4"/></button></div>
+    {s.isCountdown&&<div className="w-full h-1.5 bg-gray-200 rounded-full my-3 overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ${isR?'bg-green-500':'bg-site-accent'}`} style={{width:`${getProgress(s)}%`}}/></div>}
+    <div className={`text-3xl font-bold font-mono text-center py-3 rounded-xl mb-3 ${s.isCountdown&&s.timer<=0?'bg-red-100 text-red-600':isR?'bg-green-100 text-green-700':'bg-site-bg text-site-ink'}`}>{formatTimer(s.timer)}</div>
+    {s.isCountdown&&s.timer<=0&&<p className="text-center text-red-600 text-sm font-medium mb-3">Time's up! 🎉</p>}
+    <div className="flex gap-2 mb-3"><button onClick={()=>tryToggle(s)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-medium text-sm ${isR?'bg-gray-700 text-white hover:bg-gray-800':'bg-site-accent text-white hover:bg-site-accent-hover'}`}>{isR?<Pause className="w-4 h-4"/>:<Play className="w-4 h-4"/>}{isR?'Pause':'Start'}</button><button onClick={()=>resetSession(s.id)} className="px-3 py-2.5 border border-site-border text-site-muted rounded-lg hover:bg-site-bg"><RotateCcw className="w-4 h-4"/></button></div>
+    <button onClick={()=>openComp(s)} disabled={!canComp(s)} className={`w-full py-2.5 rounded-lg font-semibold text-sm ${canComp(s)?'bg-green-600 text-white hover:bg-green-700':'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>Complete & Log</button>
+    {s.tags?.length>0&&<div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-site-border">{s.tags.map(t=><span key={t} className="px-2 py-0.5 bg-site-soft text-site-accent text-[10px] rounded-full">{t}</span>)}</div>}
+    </div>);};
+  return (<div className="mb-8 space-y-6">
+    {skillSessions.length>0&&(()=>{ const sorted = [...skillSessions].sort((a,b)=>new Date(b.startedAt||0)-new Date(a.startedAt||0)); const totalPages = Math.ceil(sorted.length / SESSIONS_PER_PAGE); const paged = sorted.slice((skillSessionPage-1)*SESSIONS_PER_PAGE, skillSessionPage*SESSIONS_PER_PAGE); return (<div>
+      <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 bg-site-accent rounded-full"/><h2 className="text-base font-semibold text-site-ink">Skill Map Sessions</h2><span className="text-xs text-site-faint">({skillSessions.length})</span></div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{paged.map(renderCard)}</div>
+      {totalPages>1&&<div className="flex items-center justify-center gap-2 mt-3"><button onClick={()=>setSkillSessionPage(p=>Math.max(1,p-1))} disabled={skillSessionPage===1} className="p-2 rounded-lg border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronLeft className="w-4 h-4"/></button><span className="text-sm text-site-muted">Page {skillSessionPage} of {totalPages}</span><button onClick={()=>setSkillSessionPage(p=>Math.min(totalPages,p+1))} disabled={skillSessionPage>=totalPages} className="p-2 rounded-lg border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronRight className="w-4 h-4"/></button></div>}
+    </div>);})()}
+    {freeSessions.length>0&&(()=>{ const sorted = [...freeSessions].sort((a,b)=>new Date(b.startedAt||0)-new Date(a.startedAt||0)); const totalPages = Math.ceil(sorted.length / SESSIONS_PER_PAGE); const paged = sorted.slice((freeSessionPage-1)*SESSIONS_PER_PAGE, freeSessionPage*SESSIONS_PER_PAGE); return (<div>
+      <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 bg-purple-500 rounded-full"/><h2 className="text-base font-semibold text-site-ink">Free Practice</h2><span className="text-xs text-site-faint">({freeSessions.length})</span></div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{paged.map(renderCard)}</div>
+      {totalPages>1&&<div className="flex items-center justify-center gap-2 mt-3"><button onClick={()=>setFreeSessionPage(p=>Math.max(1,p-1))} disabled={freeSessionPage===1} className="p-2 rounded-lg border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronLeft className="w-4 h-4"/></button><span className="text-sm text-site-muted">Page {freeSessionPage} of {totalPages}</span><button onClick={()=>setFreeSessionPage(p=>Math.min(totalPages,p+1))} disabled={freeSessionPage>=totalPages} className="p-2 rounded-lg border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronRight className="w-4 h-4"/></button></div>}
+    </div>);})()}
+  </div>);})()}
   <div><div className="flex items-center gap-2 mb-4"><CheckCircle className="w-5 h-5 text-site-accent"/><h2 className="text-lg font-semibold text-site-ink">Completed Sessions</h2><span className="text-xs text-site-faint">({filtered.length})</span></div>
   <div className="bg-site-surface rounded-xl p-4 mb-4 border border-site-border shadow-sm"><div className="flex flex-col sm:flex-row gap-3 mb-3"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-site-faint"/><input type="text" placeholder="Search skills or notes..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 border-2 border-transparent rounded-lg outline-none focus:border-site-accent bg-site-bg focus:bg-white text-sm"/></div></div>
   <div className="flex flex-wrap gap-2"><DropFilter label="All Skills" value={fSkill} onChange={setFSkill} options={allSkillNames.map(s=>({value:s,label:s}))} />

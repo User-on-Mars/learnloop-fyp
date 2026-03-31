@@ -1,31 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Calendar,
-  Clock,
-  TrendingUp,
-  Award,
-  Target,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Flame,
+  Calendar, Clock, TrendingUp, TrendingDown, Award, Target,
+  ChevronLeft, ChevronRight, ChevronDown, FileText, Flame, Zap, BookOpen,
 } from "lucide-react";
 import { practiceAPI } from "../services/api";
 import api from "../services/api";
 import Sidebar from "../components/Sidebar";
 
-// Helper: get the Monday of the week containing `date`
 function getWeekStart(date) {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-// Helper: format date range like "Mar 24 – Mar 30, 2026"
 function formatWeekRange(start) {
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
@@ -35,32 +26,49 @@ function formatWeekRange(start) {
   return `${startStr} – ${endStr}`;
 }
 
-// Day labels
+function fmtMin(m) {
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  return h > 0 ? `${h}h ${r}m` : `${r}m`;
+}
+
+function weekLabel(offset) {
+  if (offset === 0) return "This Week";
+  if (offset === -1) return "Last Week";
+  return `${Math.abs(offset)} weeks ago`;
+}
+
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const SKILLS_PER_PAGE = 5;
 
 export default function WeeklySummary() {
   const navigate = useNavigate();
-  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, -1 = last week, etc.
+  const [weekOffset, setWeekOffset] = useState(0);
   const [practices, setPractices] = useState([]);
   const [reflections, setReflections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [skillPage, setSkillPage] = useState(1);
 
-  // Calculate the week start based on offset
   const weekStart = getWeekStart(new Date());
   weekStart.setDate(weekStart.getDate() + weekOffset * 7);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
   weekEnd.setHours(23, 59, 59, 999);
 
+  const prevWeekStart = new Date(weekStart);
+  prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+  const prevWeekEnd = new Date(prevWeekStart);
+  prevWeekEnd.setDate(prevWeekEnd.getDate() + 6);
+  prevWeekEnd.setHours(23, 59, 59, 999);
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       try {
         const [practiceRes, reflectionRes] = await Promise.all([
-          practiceAPI.getPractices({ limit: 200 }).catch(() => ({ data: { practices: [] } })),
+          practiceAPI.getPractices({ limit: 1000 }).catch(() => ({ data: { practices: [] } })),
           api.get("/reflections").catch(() => ({ data: { reflections: [] } })),
         ]);
-
         setPractices(practiceRes.data.practices || practiceRes.data || []);
         setReflections(reflectionRes.data.reflections || reflectionRes.data || []);
       } catch (err) {
@@ -70,100 +78,122 @@ export default function WeeklySummary() {
       }
     }
     fetchData();
-  }, [weekOffset]);
+  }, []);
 
-  // Filter data for the selected week
-  const weekPractices = practices.filter((p) => {
-    const d = new Date(p.date || p.createdAt);
-    return d >= weekStart && d <= weekEnd;
-  });
+  useEffect(() => { setSkillPage(1); }, [weekOffset]);
 
-  const weekReflections = reflections.filter((r) => {
-    const d = new Date(r.createdAt);
-    return d >= weekStart && d <= weekEnd;
-  });
+  // Calculate how many weeks back the oldest data goes
+  const maxWeeksBack = useMemo(() => {
+    if (practices.length === 0 && reflections.length === 0) return 0;
+    const allDates = [
+      ...practices.map(p => new Date(p.date || p.createdAt)),
+      ...reflections.map(r => new Date(r.createdAt)),
+    ];
+    const oldest = new Date(Math.min(...allDates));
+    const currentWeekStart = getWeekStart(new Date());
+    const oldestWeekStart = getWeekStart(oldest);
+    return Math.ceil((currentWeekStart - oldestWeekStart) / (7 * 24 * 60 * 60 * 1000));
+  }, [practices, reflections]);
 
-  // Calculate stats
-  const totalMinutes = weekPractices.reduce((sum, p) => sum + (p.minutesPracticed || 0), 0);
+  const inRange = (d, s, e) => { const dt = new Date(d); return dt >= s && dt <= e; };
+  const weekPractices = practices.filter(p => inRange(p.date || p.createdAt, weekStart, weekEnd));
+  const weekReflections = reflections.filter(r => inRange(r.createdAt, weekStart, weekEnd));
+  const prevPractices = practices.filter(p => inRange(p.date || p.createdAt, prevWeekStart, prevWeekEnd));
+
+  const totalMinutes = weekPractices.reduce((s, p) => s + (p.minutesPracticed || 0), 0);
   const totalSessions = weekPractices.length;
   const totalReflections = weekReflections.length;
+  const prevMinutes = prevPractices.reduce((s, p) => s + (p.minutesPracticed || 0), 0);
+  const prevSessions = prevPractices.length;
 
-  // Most practiced skill
-  const skillCounts = {};
-  weekPractices.forEach((p) => {
-    const name = p.skillName || "Unknown";
-    if (!skillCounts[name]) skillCounts[name] = { minutes: 0, sessions: 0 };
-    skillCounts[name].minutes += p.minutesPracticed || 0;
-    skillCounts[name].sessions += 1;
+  // Group by skill map (tags[0]) instead of node (skillName)
+  const skillMapCounts = {};
+  weekPractices.forEach(p => {
+    const mapName = (p.tags && p.tags.length > 0 && p.tags[0]) ? p.tags[0] : (p.skillName || "Other");
+    if (!skillMapCounts[mapName]) skillMapCounts[mapName] = { minutes: 0, sessions: 0 };
+    skillMapCounts[mapName].minutes += p.minutesPracticed || 0;
+    skillMapCounts[mapName].sessions += 1;
   });
-  const topSkill = Object.entries(skillCounts).sort((a, b) => b[1].minutes - a[1].minutes)[0];
+  const sortedSkillMaps = Object.entries(skillMapCounts).sort((a, b) => b[1].minutes - a[1].minutes);
+  const topSkillMap = sortedSkillMaps[0];
+  const skillTotalPages = Math.max(1, Math.ceil(sortedSkillMaps.length / SKILLS_PER_PAGE));
+  const pagedSkillMaps = sortedSkillMaps.slice((skillPage - 1) * SKILLS_PER_PAGE, skillPage * SKILLS_PER_PAGE);
 
-  // Days active this week
-  const activeDays = new Set(
-    weekPractices.map((p) => new Date(p.date || p.createdAt).toDateString())
-  ).size;
+  const activeDays = new Set(weekPractices.map(p => new Date(p.date || p.createdAt).toDateString())).size;
 
-  // Daily breakdown for the mini heatmap
   const dailyMinutes = DAYS.map((_, i) => {
     const dayDate = new Date(weekStart);
     dayDate.setDate(dayDate.getDate() + i);
     const dayStr = dayDate.toDateString();
-    return weekPractices
-      .filter((p) => new Date(p.date || p.createdAt).toDateString() === dayStr)
-      .reduce((sum, p) => sum + (p.minutesPracticed || 0), 0);
+    return weekPractices.filter(p => new Date(p.date || p.createdAt).toDateString() === dayStr).reduce((s, p) => s + (p.minutesPracticed || 0), 0);
+  });
+  const dailySessions = DAYS.map((_, i) => {
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(dayDate.getDate() + i);
+    const dayStr = dayDate.toDateString();
+    return weekPractices.filter(p => new Date(p.date || p.createdAt).toDateString() === dayStr).length;
   });
   const maxDaily = Math.max(...dailyMinutes, 1);
 
-  // Is this the current week?
   const isCurrentWeek = weekOffset === 0;
 
-  // Improvement message
-  const getImprovementMessage = () => {
-    if (totalSessions === 0) return "No sessions this week. Start practicing to see your progress!";
-    if (activeDays >= 5) return "Amazing consistency! You practiced 5+ days this week.";
-    if (activeDays >= 3) return "Good momentum! Try to add one more day next week.";
-    return "You're getting started. Aim for at least 3 days next week!";
+  const confPractices = weekPractices.filter(p => p.confidence);
+  const avgConf = confPractices.length > 0 ? (confPractices.reduce((s, p) => s + p.confidence, 0) / confPractices.length).toFixed(1) : null;
+
+  const getInsight = () => {
+    if (totalSessions === 0) return { icon: BookOpen, text: "No sessions recorded this week. Even a short session helps build momentum.", color: "text-site-muted" };
+    const timeDiff = totalMinutes - prevMinutes;
+    if (activeDays >= 6) return { icon: Zap, text: `${activeDays} days active — excellent consistency this week.`, color: "text-green-600" };
+    if (activeDays >= 4) return { icon: TrendingUp, text: `${activeDays} active days${timeDiff > 0 ? `, ${fmtMin(timeDiff)} more than the previous week` : ""}. Strong progress.`, color: "text-green-600" };
+    if (timeDiff > 0) return { icon: TrendingUp, text: `${fmtMin(timeDiff)} more practice time compared to the previous week.`, color: "text-green-600" };
+    if (timeDiff < 0 && prevMinutes > 0) return { icon: TrendingDown, text: `Practice time decreased by ${fmtMin(Math.abs(timeDiff))} compared to the previous week.`, color: "text-amber-600" };
+    if (activeDays <= 2) return { icon: Target, text: `${activeDays} active day${activeDays !== 1 ? "s" : ""} this week. Consistency helps — aim for 3+ days.`, color: "text-amber-600" };
+    return { icon: TrendingUp, text: `${totalSessions} sessions across ${activeDays} days. Solid week.`, color: "text-site-accent" };
   };
+  const insight = getInsight();
+  const InsightIcon = insight.icon;
+
+  // Build week selector options dynamically from data
+  const weekOptions = useMemo(() => {
+    const opts = [];
+    for (let i = 0; i >= -maxWeeksBack; i--) {
+      const ws = getWeekStart(new Date());
+      ws.setDate(ws.getDate() + i * 7);
+      opts.push({ offset: i, label: weekLabel(i), range: formatWeekRange(ws) });
+    }
+    return opts;
+  }, [maxWeeksBack]);
 
   return (
     <div className="flex min-h-screen bg-site-bg">
       <Sidebar />
-
       <main className="flex-1 overflow-y-auto w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-site-ink">Weekly Summary</h1>
             <p className="text-site-muted mt-1">Review your learning progress week by week</p>
           </div>
 
-          {/* Week Navigation */}
-          <div className="flex items-center justify-between bg-site-surface rounded-xl border border-site-border p-4 mb-6 shadow-sm">
-            <button
-              onClick={() => setWeekOffset((prev) => prev - 1)}
-              className="p-2 rounded-lg hover:bg-site-bg transition-colors text-site-muted hover:text-site-ink"
-              aria-label="Previous week"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="text-center">
-              <p className="text-sm font-medium text-site-accent">
-                {isCurrentWeek ? "This Week" : `${Math.abs(weekOffset)} week${Math.abs(weekOffset) > 1 ? "s" : ""} ago`}
-              </p>
-              <p className="text-lg font-bold text-site-ink">{formatWeekRange(weekStart)}</p>
+          {/* Week Navigator */}
+          <div className="bg-site-surface rounded-xl border border-site-border shadow-sm mb-6">
+            <div className="flex items-center justify-between px-4 py-4">
+              <button onClick={() => setWeekOffset(p => Math.max(p - 1, -maxWeeksBack))} disabled={weekOffset <= -maxWeeksBack} className={`p-2.5 rounded-lg transition-colors ${weekOffset <= -maxWeeksBack ? "text-site-faint cursor-not-allowed opacity-30" : "hover:bg-site-bg text-site-muted hover:text-site-ink"}`} aria-label="Previous week">
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="text-center">
+                <p className="text-xs font-medium text-site-accent mb-0.5">{weekLabel(weekOffset)}</p>
+                <p className="text-lg font-bold text-site-ink">{formatWeekRange(weekStart)}</p>
+              </div>
+              <button onClick={() => setWeekOffset(p => Math.min(p + 1, 0))} disabled={isCurrentWeek} className={`p-2.5 rounded-lg transition-colors ${isCurrentWeek ? "text-site-faint cursor-not-allowed opacity-30" : "hover:bg-site-bg text-site-muted hover:text-site-ink"}`} aria-label="Next week">
+                <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
-            <button
-              onClick={() => setWeekOffset((prev) => Math.min(prev + 1, 0))}
-              disabled={isCurrentWeek}
-              className={`p-2 rounded-lg transition-colors ${
-                isCurrentWeek
-                  ? "text-site-faint cursor-not-allowed"
-                  : "hover:bg-site-bg text-site-muted hover:text-site-ink"
-              }`}
-              aria-label="Next week"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            {/* Week selector dropdown */}
+            {weekOptions.length > 1 && (
+              <div className="px-4 pb-3">
+                <WeekDropdown options={weekOptions} value={weekOffset} onChange={setWeekOffset} />
+              </div>
+            )}
           </div>
 
           {loading ? (
@@ -175,52 +205,87 @@ export default function WeeklySummary() {
             </div>
           ) : (
             <>
-              {/* Stats Cards */}
+              {/* Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <StatCard icon={Clock} label="Total Time" value={`${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`} />
-                <StatCard icon={Target} label="Sessions" value={totalSessions} />
+                <StatCard icon={Clock} label="Total Time" value={fmtMin(totalMinutes)} prev={prevMinutes > 0 ? fmtMin(prevMinutes) : null} />
+                <StatCard icon={Target} label="Sessions" value={totalSessions} prev={prevSessions > 0 ? prevSessions : null} />
                 <StatCard icon={FileText} label="Reflections" value={totalReflections} />
                 <StatCard icon={Flame} label="Days Active" value={`${activeDays}/7`} />
               </div>
 
-              {/* Most Practiced Skill */}
-              {topSkill && (
-                <div className="bg-site-surface rounded-xl border border-site-border p-5 mb-6 shadow-sm">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center">
-                      <Award className="w-5 h-5 text-site-accent" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-site-faint uppercase tracking-wide">Most Practiced Skill</p>
-                      <p className="text-lg font-bold text-site-ink">{topSkill[0]}</p>
+              {/* Insight */}
+              <div className={`rounded-xl border p-4 mb-6 shadow-sm flex items-start gap-3 ${
+                totalSessions === 0 ? "bg-site-surface border-site-border" : insight.color.includes("green") ? "bg-green-50 border-green-200" : insight.color.includes("amber") ? "bg-amber-50 border-amber-200" : "bg-site-surface border-site-border"
+              }`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  insight.color.includes("green") ? "bg-green-100" : insight.color.includes("amber") ? "bg-amber-100" : "bg-site-soft"
+                }`}>
+                  <InsightIcon className={`w-5 h-5 ${insight.color}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-site-ink mb-0.5">Weekly Insight</p>
+                  <p className={`text-sm ${insight.color}`}>{insight.text}</p>
+                </div>
+              </div>
+
+              {/* Most Practiced Skill Map + Avg Confidence */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                {topSkillMap && (
+                  <div className="bg-site-surface rounded-xl border border-site-border p-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center">
+                        <Award className="w-5 h-5 text-site-accent" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-site-faint uppercase tracking-wide">Most Practiced Skill Map</p>
+                        <p className="text-base font-bold text-site-ink truncate">{topSkillMap[0]}</p>
+                        <p className="text-xs text-site-muted">{topSkillMap[1].sessions} session{topSkillMap[1].sessions !== 1 ? "s" : ""} · {fmtMin(topSkillMap[1].minutes)}</p>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-sm text-site-muted">
-                    {topSkill[1].sessions} session{topSkill[1].sessions !== 1 ? "s" : ""} •{" "}
-                    {Math.floor(topSkill[1].minutes / 60)}h {topSkill[1].minutes % 60}m total
-                  </p>
-                </div>
-              )}
+                )}
+                {avgConf && (
+                  <div className="bg-site-surface rounded-xl border border-site-border p-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center">
+                        <span className="text-lg">⭐</span>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-site-faint uppercase tracking-wide">Avg Confidence</p>
+                        <p className="text-base font-bold text-site-ink">{avgConf} / 5</p>
+                        <p className="text-xs text-site-muted">across {confPractices.length} rated session{confPractices.length !== 1 ? "s" : ""}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              {/* Daily Activity Heatmap */}
+              {/* Daily Breakdown */}
               <div className="bg-site-surface rounded-xl border border-site-border p-5 mb-6 shadow-sm">
                 <h3 className="text-sm font-semibold text-site-ink mb-4">Daily Breakdown</h3>
                 <div className="grid grid-cols-7 gap-2">
                   {DAYS.map((day, i) => {
                     const mins = dailyMinutes[i];
-                    const intensity = mins > 0 ? Math.max(0.2, mins / maxDaily) : 0;
+                    const sess = dailySessions[i];
+                    const intensity = mins > 0 ? Math.max(0.25, mins / maxDaily) : 0;
+                    const dayDate = new Date(weekStart);
+                    dayDate.setDate(dayDate.getDate() + i);
+                    const isToday = dayDate.toDateString() === new Date().toDateString();
                     return (
                       <div key={day} className="flex flex-col items-center gap-1">
-                        <span className="text-xs text-site-faint">{day}</span>
+                        <span className={`text-xs ${isToday ? "font-bold text-site-accent" : "text-site-faint"}`}>{day}</span>
                         <div
-                          className="w-full aspect-square rounded-lg border border-site-border flex items-center justify-center transition-colors"
-                          style={{
-                            backgroundColor: mins > 0 ? `rgba(46, 80, 35, ${intensity})` : "var(--site-bg, #f8fafc)",
-                          }}
+                          className={`w-full aspect-square rounded-xl border flex flex-col items-center justify-center transition-colors ${isToday ? "border-site-accent border-2" : "border-site-border"}`}
+                          style={{ backgroundColor: mins > 0 ? `rgba(46, 80, 35, ${intensity})` : undefined }}
                         >
-                          <span className={`text-xs font-medium ${mins > 0 ? "text-white" : "text-site-faint"}`}>
-                            {mins > 0 ? `${mins}m` : "–"}
-                          </span>
+                          {mins > 0 ? (
+                            <>
+                              <span className="text-sm font-bold text-white">{fmtMin(mins)}</span>
+                              <span className="text-[9px] text-white/70">{sess} session{sess !== 1 ? "s" : ""}</span>
+                            </>
+                          ) : (
+                            <span className="text-xs text-site-faint">–</span>
+                          )}
                         </div>
                       </div>
                     );
@@ -228,45 +293,38 @@ export default function WeeklySummary() {
                 </div>
               </div>
 
-              {/* Improvement Insight */}
-              <div className="bg-site-surface rounded-xl border border-site-border p-5 mb-6 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center flex-shrink-0">
-                    <TrendingUp className="w-5 h-5 text-site-accent" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-site-ink mb-1">Weekly Insight</p>
-                    <p className="text-sm text-site-muted">{getImprovementMessage()}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Skills Breakdown */}
-              {Object.keys(skillCounts).length > 0 && (
+              {/* Skill Maps Practiced — paginated */}
+              {sortedSkillMaps.length > 0 && (
                 <div className="bg-site-surface rounded-xl border border-site-border p-5 mb-6 shadow-sm">
-                  <h3 className="text-sm font-semibold text-site-ink mb-4">Skills Practiced</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold text-site-ink">Skill Maps Practiced ({sortedSkillMaps.length})</h3>
+                    {skillTotalPages > 1 && (
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => setSkillPage(p => Math.max(1, p - 1))} disabled={skillPage === 1} className="p-1 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                        <span className="text-xs text-site-muted">{skillPage}/{skillTotalPages}</span>
+                        <button onClick={() => setSkillPage(p => Math.min(skillTotalPages, p + 1))} disabled={skillPage >= skillTotalPages} className="p-1 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronRight className="w-3.5 h-3.5" /></button>
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-3">
-                    {Object.entries(skillCounts)
-                      .sort((a, b) => b[1].minutes - a[1].minutes)
-                      .map(([name, data]) => {
-                        const pct = Math.round((data.minutes / totalMinutes) * 100);
-                        return (
-                          <div key={name}>
+                    {pagedSkillMaps.map(([name, data], idx) => {
+                      const pct = Math.round((data.minutes / totalMinutes) * 100);
+                      const rank = (skillPage - 1) * SKILLS_PER_PAGE + idx + 1;
+                      return (
+                        <div key={name} className="flex items-center gap-3">
+                          <span className="text-xs text-site-faint w-5 text-right">{rank}</span>
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium text-site-ink">{name}</span>
-                              <span className="text-xs text-site-faint">
-                                {data.sessions} session{data.sessions !== 1 ? "s" : ""} • {data.minutes}m
-                              </span>
+                              <span className="text-sm font-medium text-site-ink truncate">{name}</span>
+                              <span className="text-xs text-site-faint whitespace-nowrap ml-2">{data.sessions} session{data.sessions !== 1 ? "s" : ""} · {fmtMin(data.minutes)}</span>
                             </div>
-                            <div className="h-2 bg-site-bg rounded-full overflow-hidden border border-site-border">
-                              <div
-                                className="h-full bg-site-accent rounded-full transition-all duration-500"
-                                style={{ width: `${pct}%` }}
-                              />
+                            <div className="h-1.5 bg-site-bg rounded-full overflow-hidden border border-site-border">
+                              <div className="h-full bg-site-accent rounded-full transition-all duration-500" style={{ width: `${Math.max(pct, 3)}%` }} />
                             </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -277,10 +335,7 @@ export default function WeeklySummary() {
                   <Calendar className="w-12 h-12 text-site-faint mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-site-ink mb-2">No activity this week</h3>
                   <p className="text-site-muted mb-4">Start a practice session to see your weekly summary</p>
-                  <button
-                    onClick={() => navigate("/log-practice")}
-                    className="px-5 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors"
-                  >
+                  <button onClick={() => navigate("/log-practice")} className="px-5 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors">
                     Start Practicing
                   </button>
                 </div>
@@ -293,19 +348,63 @@ export default function WeeklySummary() {
   );
 }
 
-// Reusable stat card used only in this page
-function StatCard({ icon: Icon, label, value }) {
+function StatCard({ icon: Icon, label, value, prev }) {
   return (
     <div className="bg-site-surface rounded-xl border border-site-border p-4 shadow-sm">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-site-soft flex items-center justify-center">
+        <div className="w-9 h-9 rounded-full bg-site-soft flex items-center justify-center flex-shrink-0">
           <Icon className="w-4 h-4 text-site-accent" />
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-lg font-bold text-site-ink">{value}</p>
           <p className="text-xs text-site-faint">{label}</p>
+          {prev !== null && prev !== undefined && (
+            <p className="text-[10px] text-site-muted">Previous week: {prev}</p>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+
+function WeekDropdown({ options, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => o.offset === value);
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-xs border border-site-border bg-site-bg text-site-ink hover:border-site-accent outline-none cursor-pointer"
+      >
+        <span>{selected ? `${selected.label} — ${selected.range}` : "Select week"}</span>
+        <ChevronDown className={`w-4 h-4 text-site-faint transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 max-h-60 overflow-y-auto bg-site-surface border border-site-border rounded-lg shadow-lg z-30">
+          {options.map(o => (
+            <button
+              key={o.offset}
+              type="button"
+              onClick={() => { onChange(o.offset); setOpen(false); }}
+              className={`w-full text-left px-3 py-1.5 text-xs transition-colors whitespace-nowrap ${
+                value === o.offset
+                  ? "bg-site-soft text-site-accent font-medium"
+                  : "text-site-ink hover:bg-green-50 hover:text-green-700"
+              }`}
+            >
+              {o.label} — {o.range}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

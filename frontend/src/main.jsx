@@ -41,6 +41,9 @@ import SessionScreen from "./screens/SessionScreen";
 import ReflectionScreen from "./screens/ReflectionScreen";
 import NodeCompleteScreen from "./screens/NodeCompleteScreen";
 import WeeklySummary from "./pages/WeeklySummary";
+import NodeDetailPage from "./pages/NodeDetailPage";
+
+import ActiveSessionPopup from "./components/ActiveSessionPopup";
 
 // Protect routes that require auth
 function Protected({ children }) {
@@ -66,6 +69,7 @@ function AppLayout() {
           <ActiveSessionProvider>
             <SkillMapProvider>
               <Outlet />
+              <ActiveSessionPopup />
               <MobileNav />
             </SkillMapProvider>
           </ActiveSessionProvider>
@@ -114,6 +118,7 @@ const router = createBrowserRouter([
       { path: "/weekly-summary", element: <Protected><WeeklySummary /></Protected> },
       { path: "/skills", element: <Protected><SkillMapPage /></Protected> },
       { path: "/skills/:skillId", element: <Protected><SkillMapPage /></Protected> },
+      { path: "/skills/:skillId/nodes/:nodeId", element: <Protected><NodeDetailPage /></Protected> },
       {
         path: "/maps",
         element: <Protected><MapsShellLayout /></Protected>,

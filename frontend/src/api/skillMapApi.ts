@@ -235,3 +235,15 @@ export async function deleteNode(nodeId: string): Promise<void> {
 export async function addNode(_skillMapId: string, _title: string): Promise<SkillNode> {
   throw new Error('Adding nodes from the map is not available yet.')
 }
+
+/** Creates a skill map from a pre-built template (Skill + Nodes + ActiveSessions atomically). */
+export async function createSkillMapFromTemplate(template: {
+  title: string;
+  description: string;
+  icon: string;
+  goal: string;
+  nodes: { title: string; description: string; sessions: { title: string; description: string }[] }[];
+}): Promise<{ skill: Record<string, unknown>; nodes: Record<string, unknown>[]; activeSessions: Record<string, unknown>[] }> {
+  const { data } = await client.post('/skills/maps/from-template', { template })
+  return data as { skill: Record<string, unknown>; nodes: Record<string, unknown>[]; activeSessions: Record<string, unknown>[] }
+}

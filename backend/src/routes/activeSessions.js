@@ -16,7 +16,9 @@ const createActiveSessionSchema = z.object({
   timer: z.number().min(0).default(0),
   targetTime: z.number().min(0).default(0),
   isCountdown: z.boolean().default(true),
-  isRunning: z.boolean().default(false)
+  isRunning: z.boolean().default(false),
+  nodeId: z.string().trim().optional(),
+  skillId: z.string().trim().optional()
 })
 
 const updateActiveSessionSchema = createActiveSessionSchema.partial()

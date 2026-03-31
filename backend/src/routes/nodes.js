@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { z } from 'zod';
 import NodeService from '../services/NodeService.js';
 import SessionLinkingService from '../services/SessionLinkingService.js';
+import Node from '../models/Node.js';
 
 const router = Router();
 
@@ -441,6 +442,44 @@ router.post('/:id/sessions', async (req, res) => {
       timestamp: new Date().toISOString(),
       ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
     });
+  }
+});
+
+// POST /api/nodes/:id/complete-template-session - Complete a template session by index
+router.post('/:id/complete-template-session', async (req, res) => {
+  try {
+    const { sessionIndex } = req.body;
+    if (typeof sessionIndex !== 'number' || sessionIndex < 0) {
+      return res.status(400).json({ type: 'VALIDATION_ERROR', message: 'sessionIndex must be a non-negative number' });
+    }
+    const node = await Node.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!node) return res.status(404).json({ type: 'NOT_FOUND', message: 'Node not found' });
+    if (!node.sessionDefinitions || sessionIndex >= node.sessionDefinitions.length) {
+      return res.status(400).json({ type: 'VALIDATION_ERROR', message: 'Invalid session index' });
+    }
+    const completed = node.completedSessions || [];
+    if (completed.includes(sessionIndex)) {
+      return res.status(400).json({ type: 'VALIDATION_ERROR', message: 'Session already completed' });
+    }
+    completed.push(sessionIndex);
+    node.completedSessions = completed;
+    // If all sessions completed, mark node as Completed and unlock next
+    let nextNode = null;
+    if (completed.length === node.sessionDefinitions.length) {
+      node.status = 'Completed';
+      nextNode = await Node.findOne({ skillId: node.skillId, userId: req.user.id, order: node.order + 1 });
+      if (nextNode && nextNode.status === 'Locked') {
+        nextNode.status = 'Unlocked';
+        await nextNode.save();
+      }
+    } else if (node.status === 'Unlocked') {
+      node.status = 'In_Progress';
+    }
+    await node.save();
+    res.json({ node: node.toObject(), nextNode: nextNode ? nextNode.toObject() : null });
+  } catch (error) {
+    console.error('Error completing template session:', error.message);
+    res.status(500).json({ type: 'SERVER_ERROR', message: error.message });
   }
 });
 

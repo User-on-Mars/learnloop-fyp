@@ -15,7 +15,7 @@ const SkillSchema = new mongoose.Schema({
   nodeCount: {
     type: Number,
     required: true,
-    min: 2,
+    min: 0,
     max: 15
   },
   description: {
@@ -52,8 +52,8 @@ SkillSchema.pre('save', function(next) {
     return next(error);
   }
   
-  if (!this.nodeCount || this.nodeCount < 2 || this.nodeCount > 15) {
-    const error = new Error('Node count must be between 2 and 15');
+  if (this.nodeCount < 0 || this.nodeCount > 15) {
+    const error = new Error('Node count must be between 0 and 15');
     return next(error);
   }
   

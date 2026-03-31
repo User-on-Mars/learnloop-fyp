@@ -16,7 +16,7 @@ function truncate(s, n) {
   return s.length <= n ? s : `${s.slice(0, n)}…`;
 }
 
-export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
+export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwitchToTemplates }) {
   const { skills, createSkillMap } = useSkillMap();
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState('');
@@ -312,11 +312,18 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
                     <span key={i} className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                       {i > 0 && <span className="text-site-accent font-semibold" aria-hidden>→</span>}
                       <span className={`inline-flex max-w-[9rem] sm:max-w-[11rem] truncate rounded-md border px-2 py-1 font-medium text-site-ink ${i === 0 ? 'border-site-accent bg-site-soft' : 'border-dashed border-site-accent/40 bg-site-soft'}`}>
-                        {i === 0 && <span className="mr-1">🚩</span>}
                         {truncate(val.trim() || `Node ${i + 1}`, 16)}
                       </span>
                     </span>
                   ))}
+                  {goal.trim() && (
+                    <span className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                      <span className="text-yellow-500 font-semibold" aria-hidden>→</span>
+                      <span className="inline-flex items-center gap-1 rounded-md border border-yellow-300 bg-yellow-50 px-2 py-1 font-semibold text-yellow-700 text-xs">
+                        🏆 {truncate(goal.trim(), 16)}
+                      </span>
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -357,7 +364,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
                 )}
               </div>
               <p className="text-xs text-gray-500 border-t border-gray-100 pt-3">
-                Node 1 is your starting point. {contentCount} node{contentCount === 1 ? '' : 's'} will be created.
+                {contentCount === 0 ? 'No nodes yet — you can add them after creation.' : `Node 1 is your starting point. ${contentCount} node${contentCount === 1 ? '' : 's'} will be created.`}
               </p>
             </div>
           )}
@@ -365,7 +372,15 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
 
         <div className="border-t border-gray-100 px-4 py-3 flex flex-wrap items-center gap-2 justify-between bg-gray-50">
           <div>
-            {step > 1 && (
+            {step === 1 && onSwitchToTemplates ? (
+              <button
+                type="button"
+                onClick={() => { reset(); onSwitchToTemplates(); }}
+                className="px-4 py-2 text-sm font-medium text-site-accent rounded-lg transition-colors hover:bg-site-soft"
+              >
+                Back
+              </button>
+            ) : step > 1 ? (
               <button
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
@@ -373,7 +388,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated }) {
               >
                 Back
               </button>
-            )}
+            ) : null}
           </div>
           <div className="flex flex-wrap gap-2 justify-end">
             {step === 1 && (

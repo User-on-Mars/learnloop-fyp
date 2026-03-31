@@ -17,7 +17,7 @@ const createSkillSchema = z.object({
     .max(30, 'Skill name must be 30 characters or less'),
   nodeCount: z.number()
     .int('Node count must be an integer')
-    .min(2, 'Node count must be at least 2')
+    .min(0, 'Node count must be at least 0')
     .max(15, 'Node count must be at most 15')
 });
 
@@ -49,6 +49,57 @@ const validateRequest = (schema) => {
     }
   };
 };
+
+// Validation schema for template application
+const templateSessionSchema = z.object({
+  title: z.string().trim().min(1).max(100),
+  description: z.string().trim().max(500).default('')
+});
+
+const templateNodeSchema = z.object({
+  title: z.string().trim().min(1).max(16),
+  description: z.string().trim().max(2000).default(''),
+  sessions: z.array(templateSessionSchema).min(1)
+});
+
+const createFromTemplateSchema = z.object({
+  template: z.object({
+    title: z.string().trim().min(1, 'Title is required').max(30, 'Title must be 30 characters or less'),
+    description: z.string().trim().max(120, 'Description must be 120 characters or less').default(''),
+    icon: z.string().trim().min(1).max(30),
+    goal: z.string().trim().min(1, 'Goal is required').max(16, 'Goal must be 16 characters or less'),
+    nodes: z.array(templateNodeSchema).min(2, 'At least 2 nodes required').max(15, 'At most 15 nodes allowed')
+  })
+});
+
+// POST /api/skills/maps/from-template - Create skill map from template
+router.post('/maps/from-template', validateRequest(createFromTemplateSchema), async (req, res) => {
+  try {
+    const { template } = req.body;
+    const result = await SkillService.createSkillMapFromTemplate(req.user.id, template);
+    res.status(201).json(result);
+  } catch (error) {
+    console.error('❌ Error creating skill map from template:', error.message);
+
+    let statusCode = 500;
+    let errorType = 'SERVER_ERROR';
+
+    if (error.message.includes('must be') || error.message.includes('required')) {
+      statusCode = 400;
+      errorType = 'VALIDATION_ERROR';
+    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+      statusCode = 503;
+      errorType = 'DATABASE_ERROR';
+    }
+
+    res.status(statusCode).json({
+      type: errorType,
+      message: error.message,
+      timestamp: new Date().toISOString(),
+      ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    });
+  }
+});
 
 // POST /api/skills - Create skill with nodes
 router.post('/', validateRequest(createSkillSchema), async (req, res) => {

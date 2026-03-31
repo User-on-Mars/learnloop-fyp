@@ -17,6 +17,7 @@ export default function ProgressionPathGamefied() {
     loadSkillMapFull,
     updateSkillMap,
     updateNodeContent,
+    updateNodeStatus,
     createNode,
     deleteNode,
     clearError
@@ -40,10 +41,24 @@ export default function ProgressionPathGamefied() {
   const [newNodeTitle, setNewNodeTitle] = useState('');
   const [showAddNodeForm, setShowAddNodeForm] = useState(false);
   const [nodeError, setNodeError] = useState('');
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  // Pending changes — only applied on save
+  const [pendingAddNodes, setPendingAddNodes] = useState([]);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState([]);
 
   useEffect(() => {
     if (skillId) loadSkillMapFull(skillId);
   }, [skillId, loadSkillMapFull]);
+
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (!main) return;
+    const onScroll = () => setShowBackToTop(main.scrollTop > 300);
+    main.addEventListener('scroll', onScroll);
+    window.addEventListener('scroll', () => setShowBackToTop(window.scrollY > 300));
+    return () => { main.removeEventListener('scroll', onScroll); };
+  }, []);
 
   useEffect(() => {
     if (currentSkill) {
@@ -63,13 +78,14 @@ export default function ProgressionPathGamefied() {
     }
   }, [lockedNodeId]);
 
-  const handleNodeClick = (node) => {
-    if (node.status === 'Locked') {
+  const handleNodeClick = (node, nodeIndex) => {
+    // First node is always accessible
+    if (node.status === 'Locked' && nodeIndex > 0) {
       setLockedNodeId(node._id);
       return;
     }
     if (!skillId) return;
-    navigate(`/maps/${skillId}/nodes/${node._id}`);
+    navigate(`/skills/${skillId}/nodes/${node._id}`);
   };
 
   const handleEditNodeName = (node) => {
@@ -96,34 +112,17 @@ export default function ProgressionPathGamefied() {
   };
 
   const handleAddNode = async () => {
-    if (!newNodeTitle.trim() || !skillId) return;
+    if (!newNodeTitle.trim()) return;
     setNodeError('');
-    
-    // Check for duplicate node name
-    const isDuplicate = nodes.some(n => n.title.toLowerCase() === newNodeTitle.trim().toLowerCase());
-    if (isDuplicate) {
-      setNodeError('A node with this name already exists.');
-      return;
-    }
-    
-    // Check max nodes
-    if (nodes.length >= 15) {
-      setNodeError('Maximum 15 nodes reached.');
-      return;
-    }
-    
-    setIsAddingNode(true);
-    try {
-      await createNode(skillId, { title: newNodeTitle.trim() });
-      setNewNodeTitle('');
-      setShowAddNodeForm(false);
-      setNodeError('');
-    } catch (error) {
-      console.error('Error adding node:', error);
-      setNodeError(error.message || 'Failed to add node.');
-    } finally {
-      setIsAddingNode(false);
-    }
+    // Check duplicates against existing nodes + pending adds
+    const allNames = [...nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).map(n => n.title), ...pendingAddNodes];
+    if (allNames.some(t => t.toLowerCase() === newNodeTitle.trim().toLowerCase())) { setNodeError('Duplicate name'); return; }
+    if (allNames.length >= 15) { setNodeError('Max 15 nodes'); return; }
+    // Add to pending — don't call API yet
+    setPendingAddNodes(prev => [...prev, newNodeTitle.trim()]);
+    setNewNodeTitle('');
+    setShowAddNodeForm(false);
+    setNodeError('');
   };
 
   const handleCancelAddNode = () => {
@@ -131,49 +130,48 @@ export default function ProgressionPathGamefied() {
     setShowAddNodeForm(false);
   };
 
-  const handleDeleteNode = async (nodeId) => {
-    setIsDeletingNode(true);
-    try {
-      await deleteNode(nodeId);
-      setDeletingNodeId(null);
-    } catch (error) {
-      setNodeError(error.message || 'Cannot delete this node.');
-      setDeletingNodeId(null);
-    } finally {
-      setIsDeletingNode(false);
-    }
+  const handleDeleteNode = (nodeId) => {
+    setPendingDeleteIds(prev => [...prev, nodeId]);
+    setDeletingNodeId(null);
   };
 
   const handleEditClick = () => {
+    setPendingAddNodes([]);
+    setPendingDeleteIds([]);
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
+    setPendingAddNodes([]);
+    setPendingDeleteIds([]);
+    setDeletingNodeId(null);
+    setEditingNodeId(null);
+    setShowAddNodeForm(false);
     if (currentSkill) {
-      setEditForm({
-        name: currentSkill.name || '',
-        goal: currentSkill.goal || '',
-        description: currentSkill.description || '',
-        icon: currentSkill.icon || 'Map'
-      });
+      setEditForm({ name: currentSkill.name || '', goal: currentSkill.goal || '', description: currentSkill.description || '', icon: currentSkill.icon || 'Map' });
     }
   };
 
   const handleSaveEdit = async () => {
     if (!editForm.name.trim()) return;
-    
     setIsSaving(true);
     try {
-      await updateSkillMap(skillId, {
-        name: editForm.name.trim(),
-        goal: editForm.goal.trim(),
-        description: editForm.description.trim(),
-        icon: editForm.icon
-      });
+      // Save skill details
+      await updateSkillMap(skillId, { name: editForm.name.trim(), goal: editForm.goal.trim(), description: editForm.description.trim(), icon: editForm.icon });
+      // Process pending deletes
+      for (const id of pendingDeleteIds) {
+        try { await deleteNode(id); } catch (e) { console.error('Delete failed:', e.message); }
+      }
+      // Process pending adds
+      for (const title of pendingAddNodes) {
+        try { await createNode(skillId, { title }); } catch (e) { console.error('Add failed:', e.message); }
+      }
+      setPendingAddNodes([]);
+      setPendingDeleteIds([]);
       setIsEditing(false);
     } catch (error) {
-      console.error('Failed to update skill map:', error);
+      console.error('Failed to save:', error);
     } finally {
       setIsSaving(false);
     }
@@ -212,11 +210,13 @@ export default function ProgressionPathGamefied() {
     );
   }
 
-  const completedCount = skillMapProgress?.completed ?? nodes.filter((node) => node.status === 'Completed').length;
-  const totalNodes = skillMapProgress?.total ?? nodes.length;
-  const completionPercentage =
-    skillMapProgress?.percent ??
-    (nodes.length > 0 ? Math.round((completedCount / nodes.length) * 100) : 0);
+  const userNodes = nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start'));
+  const isTemplateMap = userNodes.some(n => n.sessionDefinitions && n.sessionDefinitions.length > 0);
+  const totalTemplateSessions = isTemplateMap ? userNodes.reduce((sum, n) => sum + (n.sessionDefinitions?.length || 0), 0) : 0;
+  const totalCompletedTemplateSessions = isTemplateMap ? userNodes.reduce((sum, n) => sum + (n.completedSessions?.length || 0), 0) : 0;
+  const completedCount = userNodes.filter(n => n.status === 'Completed').length;
+  const totalNodes = userNodes.length;
+  const completionPercentage = totalNodes > 0 ? Math.round((completedCount / totalNodes) * 100) : 0;
 
   const icon = currentSkill.icon || 'Map';
 
@@ -234,23 +234,40 @@ export default function ProgressionPathGamefied() {
         }}
       />
       
-      {/* Decorative Background Elements */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-40">
-        <div className="absolute bottom-10 left-[10%] text-4xl">🌿</div>
-        <div className="absolute bottom-20 left-[25%] text-3xl">🌿</div>
-        <div className="absolute top-40 left-[15%] text-3xl">🌿</div>
-        <div className="absolute bottom-32 right-[20%] text-4xl">🌿</div>
-        <div className="absolute top-60 right-[30%] text-3xl">🌿</div>
-        <div className="absolute top-20 right-[10%] text-6xl">🌳</div>
-        <div className="absolute bottom-40 left-[5%] text-5xl">🌳</div>
-        <div className="absolute top-[50%] right-[5%] text-5xl">🌳</div>
-        <div className="absolute top-32 left-[20%] text-2xl">🌸</div>
-        <div className="absolute bottom-24 left-[35%] text-2xl">🌼</div>
-        <div className="absolute top-[45%] left-[8%] text-2xl">🌺</div>
-        <div className="absolute bottom-16 right-[25%] text-2xl">🌸</div>
-        <div className="absolute top-[35%] right-[15%] text-2xl">🌼</div>
+      {/* Decorative Pixel Art Background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.35]">
+        {/* Trees - distributed vertically */}
+        <svg className="absolute top-[5%] left-[5%]" width="28" height="44" viewBox="0 0 7 11"><rect x="3" y="7" width="1" height="4" fill="#6B4226"/><rect x="1" y="3" width="5" height="4" fill="#2e5023"/><rect x="2" y="1" width="3" height="2" fill="#4f7942"/></svg>
+        <svg className="absolute top-[20%] right-[6%]" width="36" height="52" viewBox="0 0 9 13"><rect x="3" y="9" width="3" height="4" fill="#8B5E3C"/><rect x="1" y="4" width="7" height="5" fill="#2e5023"/><rect x="2" y="1" width="5" height="3" fill="#4f7942"/></svg>
+        <svg className="absolute top-[40%] left-[3%]" width="32" height="48" viewBox="0 0 8 12"><rect x="3" y="8" width="2" height="4" fill="#6B4226"/><rect x="1" y="4" width="6" height="4" fill="#2e5023"/><rect x="2" y="2" width="4" height="2" fill="#4f7942"/></svg>
+        <svg className="absolute top-[60%] right-[4%]" width="28" height="44" viewBox="0 0 7 11"><rect x="3" y="7" width="1" height="4" fill="#6B4226"/><rect x="1" y="3" width="5" height="4" fill="#2e5023"/><rect x="2" y="1" width="3" height="2" fill="#4f7942"/></svg>
+        <svg className="absolute top-[80%] left-[6%]" width="36" height="52" viewBox="0 0 9 13"><rect x="4" y="9" width="2" height="4" fill="#8B5E3C"/><rect x="1" y="4" width="7" height="5" fill="#2e5023"/><rect x="2" y="1" width="5" height="3" fill="#4f7942"/></svg>
+        <svg className="absolute top-[90%] right-[8%]" width="32" height="48" viewBox="0 0 8 12"><rect x="3" y="8" width="2" height="4" fill="#6B4226"/><rect x="1" y="4" width="6" height="4" fill="#2e5023"/><rect x="2" y="2" width="4" height="2" fill="#4f7942"/></svg>
+        {/* Flowers - distributed */}
+        <svg className="absolute top-[10%] left-[15%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#FF69B4"/><rect x="2" y="1" width="1" height="1" fill="#FF69B4"/><rect x="1" y="0" width="1" height="1" fill="#FF69B4"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
+        <svg className="absolute top-[25%] right-[18%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#FF6347"/><rect x="2" y="1" width="1" height="1" fill="#FF6347"/><rect x="1" y="0" width="1" height="1" fill="#FF6347"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
+        <svg className="absolute top-[45%] left-[10%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#DA70D6"/><rect x="2" y="1" width="1" height="1" fill="#DA70D6"/><rect x="1" y="0" width="1" height="1" fill="#DA70D6"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
+        <svg className="absolute top-[55%] right-[15%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#87CEEB"/><rect x="2" y="1" width="1" height="1" fill="#87CEEB"/><rect x="1" y="0" width="1" height="1" fill="#87CEEB"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
+        <svg className="absolute top-[70%] left-[12%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#FFB6C1"/><rect x="2" y="1" width="1" height="1" fill="#FFB6C1"/><rect x="1" y="0" width="1" height="1" fill="#FFB6C1"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
+        <svg className="absolute top-[85%] right-[20%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#FFA500"/><rect x="2" y="1" width="1" height="1" fill="#FFA500"/><rect x="1" y="0" width="1" height="1" fill="#FFA500"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
+        {/* Grass - along edges */}
+        <svg className="absolute top-[15%] left-[1%]" width="32" height="10" viewBox="0 0 8 3"><rect x="0" y="2" width="8" height="1" fill="#4f7942"/><rect x="1" y="0" width="1" height="2" fill="#2e5023"/><rect x="4" y="1" width="1" height="1" fill="#4f7942"/><rect x="6" y="0" width="1" height="1" fill="#2e5023"/></svg>
+        <svg className="absolute top-[35%] right-[2%]" width="28" height="10" viewBox="0 0 7 3"><rect x="0" y="2" width="7" height="1" fill="#4f7942"/><rect x="2" y="0" width="1" height="2" fill="#2e5023"/><rect x="5" y="1" width="1" height="1" fill="#4f7942"/></svg>
+        <svg className="absolute top-[65%] left-[2%]" width="24" height="10" viewBox="0 0 6 3"><rect x="0" y="2" width="6" height="1" fill="#4f7942"/><rect x="1" y="0" width="1" height="2" fill="#2e5023"/><rect x="4" y="1" width="1" height="1" fill="#4f7942"/></svg>
+        <svg className="absolute top-[95%] right-[3%]" width="32" height="10" viewBox="0 0 8 3"><rect x="0" y="2" width="8" height="1" fill="#4f7942"/><rect x="3" y="0" width="1" height="2" fill="#2e5023"/><rect x="6" y="1" width="1" height="1" fill="#4f7942"/></svg>
+        {/* Animals - scattered */}
+        <svg className="absolute top-[30%] left-[8%]" width="20" height="16" viewBox="0 0 5 4"><rect x="1" y="1" width="3" height="2" fill="#4682B4"/><rect x="0" y="1" width="1" height="1" fill="#4682B4"/><rect x="4" y="0" width="1" height="1" fill="#4682B4"/><rect x="4" y="2" width="1" height="1" fill="#FFD700"/><rect x="2" y="1" width="1" height="1" fill="#fff"/></svg>
+        <svg className="absolute top-[50%] right-[10%]" width="20" height="16" viewBox="0 0 5 4"><rect x="2" y="0" width="1" height="4" fill="#333"/><rect x="0" y="0" width="2" height="2" fill="#FF69B4"/><rect x="3" y="0" width="2" height="2" fill="#FF69B4"/><rect x="0" y="2" width="2" height="1" fill="#DA70D6"/><rect x="3" y="2" width="2" height="1" fill="#DA70D6"/></svg>
+        <svg className="absolute top-[75%] right-[25%]" width="20" height="24" viewBox="0 0 5 6"><rect x="1" y="0" width="1" height="1" fill="#D2B48C"/><rect x="3" y="0" width="1" height="1" fill="#D2B48C"/><rect x="0" y="1" width="5" height="3" fill="#D2B48C"/><rect x="1" y="2" width="1" height="1" fill="#333"/><rect x="3" y="2" width="1" height="1" fill="#333"/><rect x="1" y="4" width="1" height="2" fill="#D2B48C"/><rect x="3" y="4" width="1" height="2" fill="#D2B48C"/></svg>
+        {/* Mushrooms */}
+        <svg className="absolute top-[18%] right-[12%]" width="14" height="18" viewBox="0 0 4 5"><rect x="1" y="3" width="2" height="2" fill="#F5F5DC"/><rect x="0" y="1" width="4" height="2" fill="#FF4500"/><rect x="1" y="1" width="1" height="1" fill="#fff"/></svg>
+        <svg className="absolute top-[68%] left-[14%]" width="14" height="18" viewBox="0 0 4 5"><rect x="1" y="3" width="2" height="2" fill="#F5F5DC"/><rect x="0" y="1" width="4" height="2" fill="#FF4500"/><rect x="2" y="1" width="1" height="1" fill="#fff"/></svg>
+        {/* Clouds */}
+        <svg className="absolute top-[3%] left-[30%]" width="48" height="20" viewBox="0 0 12 5"><rect x="2" y="2" width="8" height="3" fill="#fff"/><rect x="1" y="3" width="10" height="2" fill="#fff"/><rect x="3" y="0" width="3" height="2" fill="#fff"/><rect x="7" y="1" width="2" height="1" fill="#fff"/></svg>
+        <svg className="absolute top-[2%] right-[25%]" width="40" height="16" viewBox="0 0 10 4"><rect x="1" y="2" width="8" height="2" fill="#fff"/><rect x="2" y="0" width="3" height="2" fill="#fff"/><rect x="6" y="1" width="2" height="1" fill="#fff"/></svg>
       </div>
-
+        {/* Trees */}
+        <svg className="absolute bottom-8 left-[8%]" width="32" height="48" viewBox="0 0 8 12"><rect x="3" y="8" width="2" height="4" fill="#6B4226"/><rect x="1" y="4" width="6" height="4" fill="#2e5023"/><rect x="2" y="2" width="4" height="2" fill="#2e5023"/><rect x="3" y="0" width="2" height="2" fill="#4f7942"/></svg>
       {/* Main Content */}
       <div className={`flex-1 py-4 sm:py-8 px-3 sm:px-4 transition-all duration-300 relative z-10 ${isSidebarOpen ? 'mr-0 lg:mr-80' : 'mr-0'}`}>
         <div className="max-w-3xl mx-auto">
@@ -262,13 +279,6 @@ export default function ProgressionPathGamefied() {
             >
               Back to Skills
             </button>
-            {skillId && (
-              <span
-                className="inline-flex items-center px-4 sm:px-6 py-2.5 rounded-lg font-medium bg-white/90 text-[#2e5023] text-sm sm:text-base min-h-[44px] border-2 border-site-accent"
-              >
-                Gamified map view
-              </span>
-            )}
           </div>
 
           {/* Compact Header */}
@@ -309,122 +319,77 @@ export default function ProgressionPathGamefied() {
             </div>
           </div>
 
-          {/* Simple visible connecting lines using divs */}
-          <div className="relative pb-20">
-            {nodes.map((node, index) => {
-              const isLast = index === nodes.length - 1;
-              const isStart = node.isStart;
-              const isGoal = node.isGoal;
-              const isLeft = index % 2 === 0;
+          {/* Node Path */}
+          <div className="relative pb-12">
+            {(() => {
+              const filtered = nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start'));
+              const allDone = filtered.length > 0 && filtered.every(n => n.status === 'Completed');
+              const items = [...filtered];
 
-              return (
-                <div key={node._id} className="relative mb-24">
-                  {/* Simple connecting line to next node */}
-                  {!isLast && (
-                    <div className="absolute left-0 right-0 pointer-events-none" style={{ top: '64px', height: '140px', zIndex: 1 }}>
-                      {/* Vertical line down from current node (extends below node name) */}
-                      <div 
-                        className={`absolute w-2 ${node.status === 'Completed' ? 'bg-site-accent' : 'bg-black/50'}`}
-                        style={{ 
-                          left: isLeft ? 'calc(15% - 4px)' : 'calc(85% - 4px)',
-                          top: 0,
-                          height: '70px'
-                        }}
-                      />
-                      {/* Horizontal line across */}
-                      <div 
-                        className={`absolute h-2 ${node.status === 'Completed' ? 'bg-site-accent' : 'bg-black/50'}`}
-                        style={{ 
-                          left: isLeft ? 'calc(15% - 4px)' : 'calc(15% - 4px)',
-                          right: isLeft ? 'calc(15% - 4px)' : 'calc(15% - 4px)',
-                          top: '70px'
-                        }}
-                      />
-                      {/* Vertical line down to next node */}
-                      <div 
-                        className={`absolute w-2 ${node.status === 'Completed' ? 'bg-site-accent' : 'bg-black/50'}`}
-                        style={{ 
-                          left: isLeft ? 'calc(85% - 4px)' : 'calc(15% - 4px)',
-                          top: '70px',
-                          height: '70px'
-                        }}
-                      />
-                    </div>
-                  )}
-                  {/* Node Container - Zig-zag positioning */}
-                  <div className={`flex ${isLeft ? 'justify-start pl-8 sm:pl-16' : 'justify-end pr-8 sm:pr-16'} relative`} style={{ zIndex: 10 }}>
-                    <div className="relative">
-                      {/* Node Card */}
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleNodeClick(node)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleNodeClick(node);
-                          }
-                        }}
-                        className={`relative cursor-pointer transition-all duration-200 hover:scale-105 w-32 h-32 rounded-xl shadow-xl flex items-center justify-center ${
-                          isStart
-                            ? 'bg-pink-400 border-4 border-pink-600'
-                            : isGoal
-                            ? 'bg-cyan-400 border-4 border-cyan-600 rounded-full'
-                            : node.status === 'Completed'
-                            ? 'bg-site-soft0 border-4 border-green-700'
-                            : node.status === 'Unlocked' || node.status === 'In_Progress'
-                            ? 'bg-blue-400 border-4 border-blue-600'
-                            : 'bg-gray-400 border-4 border-gray-600 opacity-75'
-                        }`}
-                      >
-                        {/* Show message inside locked node when clicked */}
-                        {node.status === 'Locked' && lockedNodeId === node._id ? (
-                          <div className="absolute inset-0 bg-red-500/95 rounded-xl flex items-center justify-center p-2 animate-pulse">
-                            <p className="text-white text-xs font-bold text-center leading-tight">
-                              🔒 Complete previous node to unlock
-                            </p>
+              return filtered.map((node, index) => {
+                const isCompleted = node.status === 'Completed';
+                // First node should always be accessible even if backend says Locked (old data)
+                const isUnlocked = node.status === 'Unlocked' || node.status === 'In_Progress' || (index === 0 && node.status === 'Locked');
+                const isFirst = index === 0;
+                const isLeft = index % 2 === 0;
+                const prevCompleted = index > 0 && filtered[index - 1].status === 'Completed';
+                const isLocked = node.status === 'Locked' && index > 0;
+
+                let outerCls, innerCls;
+                if (isCompleted) { outerCls = 'border-green-400 bg-green-50'; innerCls = 'bg-green-500'; }
+                else if (isUnlocked) { outerCls = 'border-site-accent bg-site-soft'; innerCls = 'bg-site-accent'; }
+                else { outerCls = 'border-gray-300 bg-gray-50'; innerCls = 'bg-gray-300'; }
+
+                return (
+                  <div key={node._id} className="flex flex-col items-center">
+                    {/* Vertical connector line — always centered */}
+                    {index > 0 && (
+                      <div className={`w-1 h-10 rounded-full ${prevCompleted ? 'bg-green-400' : 'bg-gray-200'}`} />
+                    )}
+
+                    {/* Node — alternates left/right */}
+                    <div className={`w-full flex ${isLeft ? 'justify-start pl-6 sm:pl-16' : 'justify-end pr-6 sm:pr-16'}`}>
+                      <div className="flex flex-col items-center cursor-pointer" onClick={() => handleNodeClick(node, index)}>
+                        <div className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-[3px] flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105 ${outerCls}`}>
+                          <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${innerCls}`}>
+                            {isFirst ? <Rocket className="w-7 h-7 sm:w-8 sm:h-8 text-white" strokeWidth={2} />
+                            : isCompleted ? <CheckCircle className="w-7 h-7 sm:w-8 sm:h-8 text-white" strokeWidth={2} />
+                            : isUnlocked ? <Unlock className="w-7 h-7 sm:w-8 sm:h-8 text-white" strokeWidth={2} />
+                            : <Lock className="w-7 h-7 sm:w-8 sm:h-8 text-white" strokeWidth={2} />}
                           </div>
-                        ) : (
-                          <>
-                            {/* Icon inside node */}
-                            {isStart ? (
-                              <Rocket className="w-16 h-16 text-white" strokeWidth={2.5} />
-                            ) : isGoal ? (
-                              <Trophy className="w-16 h-16 text-white" strokeWidth={2.5} />
-                            ) : node.status === 'Locked' ? (
-                              <Lock className="w-16 h-16 text-white" strokeWidth={2.5} />
-                            ) : node.status === 'Completed' ? (
-                              <CheckCircle className="w-16 h-16 text-white" strokeWidth={2.5} />
-                            ) : (
-                              <Unlock className="w-16 h-16 text-white" strokeWidth={2.5} />
-                            )}
-                          </>
-                        )}
-
-                        {/* Sparkle for completed */}
-                        {node.status === 'Completed' && (
-                          <div className="absolute -top-2 -right-2 text-2xl animate-pulse">
-                            ⭐
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Node Title Below - Compact */}
-                      <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2">
-                        <div className="bg-white/95 px-3 py-1.5 rounded-lg shadow-md border-2 border-gray-300 max-w-[180px]">
-                          <p className="text-sm font-semibold text-gray-900 text-center whitespace-nowrap overflow-hidden text-ellipsis">
-                            {node.title}
-                          </p>
+                          {isCompleted && <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center shadow border-2 border-white"><Check className="w-3 h-3 text-white" /></div>}
+                          {isLocked && lockedNodeId === node._id && <div className="absolute inset-0 bg-red-500/90 rounded-full flex items-center justify-center animate-pulse"><p className="text-white text-[9px] font-bold text-center px-1">Complete previous</p></div>}
                         </div>
+                        <p className="mt-1.5 text-xs font-semibold text-center max-w-[120px] truncate text-gray-700">{node.title}</p>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
 
-          {nodes.length === 0 && (
+          {/* Goal Card - separate from nodes */}
+          {currentSkill.goal && (() => {
+            const uNodes = nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start'));
+            const allDone = uNodes.length > 0 && uNodes.every(n => n.status === 'Completed');
+            const lastCompleted = uNodes.length > 0 && uNodes[uNodes.length - 1].status === 'Completed';
+            return (
+              <div className="flex flex-col items-center mt-0 mb-8">
+                {/* Connector to goal */}
+                <div className={`w-1 h-12 rounded-full ${lastCompleted ? 'bg-yellow-400' : 'bg-gray-200'}`} />
+                <div className={`relative w-full max-w-sm p-6 rounded-2xl text-center transition-all duration-500 ${allDone ? 'bg-gradient-to-br from-yellow-100 via-amber-50 to-yellow-100 border-2 border-yellow-400 shadow-xl shadow-yellow-200/50' : 'bg-white/80 border-2 border-dashed border-gray-300'}`}>
+                  {allDone && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-yellow-400 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow">Achieved</div>}
+                  <Trophy className={`w-10 h-10 mx-auto mb-2 ${allDone ? 'text-yellow-500' : 'text-gray-300'}`} />
+                  <p className={`text-lg font-bold mb-1 ${allDone ? 'text-yellow-700' : 'text-gray-400'}`}>{allDone ? '🎉 Goal Complete!' : 'Goal'}</p>
+                  <p className={`text-sm ${allDone ? 'text-yellow-600' : 'text-gray-400'}`}>{currentSkill.goal}</p>
+                  {!allDone && <p className="text-[10px] text-gray-400 mt-2">Complete all {uNodes.length} nodes to unlock</p>}
+                </div>
+              </div>
+            );
+          })()}
+
+          {nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).length === 0 && (
             <div className="text-center py-12 text-gray-700 text-sm">
               No nodes found for this skill.
             </div>
@@ -441,23 +406,15 @@ export default function ProgressionPathGamefied() {
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4 border-b-4 border-site-accent bg-gradient-to-r from-green-100 to-emerald-100">
           <h2 className="text-lg font-bold text-gray-900">Details</h2>
-          <div className="flex items-center gap-2">
-            {!isEditing && (
-              <button
-                onClick={handleEditClick}
-                className="p-2 text-gray-400 hover:text-site-accent hover:bg-white rounded-lg transition-colors"
-                aria-label="Edit details"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors"
-              aria-label="Close sidebar"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <div className="flex items-center gap-1">
+            {isEditing ? (
+              <>
+                <button onClick={handleSaveEdit} disabled={isSaving || !editForm.name.trim()} className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors disabled:opacity-50" title="Save"><Check className="w-5 h-5" /></button>
+                <button onClick={() => setShowCancelConfirm(true)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Cancel"><X className="w-5 h-5" /></button>
+              </>
+            ) : !isTemplateMap ? (
+              <button onClick={handleEditClick} className="p-2 text-gray-400 hover:text-site-accent hover:bg-white rounded-lg transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>
+            ) : null}
           </div>
         </div>
 
@@ -516,7 +473,7 @@ export default function ProgressionPathGamefied() {
               {/* Nodes Section - Edit Mode */}
               <div className="bg-site-soft rounded-lg p-4 border-2 border-site-border shadow-md">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.length}/15)</h3>
+                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).length}/15)</h3>
                   {nodes.length < 15 ? (
                     <button
                       onClick={() => { setShowAddNodeForm(true); setNodeError(''); }}
@@ -566,9 +523,11 @@ export default function ProgressionPathGamefied() {
                 )}
                 
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {nodes.map((node, index) => (
-                    <div key={node._id} className="bg-white rounded p-2 border border-site-border text-xs">
-                      {editingNodeId === node._id ? (
+                  {nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start') && !pendingDeleteIds.includes(n._id)).map((node, index) => (
+                    <div key={node._id} className={`bg-white rounded p-2 border text-xs ${pendingDeleteIds.includes(node._id) ? 'border-red-300 bg-red-50 opacity-50' : 'border-site-border'}`}>
+                      {deletingNodeId === node._id ? (
+                        <div><p className="text-[10px] text-red-600 mb-1.5">Delete "{node.title}"?</p><div className="flex gap-1.5"><button onClick={() => handleDeleteNode(node._id)} className="flex-1 px-2 py-1 bg-red-600 text-white text-[10px] rounded hover:bg-red-700">Yes</button><button onClick={() => setDeletingNodeId(null)} className="flex-1 px-2 py-1 border border-gray-300 text-gray-600 text-[10px] rounded hover:bg-gray-50">No</button></div></div>
+                      ) : editingNodeId === node._id ? (
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
@@ -595,40 +554,23 @@ export default function ProgressionPathGamefied() {
                         </div>
                       ) : (
                         <div className="flex items-center justify-between min-w-0">
-                          <span className="font-semibold text-gray-700 truncate">
-                            {index + 1}. {node.title}
-                          </span>
-                          <button
-                            onClick={() => handleEditNodeName(node)}
-                            className="text-[#2e5023] hover:text-[#1f3518]"
-                            title="Edit name"
-                          >
-                            <Pencil className="w-3 h-3" />
-                          </button>
+                          <span className="font-semibold text-gray-700 truncate flex-1">{index + 1}. {node.title}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => handleEditNodeName(node)} className="p-1 text-site-accent hover:text-site-accent-hover" title="Edit"><Pencil className="w-3 h-3" /></button>
+                            {index > 0 && <button onClick={() => setDeletingNodeId(node._id)} className="p-1 text-gray-400 hover:text-red-500" title="Delete"><Trash2 className="w-3 h-3" /></button>}
+                          </div>
                         </div>
                       )}
                     </div>
                   ))}
+                  {/* Pending new nodes */}
+                  {pendingAddNodes.map((title, i) => (
+                    <div key={`pending-${i}`} className="bg-green-50 rounded p-2 border border-green-300 border-dashed text-xs flex items-center justify-between">
+                      <span className="font-semibold text-green-700 truncate flex-1">+ {title}</span>
+                      <button onClick={() => setPendingAddNodes(prev => prev.filter((_, j) => j !== i))} className="p-1 text-gray-400 hover:text-red-500 shrink-0"><X className="w-3 h-3" /></button>
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              <div className="flex flex-col gap-2 pt-2">
-                <button
-                  onClick={handleSaveEdit}
-                  disabled={isSaving || !editForm.name.trim()}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2e5023] text-white rounded-lg font-bold hover:bg-[#1f3518] disabled:opacity-50 disabled:cursor-not-allowed transition-colors border-2 border-[#1f3518] shadow-md"
-                >
-                  <Check className="w-5 h-5" />
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  disabled={isSaving}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-gray-400 text-gray-700 rounded-lg font-bold hover:bg-gray-100 disabled:opacity-50 transition-colors shadow-md"
-                >
-                  <X className="w-5 h-5" />
-                  Cancel
-                </button>
               </div>
             </div>
           ) : (
@@ -668,52 +610,74 @@ export default function ProgressionPathGamefied() {
                 )}
               </div>
 
-              {/* Nodes Section - View Mode */}
+              {/* Nodes Section - View Mode (no edit/delete) */}
               <div className="bg-site-soft rounded-lg p-4 border-2 border-site-border shadow-md">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.length}/15)</h3>
+                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).length}/15)</h3>
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {nodes.map((node, index) => (
+                  {nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).map((node, index) => (
                     <div key={node._id} className="bg-white rounded p-2 border border-site-border text-xs">
-                      {deletingNodeId === node._id ? (
-                        <div>
-                          <p className="text-xs text-red-600 mb-2">Delete "{node.title}"?</p>
-                          <div className="flex gap-2">
-                            <button onClick={() => handleDeleteNode(node._id)} disabled={isDeletingNode} className="flex-1 px-2 py-1 bg-red-600 text-white text-xs rounded font-medium hover:bg-red-700 disabled:opacity-50">{isDeletingNode ? '...' : 'Delete'}</button>
-                            <button onClick={() => setDeletingNodeId(null)} className="flex-1 px-2 py-1 border border-gray-300 text-gray-600 text-xs rounded font-medium hover:bg-gray-50">Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between min-w-0">
-                          <span className="font-semibold text-gray-700 truncate flex-1">
-                            {index + 1}. {node.title}
-                          </span>
-                          {!node.isStart && !node.isGoal && (
-                            <button onClick={() => setDeletingNodeId(node._id)} className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors shrink-0" title="Delete node">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      )}
+                      <span className="font-semibold text-gray-700 truncate block">{index + 1}. {node.title}</span>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Template Sessions Overview */}
+              {isTemplateMap && (
+                <div className="bg-white rounded-lg p-4 border-2 border-gray-300 shadow-md">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-gray-900">Sessions</h3>
+                    <span className="text-xs font-medium text-site-accent">{totalCompletedTemplateSessions}/{totalTemplateSessions}</span>
+                  </div>
+                  <div className="space-y-3 max-h-72 overflow-y-auto">
+                    {userNodes.filter(n => n.sessionDefinitions?.length > 0).map((node) => (
+                      <div key={node._id}>
+                        <p className="text-[10px] font-bold text-site-accent uppercase tracking-wide mb-1">{node.title}</p>
+                        <div className="space-y-1">
+                          {node.sessionDefinitions.map((sd, j) => {
+                            const done = (node.completedSessions || []).includes(j);
+                            return (
+                              <div key={j} className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs ${done ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-600'}`}>
+                                {done ? <CheckCircle className="w-3 h-3 text-green-500 shrink-0" /> : <div className="w-3 h-3 rounded-full border border-gray-300 shrink-0" />}
+                                <span className="truncate">{sd.title}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {isTemplateMap && <p className="text-[10px] text-gray-400 mt-2 text-center">Template sessions are managed within each node</p>}
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Toggle Button */}
-      {!isSidebarOpen && (
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="fixed right-4 top-20 p-3 bg-white border-4 border-site-accent rounded-lg shadow-lg hover:shadow-xl transition-all z-30 hover:bg-site-soft"
-          aria-label="Open details"
-        >
-          <ChevronLeft className="w-5 h-5 text-[#2e5023]" />
-        </button>
+      {/* Toggle sidebar button - always visible at same position */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className={`fixed top-4 p-2.5 bg-white border-2 border-site-accent rounded-full shadow-lg hover:shadow-xl transition-all z-50 hover:bg-site-soft ${isSidebarOpen ? 'right-[20.5rem]' : 'right-4'}`}
+        aria-label={isSidebarOpen ? 'Close details' : 'Open details'}
+      >
+        {isSidebarOpen ? <ChevronRight className="w-5 h-5 text-site-accent" /> : <ChevronLeft className="w-5 h-5 text-site-accent" />}
+      </button>
+
+      {/* Cancel Edit Confirmation */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-xs p-5 text-center">
+            <p className="text-sm font-semibold text-gray-900 mb-2">Discard changes?</p>
+            <p className="text-xs text-gray-500 mb-4">Unsaved edits will be lost.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50">Keep editing</button>
+              <button onClick={() => { handleCancelEdit(); setShowCancelConfirm(false); }} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">Discard</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Mobile Overlay */}
@@ -722,6 +686,17 @@ export default function ProgressionPathGamefied() {
           className="fixed inset-0 bg-black/30 z-30 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
+      )}
+
+      {/* Back to Top */}
+      {showBackToTop && (
+        <button
+          onClick={() => { const m = document.querySelector('main'); if (m) m.scrollTo({ top: 0, behavior: 'smooth' }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          className={`fixed bottom-6 w-11 h-11 bg-site-accent text-white rounded-full shadow-lg hover:bg-site-accent-hover transition-all z-50 flex items-center justify-center hover:scale-110 ${isSidebarOpen ? 'right-[21.5rem]' : 'right-6'}`}
+          aria-label="Back to top"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+        </button>
       )}
     </div>
   );

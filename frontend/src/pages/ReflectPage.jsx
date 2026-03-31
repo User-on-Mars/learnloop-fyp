@@ -322,7 +322,7 @@ function DateFilter({ value, onChange }) {
         <div className="absolute top-full right-0 mt-1 w-44 bg-site-surface border border-site-border rounded-lg shadow-lg z-30 overflow-hidden">
           {DATE_OPTS.map(o => (
             <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-xs transition-colors ${value === o.value ? 'bg-site-soft text-site-accent font-medium' : 'text-site-ink hover:bg-site-soft'}`}>
+              className={`w-full text-left px-3 py-2 text-xs transition-colors ${value === o.value ? 'bg-site-soft text-site-accent font-medium' : 'text-site-ink hover:bg-green-50 hover:text-green-700'}`}>
               {o.label}
             </button>
           ))}
