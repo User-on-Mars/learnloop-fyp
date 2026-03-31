@@ -1,6 +1,7 @@
 import Skill from '../models/Skill.js';
 import Node from '../models/Node.js';
 import LearningSession from '../models/LearningSession.js';
+import ActiveSession from '../models/ActiveSession.js';
 import mongoose from 'mongoose';
 import dbMonitor from '../utils/dbMonitor.js';
 import {
@@ -37,12 +38,12 @@ class SkillService {
       throw new ValidationError('name', name, { type: 'maxLength', max: 100 });
     }
     
-    if (!nodeCount || !Number.isInteger(nodeCount)) {
+    if (nodeCount === undefined || nodeCount === null || !Number.isInteger(nodeCount)) {
       throw new ValidationError('nodeCount', nodeCount, { type: 'required', format: 'integer' });
     }
     
-    if (nodeCount < 2 || nodeCount > 15) {
-      throw new ValidationError('nodeCount', nodeCount, { type: 'range', min: 2, max: 15 });
+    if (nodeCount < 0 || nodeCount > 15) {
+      throw new ValidationError('nodeCount', nodeCount, { type: 'range', min: 0, max: 15 });
     }
 
     const session = await mongoose.startSession();
@@ -289,116 +290,94 @@ class SkillService {
    * Create skill map from wizard (START completed, optional content nodes, GOAL locked).
    */
   async createSkillMap(userId, { title, description, icon, goal, sketchTitles }) {
-    if (!userId) {
-      throw new ValidationError('userId', userId, { type: 'required' });
-    }
-    const cleanTitle = title.trim();
-    if (await this.skillTitleExistsForUser(userId, cleanTitle)) {
-      throw new ConflictError('SkillMap', 'A skill map with this title already exists');
-    }
+      if (!userId) {
+        throw new ValidationError('userId', userId, { type: 'required' });
+      }
+      const cleanTitle = title.trim();
+      if (await this.skillTitleExistsForUser(userId, cleanTitle)) {
+        throw new ConflictError('SkillMap', 'A skill map with this title already exists');
+      }
 
-    const titles = (sketchTitles || []).map((t) => String(t).trim()).filter(Boolean);
-    if (titles.length !== new Set(titles.map((t) => t.toLowerCase())).size) {
-      throw new ValidationError('sketchTitles', titles, { type: 'unique', message: 'Node titles must be unique' });
-    }
+      const titles = (sketchTitles || []).map((t) => String(t).trim()).filter(Boolean);
+      if (titles.length !== new Set(titles.map((t) => t.toLowerCase())).size) {
+        throw new ValidationError('sketchTitles', titles, { type: 'unique', message: 'Node titles must be unique' });
+      }
 
-    const contentCount = titles.length;
-    const totalNodes = 1 + contentCount + 1;
-    if (totalNodes > 15) {
-      throw new ValidationError('sketchTitles', titles, { type: 'maxLength', max: 15 });
-    }
+      const contentCount = titles.length;
+      if (contentCount > 15) {
+        throw new ValidationError('sketchTitles', titles, { type: 'maxLength', max: 15 });
+      }
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
+      const session = await mongoose.startSession();
+      session.startTransaction();
 
-    try {
-      const skill = new Skill({
-        userId,
-        name: cleanTitle,
-        nodeCount: totalNodes,
-        description: description == null ? '' : String(description).trim(),
-        icon: icon || 'Map',
-        goal: goal.trim(),
-        status: 'active'
-      });
+      try {
+        const skill = new Skill({
+          userId,
+          name: cleanTitle,
+          nodeCount: contentCount,
+          description: description == null ? '' : String(description).trim(),
+          icon: icon || 'Map',
+          goal: goal ? goal.trim() : '',
+          status: 'active'
+        });
 
-      await dbMonitor.monitorWrite(
-        () => skill.save({ session }),
-        'SkillService.createSkillMap - save skill'
-      );
+        await dbMonitor.monitorWrite(
+          () => skill.save({ session }),
+          'SkillService.createSkillMap - save skill'
+        );
 
-      const nodes = [];
-      let order = 1;
+        // Create only user-defined nodes — no auto Start/Goal nodes
+        // Node 1 is unlocked (starting point), rest are locked
+        const nodes = [];
+        for (let i = 0; i < contentCount; i++) {
+          nodes.push(new Node({
+            skillId: skill._id,
+            userId,
+            order: i + 1,
+            title: titles[i],
+            description: '',
+            status: i === 0 ? 'Unlocked' : 'Locked',
+            isStart: i === 0,
+            isGoal: false
+          }));
+        }
 
-      nodes.push(new Node({
-        skillId: skill._id,
-        userId,
-        order: order++,
-        title: 'Start',
-        description: '',
-        status: 'Completed',
-        isStart: true,
-        isGoal: false
-      }));
+        await dbMonitor.monitorWrite(
+          () => Node.insertMany(nodes, { session }),
+          'SkillService.createSkillMap - insert nodes'
+        );
 
-      for (let i = 0; i < contentCount; i++) {
-        nodes.push(new Node({
+        await session.commitTransaction();
+
+        await ErrorLoggingService.logSystemEvent('skill_map_created', {
           skillId: skill._id,
           userId,
-          order: order++,
-          title: titles[i],
-          description: '',
-          status: i === 0 ? 'Unlocked' : 'Locked',
-          isStart: false,
-          isGoal: false
-        }));
+          contentCount,
+          timestamp: new Date().toISOString()
+        });
+
+        const nodeObjects = nodes.map((n) => n.toObject());
+        return {
+          skill: skill.toObject(),
+          nodes: nodeObjects
+        };
+      } catch (error) {
+        await session.abortTransaction();
+        await ErrorLoggingService.logError(error, {
+          userId,
+          operation: 'createSkillMap',
+          timestamp: new Date().toISOString()
+        });
+        if (error.name === 'MongoError' || error.name === 'MongoServerError') {
+          throw new DatabaseError('createSkillMap', error, { userId });
+        }
+        throw error;
+      } finally {
+        session.endSession();
       }
-
-      nodes.push(new Node({
-        skillId: skill._id,
-        userId,
-        order: order++,
-        title: goal.trim(),
-        description: '',
-        status: 'Locked',
-        isStart: false,
-        isGoal: true
-      }));
-
-      await dbMonitor.monitorWrite(
-        () => Node.insertMany(nodes, { session }),
-        'SkillService.createSkillMap - insert nodes'
-      );
-
-      await session.commitTransaction();
-
-      await ErrorLoggingService.logSystemEvent('skill_map_created', {
-        skillId: skill._id,
-        userId,
-        contentCount,
-        timestamp: new Date().toISOString()
-      });
-
-      const nodeObjects = nodes.map((n) => n.toObject());
-      return {
-        skill: skill.toObject(),
-        nodes: nodeObjects
-      };
-    } catch (error) {
-      await session.abortTransaction();
-      await ErrorLoggingService.logError(error, {
-        userId,
-        operation: 'createSkillMap',
-        timestamp: new Date().toISOString()
-      });
-      if (error.name === 'MongoError' || error.name === 'MongoServerError') {
-        throw new DatabaseError('createSkillMap', error, { userId });
-      }
-      throw error;
-    } finally {
-      session.endSession();
     }
-  }
+
 
   /**
    * Single payload for map screen: skill_map, nodes with session stats, progress.
@@ -640,6 +619,101 @@ class SkillService {
       session.endSession();
     }
   }
+
+  /**
+   * Create a skill map from a template with nodes and active sessions atomically.
+   * @param {string} userId - User ID
+   * @param {Object} template - Template object with title, description, icon, goal, nodes (each with sessions)
+   * @returns {Promise<{skill: Object, nodes: Array, activeSessions: Array}>}
+   */
+  async createSkillMapFromTemplate(userId, template) {
+    if (!userId) {
+      throw new ValidationError('userId', userId, { type: 'required' });
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // 1. Deduplicate title
+      let title = template.title.trim();
+      if (await this.skillTitleExistsForUser(userId, title)) {
+        let suffix = 2;
+        while (await this.skillTitleExistsForUser(userId, `${title} (${suffix})`)) {
+          suffix++;
+        }
+        title = `${title} (${suffix})`;
+      }
+
+      // 2. Create Skill
+      const skill = new Skill({
+        userId,
+        name: title,
+        nodeCount: template.nodes.length,
+        description: template.description != null ? String(template.description).trim() : '',
+        icon: template.icon || 'Map',
+        goal: template.goal ? template.goal.trim() : '',
+        status: 'active'
+      });
+
+      await dbMonitor.monitorWrite(
+        () => skill.save({ session }),
+        'SkillService.createSkillMapFromTemplate - save skill'
+      );
+
+      // 3. Create Nodes — first node Unlocked, rest Locked, no isGoal
+      const nodes = template.nodes.map((nd, i) => new Node({
+        skillId: skill._id,
+        userId,
+        order: i + 1,
+        title: nd.title.trim(),
+        description: nd.description || '',
+        status: i === 0 ? 'Unlocked' : 'Locked',
+        isStart: i === 0,
+        isGoal: false,
+        sessionDefinitions: nd.sessions && nd.sessions.length > 0
+          ? nd.sessions.map(s => ({ title: s.title, description: s.description || '' }))
+          : undefined
+      }));
+
+      await dbMonitor.monitorWrite(
+        () => Node.insertMany(nodes, { session }),
+        'SkillService.createSkillMapFromTemplate - insert nodes'
+      );
+
+      // 5. Commit
+      await session.commitTransaction();
+
+      await ErrorLoggingService.logSystemEvent('skill_map_from_template_created', {
+        skillId: skill._id,
+        userId,
+        nodeCount: nodes.length,
+        templateTitle: template.title,
+        timestamp: new Date().toISOString()
+      });
+
+      return {
+        skill: skill.toObject(),
+        nodes: nodes.map(n => n.toObject()),
+        activeSessions: []
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      await ErrorLoggingService.logError(error, {
+        userId,
+        operation: 'createSkillMapFromTemplate',
+        templateTitle: template.title,
+        timestamp: new Date().toISOString()
+      });
+      if (error.name === 'MongoError' || error.name === 'MongoServerError') {
+        throw new DatabaseError('createSkillMapFromTemplate', error, { userId });
+      }
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
 }
 
 export default new SkillService();
