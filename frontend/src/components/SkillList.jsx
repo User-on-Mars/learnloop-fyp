@@ -4,6 +4,7 @@ import { Plus, Trash2, ChevronRight, ChevronLeft, Target } from 'lucide-react';
 import { useSkillMap } from '../context/SkillMapContext';
 import { useToast } from '../context/ToastContext';
 import CreateSkillMapWizard from './CreateSkillMapWizard';
+import TemplateGallery from './TemplateGallery';
 import { SkillIcon } from './IconPicker';
 
 const PER_PAGE = 9;
@@ -11,8 +12,9 @@ const PER_PAGE = 9;
 export default function SkillList() {
   const navigate = useNavigate();
   const { showSuccess } = useToast();
-  const { skills, deleteSkill, isLoading } = useSkillMap();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const { skills, deleteSkill, loadSkills, isLoading } = useSkillMap();
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [deletingSkillId, setDeletingSkillId] = useState(null);
   const [skillPendingDeleteId, setSkillPendingDeleteId] = useState(null);
   const [page, setPage] = useState(1);
@@ -31,13 +33,13 @@ export default function SkillList() {
 
   const handleDeleteSkillConfirmed = async () => {
     if (deleteConfirmInput !== 'CONFIRM' || !skillPendingDeleteId) return;
+    const idToDelete = skillPendingDeleteId;
+    closeDeleteSkillModal();
     try {
-      setDeletingSkillId(skillPendingDeleteId);
-      await deleteSkill(skillPendingDeleteId);
-      closeDeleteSkillModal();
+      setDeletingSkillId(idToDelete);
+      await deleteSkill(idToDelete);
     } catch (error) {
       console.error('Error deleting skill:', error);
-      closeDeleteSkillModal();
     } finally {
       setDeletingSkillId(null);
     }
@@ -56,7 +58,7 @@ export default function SkillList() {
           <p className="text-sm sm:text-base text-site-muted mt-1">Track your learning journey with visual progression paths</p>
         </div>
         <button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => setIsGalleryOpen(true)}
           className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover active:opacity-90 transition-all shadow-md hover:shadow-lg min-h-[44px] text-sm sm:text-base"
         >
           <Plus className="w-5 h-5" />
@@ -73,7 +75,7 @@ export default function SkillList() {
           <h3 className="text-lg sm:text-xl font-bold text-site-ink mb-2">No skills yet</h3>
           <p className="text-sm sm:text-base text-site-muted mb-6">Create your first skill map to start tracking your learning journey</p>
           <button
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => setIsGalleryOpen(true)}
             className="inline-flex items-center gap-2 px-5 sm:px-6 py-3 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover active:opacity-90 transition-all min-h-[44px] text-sm sm:text-base"
           >
             <Plus className="w-5 h-5" />
@@ -87,7 +89,13 @@ export default function SkillList() {
             <div
               key={skill._id}
               onClick={() => handleSkillClick(skill._id)}
-              className="bg-site-surface rounded-xl shadow-sm border border-site-border p-5 sm:p-6 hover:shadow-lg transition-all cursor-pointer group relative min-h-[140px] touch-manipulation"
+              className={`rounded-xl shadow-sm p-5 sm:p-6 hover:shadow-lg transition-all cursor-pointer group relative min-h-[140px] touch-manipulation border-l-4 ${
+                (skill.completionPercentage || 0) >= 100
+                  ? 'bg-green-50/60 border-l-green-500 border border-green-200'
+                  : (skill.completionPercentage || 0) > 0
+                  ? 'bg-site-soft/40 border-l-site-accent border border-site-border'
+                  : 'bg-site-surface border-l-gray-300 border border-site-border'
+              }`}
             >
               {/* Delete Button - touch-friendly */}
               <button
@@ -130,12 +138,7 @@ export default function SkillList() {
                 <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-site-accent transition-colors" />
               </div>
 
-              <div className="mt-3 pt-3 border-t border-site-border" onClick={(e) => e.stopPropagation()}>
-                <span className="text-xs sm:text-sm font-medium text-site-accent" title="Coming soon">
-                  Open gamified map view
-                </span>
               </div>
-            </div>
           ))}
         </div>
         {/* Pagination */}
@@ -151,13 +154,33 @@ export default function SkillList() {
         </>
       )}
 
-      {/* Create Skill Modal */}
+      {/* Template Gallery Modal */}
+      <TemplateGallery
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        onCreated={({ skillId, title }) => {
+          setIsGalleryOpen(false);
+          loadSkills();
+          showSuccess(`Skill map "${title}" created!`);
+          navigate(`/skills/${skillId}`);
+        }}
+        onSwitchToWizard={() => {
+          setIsGalleryOpen(false);
+          setIsWizardOpen(true);
+        }}
+      />
+
+      {/* Create Skill Map Wizard Modal */}
       <CreateSkillMapWizard
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
         onCreated={({ skillId, title }) => {
           showSuccess(`Skill map ${title} created! Start from the first node.`);
           navigate(`/skills/${skillId}`);
+        }}
+        onSwitchToTemplates={() => {
+          setIsWizardOpen(false);
+          setIsGalleryOpen(true);
         }}
       />
 
