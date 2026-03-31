@@ -231,12 +231,8 @@ export function ActiveSessionProvider({ children }) {
         return () => clearInterval(interval);
     }, [activeSessions, soundEnabled]);
 
-    // Add a new session (max 6)
+    // Add a new session
     const addSession = useCallback((session) => {
-        if (activeSessions.length >= 6) {
-            console.warn('Max 6 active sessions reached');
-            return null;
-        }
         const newSession = {
             id: Date.now(),
             ...session,
@@ -254,7 +250,9 @@ export function ActiveSessionProvider({ children }) {
                 timer: session.timer,
                 targetTime: session.targetTime,
                 isCountdown: session.isCountdown,
-                isRunning: session.isRunning
+                isRunning: session.isRunning,
+                nodeId: session.nodeId,
+                skillId: session.skillId
             }).then(response => {
                 // Update local session with MongoDB _id
                 setActiveSessions(prev =>
@@ -267,7 +265,7 @@ export function ActiveSessionProvider({ children }) {
         }
         
         return newSession;
-    }, [activeSessions.length]);
+    }, []);
 
     // Remove a session
     const removeSession = useCallback((sessionId) => {
