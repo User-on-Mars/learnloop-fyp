@@ -373,16 +373,7 @@ class NodeService {
         throw new NotFoundError('Node', nodeId, { userId });
       }
 
-      // Prevent editing locked nodes - State transition check
-      if (node.status === 'Locked') {
-        throw new StateTransitionError(
-          'Locked',
-          'editable',
-          'Cannot edit locked nodes. Unlock the node first to make changes.',
-          { nodeId, userId, currentStatus: node.status }
-        );
-      }
-
+      // Allow editing description for any status
       // Update fields
       if (title !== undefined) {
         node.title = title.trim();
@@ -495,31 +486,22 @@ class NodeService {
         });
       }
 
-      // Find the goal node (last node)
-      const goalNode = await Node.findOne({ skillId, userId, isGoal: true }).session(session);
-      if (!goalNode) {
-        throw new NotFoundError('Goal node', skillId, { userId });
-      }
+      // Find the highest order number and append after it
+      const lastNode = await Node.findOne({ skillId, userId }).sort({ order: -1 }).session(session);
+      const newOrder = lastNode ? lastNode.order + 1 : 1;
 
-      const goalOrder = goalNode.order;
-      const newNodeOrder = goalOrder; // Insert before goal
-      
-      // Shift goal node order by 1
-      goalNode.order = goalOrder + 1;
-      await dbMonitor.monitorWrite(
-        () => goalNode.save({ session }),
-        'NodeService.createNode - update goal node order'
-      );
+      // If this is the first node, make it unlocked
+      const isFirstNode = !lastNode;
 
       // Create new node
       const newNode = new Node({
         skillId,
         userId,
-        order: newNodeOrder,
+        order: newOrder,
         title: title.trim(),
         description: description ? description.trim() : '',
-        status: 'Locked', // New nodes start locked
-        isStart: false,
+        status: isFirstNode ? 'Unlocked' : 'Locked',
+        isStart: isFirstNode,
         isGoal: false
       });
 
@@ -537,23 +519,21 @@ class NodeService {
 
       await session.commitTransaction();
 
-      // Invalidate cache
-      if (cacheService.isAvailable()) {
-        await cacheService.invalidateSkillMapCache(skillId, userId);
+      // Post-commit operations (non-critical)
+      try {
+        if (cacheService.isAvailable()) {
+          await cacheService.invalidateSkillMapCache(skillId, userId);
+        }
+        await ErrorLoggingService.logSystemEvent('node_created', {
+          nodeId: newNode._id, skillId, userId, order: newOrder, timestamp: new Date().toISOString()
+        });
+      } catch (postErr) {
+        console.warn('Post-commit cache/log error (non-critical):', postErr.message);
       }
-
-      // Log successful creation
-      await ErrorLoggingService.logSystemEvent('node_created', {
-        nodeId: newNode._id,
-        skillId,
-        userId,
-        order: newNodeOrder,
-        timestamp: new Date().toISOString()
-      });
 
       return newNode.toObject();
     } catch (error) {
-      await session.abortTransaction();
+      try { await session.abortTransaction(); } catch (_) { /* already committed or aborted */ }
       
       // Log error with context
       await ErrorLoggingService.logError(error, {
@@ -823,7 +803,7 @@ class NodeService {
 
       const nodes = await dbMonitor.monitorRead(
         () => Node.find({ skillId, userId })
-          .select('_id skillId userId order title description status isStart isGoal createdAt updatedAt')
+          .select('_id skillId userId order title description status isStart isGoal sessionDefinitions completedSessions createdAt updatedAt')
           .sort({ order: 1 })
           .lean(),
         'NodeService.getSkillNodes - fetch nodes'
