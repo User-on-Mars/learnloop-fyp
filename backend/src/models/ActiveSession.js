@@ -39,6 +39,14 @@ const ActiveSessionSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  nodeId: {
+    type: String,
+    trim: true
+  },
+  skillId: {
+    type: String,
+    trim: true
+  },
   startedAt: {
     type: Date,
     default: Date.now
