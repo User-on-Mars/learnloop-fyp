@@ -220,4 +220,18 @@ export const skillMapAPI = {
     api.put(`/skill-maps/${skillMapId}/activate`, { isActive }),
 };
 
+// XP API
+export const xpAPI = {
+  getProfile: () => api.get('/xp/profile'),
+  getTransactions: (params = {}) => api.get('/xp/transactions', { params }),
+};
+
+// Leaderboard API
+export const leaderboardAPI = {
+  getWeekly: (page = 1) => api.get('/leaderboard/weekly', { params: { page } }),
+  getStreaks: (page = 1) => api.get('/leaderboard/streaks', { params: { page } }),
+  getAllTime: (page = 1) => api.get('/leaderboard/all-time', { params: { page } }),
+  getMyRanks: () => api.get('/leaderboard/my-ranks'),
+};
+
 export default api;
