@@ -111,9 +111,9 @@ export function ActiveSessionProvider({ children }) {
                     setIsLoading(false);
                 }
             } else if (!user) {
-                // User logged out - clear sessions
+                // User logged out - pause sessions but keep in localStorage
                 hasLoadedRef.current = false;
-                setActiveSessions([]);
+                setActiveSessions(prev => prev.map(s => ({ ...s, isRunning: false })));
                 setIsLoading(false);
             }
         });
