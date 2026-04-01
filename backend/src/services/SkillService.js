@@ -653,7 +653,8 @@ class SkillService {
         description: template.description != null ? String(template.description).trim() : '',
         icon: template.icon || 'Map',
         goal: template.goal ? template.goal.trim() : '',
-        status: 'active'
+        status: 'active',
+        fromTemplate: true
       });
 
       await dbMonitor.monitorWrite(
