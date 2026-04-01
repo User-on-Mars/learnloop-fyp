@@ -5,6 +5,8 @@ import SessionManager from '../services/SessionManager.js';
 import ErrorHandlingService from '../services/ErrorHandlingService.js';
 import ErrorLoggingService from '../services/ErrorLoggingService.js';
 import WebSocketService from '../services/WebSocketService.js';
+import StreakService from '../services/StreakService.js';
+import XpService from '../services/XpService.js';
 import { withDatabaseRetry } from '../middleware/errorHandler.js';
 
 // Validation schemas
@@ -223,6 +225,23 @@ class SessionController {
             operation: 'websocket_completion_notification'
           });
         }
+      }
+
+      // Award XP for session completion (never blocks response)
+      try {
+        const minutesPracticed = (result.duration || 0) / 60;
+        if (minutesPracticed >= 10) {
+          const streakResult = await StreakService.processSession(userId, new Date());
+          await XpService.awardXp(userId, 'session_completion', 10);
+          if (streakResult.streakCount >= 1) {
+            await XpService.awardXp(userId, 'streak_bonus', 5 * streakResult.streakCount);
+          }
+        }
+      } catch (xpError) {
+        await ErrorLoggingService.logError(xpError, {
+          ...context,
+          operation: 'session_xp_award'
+        });
       }
       
       // Log performance metrics

@@ -1,6 +1,7 @@
 import Node from '../models/Node.js';
 import LearningSession from '../models/LearningSession.js';
 import Reflection from '../models/Reflection.js';
+import Skill from '../models/Skill.js';
 import mongoose from 'mongoose';
 import dbMonitor from '../utils/dbMonitor.js';
 import {
@@ -14,6 +15,7 @@ import {
 } from '../utils/errors.js';
 import ErrorLoggingService from './ErrorLoggingService.js';
 import cacheService from './CacheService.js';
+import XpService from './XpService.js';
 
 class NodeService {
   /**
@@ -164,6 +166,27 @@ class NodeService {
         nextNodeUnlocked: nextNode !== null,
         timestamp: new Date().toISOString()
       });
+
+      // Award skill map completion XP if all nodes are now completed (never blocks response)
+      if (newStatus === 'Completed') {
+        try {
+          const allNodes = await Node.find({ skillId: node.skillId });
+          const allCompleted = allNodes.every(n => n.status === 'Completed');
+          if (allCompleted) {
+            const skill = await Skill.findById(node.skillId);
+            if (skill && skill.fromTemplate === true) {
+              await XpService.awardXp(userId, 'skillmap_completion', 200, { skillMapId: node.skillId.toString() });
+            }
+          }
+        } catch (xpError) {
+          await ErrorLoggingService.logError(xpError, {
+            userId,
+            nodeId,
+            skillId: node.skillId?.toString(),
+            operation: 'skillmap_completion_xp_award'
+          });
+        }
+      }
 
       return {
         node: node.toObject(),

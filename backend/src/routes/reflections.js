@@ -13,6 +13,8 @@ import {
   deleteReflection
 } from '../controllers/reflectionController.js'
 import { generateReflectionPDF } from '../services/pdfGenerator.js'
+import XpService from '../services/XpService.js'
+import ErrorLoggingService from '../services/ErrorLoggingService.js'
 
 const router = Router()
 
@@ -46,6 +48,20 @@ router.post('/',
       console.log('📝 Creating reflection for user:', req.user.id)
       const reflection = await createReflection(req.user.id, req.body)
       console.log('✅ Reflection created:', reflection._id)
+
+      // Award reflection XP if mood and content present (never blocks response)
+      try {
+        if (reflection.mood && reflection.content) {
+          await XpService.awardXp(req.user.id, 'reflection', 20)
+        }
+      } catch (xpError) {
+        await ErrorLoggingService.logError(xpError, {
+          userId: req.user.id,
+          reflectionId: reflection._id,
+          operation: 'reflection_xp_award'
+        })
+      }
+
       res.status(201).json(reflection)
     } catch (error) {
       console.error('❌ Error creating reflection:', error.message)

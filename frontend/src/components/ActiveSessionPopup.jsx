@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useActiveSessions } from '../context/ActiveSessionContext';
 import { auth } from '../firebase';
-import { Play, Pause, X, Clock } from 'lucide-react';
+import { X, Clock } from 'lucide-react';
 import SessionCompletionPrompt from './SessionCompletionPrompt';
 
 const MINI_SESSION_KEY = 'miniPopupSessionId';
@@ -46,10 +46,18 @@ export default function ActiveSessionPopup() {
         }
     }, [activeSessions, miniSessionId]);
 
-    // The one session to show
-    const primarySession = miniSessionId
-        ? activeSessions.find(s => String(s.id) === miniSessionId) || null
-        : null;
+    // The one session to show — prefer miniSessionId, fallback to any running free practice session
+    const primarySession = (() => {
+        if (miniSessionId) {
+            const found = activeSessions.find(s => String(s.id) === miniSessionId);
+            if (found) return found;
+        }
+        // Fallback: pick any running session (prefer free practice)
+        const runningFree = activeSessions.find(s => s.isRunning && !s.skillId && !s.nodeId);
+        if (runningFree) return runningFree;
+        const runningAny = activeSessions.find(s => s.isRunning);
+        return runningAny || null;
+    })();
 
     // Detect countdown completion
     useEffect(() => {
@@ -83,11 +91,6 @@ export default function ActiveSessionPopup() {
         localStorage.removeItem(MINI_SESSION_KEY);
     }, [primarySession, toggleSession]);
 
-    const handleToggle = useCallback((e) => {
-        e.stopPropagation();
-        if (primarySession) toggleSession(primarySession.id);
-    }, [primarySession, toggleSession]);
-
     const handleNavigate = useCallback(() => {
         if (!primarySession) return;
         const sid = primarySession.skillId;
@@ -102,7 +105,7 @@ export default function ActiveSessionPopup() {
     // Don't show on auth pages or log-practice
     if (!user) return null;
     const hiddenPages = ['/login', '/signup', '/forgot', '/'];
-    if (hiddenPages.includes(location.pathname) || location.pathname.startsWith('/log-practice')) return null;
+    if (hiddenPages.includes(location.pathname)) return null;
 
     // Hide if on the node detail page that owns this session
     const nodeMatch = location.pathname.match(/\/skills\/[^/]+\/nodes\/([^/]+)/);
@@ -149,19 +152,12 @@ export default function ActiveSessionPopup() {
                         </div>
                     )}
                     <div className="px-4 py-3">
-                        <div className={`text-3xl font-bold font-mono text-center mb-3 ${
+                        <div className={`text-3xl font-bold font-mono text-center ${
                             primarySession.isCountdown && primarySession.timer <= 0 ? 'text-red-600' : isRunning ? 'text-green-700' : 'text-site-ink'
                         }`}>
                             {formatTimer(primarySession.timer)}
                         </div>
-                        <div className="flex gap-2">
-                            <button onClick={handleToggle} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm transition-colors ${
-                                isRunning ? 'bg-gray-700 text-white hover:bg-gray-800' : 'bg-site-accent text-white hover:bg-site-accent-hover'
-                            }`}>
-                                {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                                {isRunning ? 'Pause' : 'Resume'}
-                            </button>
-                        </div>
+                        {isRunning && <p className="text-center text-xs text-green-600 mt-1">● Running — tap to view</p>}
                     </div>
                 </div>
             </div>

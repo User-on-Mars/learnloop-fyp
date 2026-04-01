@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { SECURITY_EVENTS } from './security.js'
+import User from '../models/User.js'
 
 // Auth middleware that accepts both JWT and Firebase tokens
 export async function requireAuth(req, res, next) {
@@ -62,6 +63,42 @@ export async function requireAuth(req, res, next) {
 
       console.log('✅ Auth: Firebase token decoded, user:', userId, 'email:', email)
       req.user = { id: userId, email: email }
+
+      // Check account status for banned/suspended users
+      // Auto-create User record for Firebase users if it doesn't exist
+      let dbUser = await User.findOne({ email }).select('accountStatus role firebaseUid').lean()
+      if (!dbUser && email) {
+        try {
+          dbUser = await User.create({
+            name: payload.name || email.split('@')[0],
+            email,
+            passwordHash: 'firebase-auth-user',
+            role: 'user',
+            accountStatus: 'active',
+            firebaseUid: userId
+          })
+          console.log(`📝 Auto-created User record for Firebase user: ${email}`)
+        } catch (createErr) {
+          // Might fail on duplicate — race condition, just re-fetch
+          dbUser = await User.findOne({ email }).select('accountStatus role firebaseUid').lean()
+        }
+      }
+
+      // Update firebaseUid if not set yet
+      if (dbUser && !dbUser.firebaseUid) {
+        await User.updateOne({ _id: dbUser._id }, { firebaseUid: userId })
+      }
+
+      if (dbUser) {
+        if (dbUser.accountStatus === 'banned') {
+          return res.status(403).json({ message: 'Your account has been banned.', accountStatus: 'banned' })
+        }
+        if (dbUser.accountStatus === 'suspended') {
+          return res.status(403).json({ message: 'Your account has been suspended.', accountStatus: 'suspended' })
+        }
+        req.user.role = dbUser.role
+      }
+
       logSecurityEvent(SECURITY_EVENTS.AUTH_LOGIN, req, 'Firebase authentication successful')
       return next()
     } catch (decodeError) {

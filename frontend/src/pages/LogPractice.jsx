@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { practiceAPI, skillsAPI } from '../services/api';
 import { useActiveSessions } from '../context/ActiveSessionContext';
 import Sidebar from '../components/Sidebar';
-import { Play, Pause, RotateCcw, Plus, X, Search, FileText, Trash2, CheckCircle, Star, AlertTriangle, ArrowRight, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Flame, Info } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, X, Search, FileText, Trash2, CheckCircle, Star, AlertTriangle, ArrowRight, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Flame, Info, ExternalLink } from 'lucide-react';
 const CONF = ['','Not confident','Slightly','Moderate','Confident','Very confident'];
 const PER_PAGE = 5;
 const SESSIONS_PER_PAGE = 3;
 export default function LogPractice() {
+  const navigate = useNavigate();
   const [practices, setPractices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -78,12 +80,18 @@ export default function LogPractice() {
   const freeSessions = activeSessions.filter(s => !s.skillId && !s.nodeId);
   const renderCard = (s) => { const isR=s.isRunning; const isFree = !s.skillId && !s.nodeId; return (
     <div key={s.id} className={`rounded-2xl border-2 p-5 shadow-sm transition-all ${isR?'border-green-500 bg-green-50/50 shadow-green-100': isFree ? 'border-purple-200 bg-purple-50/30' : 'border-site-border bg-site-surface'}`}>
-    <div className="flex items-start justify-between mb-1"><div className="flex-1 min-w-0"><h3 className="font-bold text-site-ink text-base truncate">{s.skillName}</h3>{isR&&<p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-0.5"><Flame className="w-3 h-3"/>Focus mode — you got this!</p>}{!isR&&s.timer===s.targetTime&&s.isCountdown&&<p className="text-xs text-amber-600 font-medium mt-0.5">Ready to start</p>}</div><button onClick={()=>setRemoveId(s._id??s.id)} className="text-site-faint hover:text-red-500 ml-2 p-1"><X className="w-4 h-4"/></button></div>
-    {s.isCountdown&&<div className="w-full h-1.5 bg-gray-200 rounded-full my-3 overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ${isR?'bg-green-500':'bg-site-accent'}`} style={{width:`${getProgress(s)}%`}}/></div>}
-    <div className={`text-3xl font-bold font-mono text-center py-3 rounded-xl mb-3 ${s.isCountdown&&s.timer<=0?'bg-red-100 text-red-600':isR?'bg-green-100 text-green-700':'bg-site-bg text-site-ink'}`}>{formatTimer(s.timer)}</div>
-    {s.isCountdown&&s.timer<=0&&<p className="text-center text-red-600 text-sm font-medium mb-3">Time's up! 🎉</p>}
-    <div className="flex gap-2 mb-3"><button onClick={()=>tryToggle(s)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-medium text-sm ${isR?'bg-gray-700 text-white hover:bg-gray-800':'bg-site-accent text-white hover:bg-site-accent-hover'}`}>{isR?<Pause className="w-4 h-4"/>:<Play className="w-4 h-4"/>}{isR?'Pause':'Start'}</button><button onClick={()=>resetSession(s.id)} className="px-3 py-2.5 border border-site-border text-site-muted rounded-lg hover:bg-site-bg"><RotateCcw className="w-4 h-4"/></button></div>
-    <button onClick={()=>openComp(s)} disabled={!canComp(s)} className={`w-full py-2.5 rounded-lg font-semibold text-sm ${canComp(s)?'bg-green-600 text-white hover:bg-green-700':'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>Complete & Log</button>
+    <div className="flex items-start justify-between mb-1"><div className="flex-1 min-w-0"><h3 className="font-bold text-site-ink text-base truncate">{s.skillName}</h3>{s.notes && <p className="text-xs text-site-muted truncate mt-0.5">{s.notes}</p>}{isR&&<p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-0.5"><Flame className="w-3 h-3"/>Focus mode — you got this!</p>}</div><button onClick={()=>setRemoveId(s._id??s.id)} className="text-site-faint hover:text-red-500 ml-2 p-1"><X className="w-4 h-4"/></button></div>
+    {isFree ? (<>
+      {s.isCountdown&&<div className="w-full h-1.5 bg-gray-200 rounded-full my-3 overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ${isR?'bg-green-500':'bg-site-accent'}`} style={{width:`${getProgress(s)}%`}}/></div>}
+      <div className={`text-3xl font-bold font-mono text-center py-3 rounded-xl mb-3 ${s.isCountdown&&s.timer<=0?'bg-red-100 text-red-600':isR?'bg-green-100 text-green-700':'bg-site-bg text-site-ink'}`}>{formatTimer(s.timer)}</div>
+      {s.isCountdown&&s.timer<=0&&<p className="text-center text-red-600 text-sm font-medium mb-3">Time's up! 🎉</p>}
+      <div className="flex gap-2 mb-3"><button onClick={()=>tryToggle(s)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-medium text-sm ${isR?'bg-gray-700 text-white hover:bg-gray-800':'bg-site-accent text-white hover:bg-site-accent-hover'}`}>{isR?<Pause className="w-4 h-4"/>:<Play className="w-4 h-4"/>}{isR?'Pause':'Start'}</button><button onClick={()=>resetSession(s.id)} className="px-3 py-2.5 border border-site-border text-site-muted rounded-lg hover:bg-site-bg"><RotateCcw className="w-4 h-4"/></button></div>
+      <button onClick={()=>openComp(s)} disabled={!canComp(s)} className={`w-full py-2.5 rounded-lg font-semibold text-sm ${canComp(s)?'bg-green-600 text-white hover:bg-green-700':'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>Complete & Log</button>
+    </>) : (<>
+      {s.isCountdown&&<div className="w-full h-1.5 bg-gray-200 rounded-full my-2 overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ${isR?'bg-green-500':'bg-site-accent'}`} style={{width:`${getProgress(s)}%`}}/></div>}
+      <div className={`text-2xl font-bold font-mono text-center py-2 rounded-xl mb-3 ${isR?'bg-green-100 text-green-700':'bg-site-bg text-site-ink'}`}>{formatTimer(s.timer)}</div>
+      <button onClick={()=>navigate(`/skills/${s.skillId}/nodes/${s.nodeId}`)} className="w-full flex items-center justify-center gap-2 py-2.5 bg-site-accent text-white rounded-lg font-medium text-sm hover:bg-site-accent-hover"><ExternalLink className="w-4 h-4"/>Go to Node</button>
+    </>)}
     {s.tags?.length>0&&<div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-site-border">{s.tags.map(t=><span key={t} className="px-2 py-0.5 bg-site-soft text-site-accent text-[10px] rounded-full">{t}</span>)}</div>}
     </div>);};
   return (<div className="mb-8 space-y-6">

@@ -42,8 +42,14 @@ import ReflectionScreen from "./screens/ReflectionScreen";
 import NodeCompleteScreen from "./screens/NodeCompleteScreen";
 import WeeklySummary from "./pages/WeeklySummary";
 import NodeDetailPage from "./pages/NodeDetailPage";
+import Leaderboard from "./pages/Leaderboard";
 
 import ActiveSessionPopup from "./components/ActiveSessionPopup";
+import AdminLayout from "./layout/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
+import AdminActivity from "./pages/admin/AdminActivity";
 
 // Protect routes that require auth
 function Protected({ children }) {
@@ -116,6 +122,7 @@ const router = createBrowserRouter([
       { path: "/reflect", element: <Protected><ReflectPage /></Protected> },
       { path: "/reflections", element: <Protected><ReflectionHistory /></Protected> },
       { path: "/weekly-summary", element: <Protected><WeeklySummary /></Protected> },
+      { path: "/leaderboard", element: <Protected><Leaderboard /></Protected> },
       { path: "/skills", element: <Protected><SkillMapPage /></Protected> },
       { path: "/skills/:skillId", element: <Protected><SkillMapPage /></Protected> },
       { path: "/skills/:skillId/nodes/:nodeId", element: <Protected><NodeDetailPage /></Protected> },
@@ -131,6 +138,16 @@ const router = createBrowserRouter([
             element: <ReflectionScreen />,
           },
           { path: ":mapId/complete", element: <NodeCompleteScreen /> },
+        ],
+      },
+      {
+        path: "/admin",
+        element: <Protected><AdminLayout /></Protected>,
+        children: [
+          { index: true, element: <AdminDashboard /> },
+          { path: "users", element: <AdminUsers /> },
+          { path: "users/:userId", element: <AdminUserDetail /> },
+          { path: "activity", element: <AdminActivity /> },
         ],
       },
     ]

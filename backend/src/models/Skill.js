@@ -40,6 +40,10 @@ const SkillSchema = new mongoose.Schema({
     type: String,
     enum: ['draft', 'active'],
     default: 'active'
+  },
+  fromTemplate: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

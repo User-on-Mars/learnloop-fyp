@@ -11,10 +11,11 @@ import {
   Plus,
   MapPin,
 } from "lucide-react";
-import { practiceAPI, skillsAPI } from "../services/api";
+import { practiceAPI, skillsAPI, xpAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import DashboardGreeting from "../components/DashboardGreeting";
 import WeeklyPerformanceChart from "../components/WeeklyPerformanceChart";
+import XpProfileCard from "../components/XpProfileCard";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -25,6 +26,9 @@ export default function Dashboard() {
   const [weeklyData, setWeeklyData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [xpProfile, setXpProfile] = useState(null);
+  const [xpLoading, setXpLoading] = useState(true);
+  const [xpError, setXpError] = useState(false);
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -47,6 +51,18 @@ export default function Dashboard() {
       setPractices(practicesRes.data.practices || []);
       setWeeklyData(weeklyRes.data.weeklyData || []);
       setSkills(skillsRes.data.skills || []);
+
+      // Fetch XP profile separately so failures don't block the dashboard
+      setXpLoading(true);
+      setXpError(false);
+      try {
+        const xpRes = await xpAPI.getProfile();
+        setXpProfile(xpRes.data);
+      } catch {
+        setXpError(true);
+      } finally {
+        setXpLoading(false);
+      }
     } catch (err) {
       console.error("Dashboard fetch error:", err);
       setError("Failed to load dashboard data");
@@ -171,6 +187,27 @@ export default function Dashboard() {
             <QuickStat icon={Zap} label="Sessions" value={totalSessions} />
             <QuickStat icon={Award} label="Skill Maps" value={skills.length} />
             <QuickStat icon={Target} label="Nodes Done" value={`${completedNodes}/${totalNodes}`} />
+          </div>
+
+          {/* ── XP Profile ── */}
+          <div className="mb-6">
+            <XpProfileCard
+              profile={xpProfile}
+              isLoading={xpLoading}
+              error={xpError}
+              onRetry={async () => {
+                setXpLoading(true);
+                setXpError(false);
+                try {
+                  const res = await xpAPI.getProfile();
+                  setXpProfile(res.data);
+                } catch {
+                  setXpError(true);
+                } finally {
+                  setXpLoading(false);
+                }
+              }}
+            />
           </div>
 
           {/* ── Today's Activity + Overall Progress ── */}

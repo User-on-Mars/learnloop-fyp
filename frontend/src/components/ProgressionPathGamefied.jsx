@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSkillMap } from '../context/SkillMapContext';
-import { Pencil, Check, X, ChevronRight, ChevronLeft, FileText, Target, Rocket, Trophy, Lock, Unlock, CheckCircle, Trash2 } from 'lucide-react';
+import { useActiveSessions } from '../context/ActiveSessionContext';
+import { practiceAPI } from '../services/api';
+import { Pencil, Check, X, ChevronRight, ChevronLeft, FileText, Target, Rocket, Trophy, Lock, Unlock, CheckCircle, Trash2, Clock } from 'lucide-react';
 import SkillMapPageSkeleton from './SkillMapPageSkeleton';
 import IconPicker, { SkillIcon } from './IconPicker';
 
 export default function ProgressionPathGamefied() {
   const { skillId } = useParams();
   const navigate = useNavigate();
+  const { activeSessions, formatTimer } = useActiveSessions();
   const {
     currentSkill,
     nodes,
@@ -46,10 +49,25 @@ export default function ProgressionPathGamefied() {
   // Pending changes — only applied on save
   const [pendingAddNodes, setPendingAddNodes] = useState([]);
   const [pendingDeleteIds, setPendingDeleteIds] = useState([]);
+  const [practiceHistory, setPracticeHistory] = useState([]);
 
   useEffect(() => {
     if (skillId) loadSkillMapFull(skillId);
   }, [skillId, loadSkillMapFull]);
+
+  // Fetch practice history for all nodes in this skill map
+  const fetchPracticeHistory = useCallback(async () => {
+    if (!nodes || nodes.length === 0) return;
+    try {
+      const r = await practiceAPI.getPractices({ limit: 500 });
+      const allPractices = r.data.practices || r.data || [];
+      // Filter to practices that match node titles in this skill map
+      const nodeTitles = new Set(nodes.map(n => n.title));
+      setPracticeHistory(allPractices.filter(p => nodeTitles.has(p.skillName)));
+    } catch { setPracticeHistory([]); }
+  }, [nodes]);
+
+  useEffect(() => { fetchPracticeHistory(); }, [fetchPracticeHistory]);
 
   useEffect(() => {
     const main = document.querySelector('main');
@@ -652,6 +670,56 @@ export default function ProgressionPathGamefied() {
                   {isTemplateMap && <p className="text-[10px] text-gray-400 mt-2 text-center">Template sessions are managed within each node</p>}
                 </div>
               )}
+
+              {/* Sessions for user-created maps — always show */}
+              {!isTemplateMap && (() => {
+                const mapSessions = activeSessions.filter(s => s.skillId === skillId);
+                const totalActive = mapSessions.length;
+                const totalCompleted = practiceHistory.length;
+                return (
+                  <div className="bg-white rounded-lg p-4 border-2 border-gray-300 shadow-md">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold text-gray-900">Sessions</h3>
+                      <div className="flex gap-2 text-[10px]">
+                        {totalActive > 0 && <span className="text-site-accent font-medium">{totalActive} active</span>}
+                        {totalCompleted > 0 && <span className="text-gray-400">{totalCompleted} completed</span>}
+                      </div>
+                    </div>
+                    {totalActive === 0 && totalCompleted === 0 ? (
+                      <p className="text-xs text-gray-400 text-center py-3">No sessions yet. Start practicing from a node.</p>
+                    ) : (
+                      <div className="space-y-3 max-h-72 overflow-y-auto">
+                        {userNodes.map(n => {
+                          const nodeSessions = mapSessions.filter(s => s.nodeId === n._id);
+                          const nodeHistory = practiceHistory.filter(p => p.skillName === n.title);
+                          if (nodeSessions.length === 0 && nodeHistory.length === 0) return null;
+                          return (
+                            <div key={n._id}>
+                              <p className="text-[10px] font-bold text-site-accent uppercase tracking-wide mb-1">{n.title}</p>
+                              <div className="space-y-1">
+                                {nodeSessions.map(s => (
+                                  <div key={s.id || s._id} className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer hover:shadow-sm ${s.isRunning ? 'bg-green-50 border border-green-300' : 'bg-gray-50 border border-gray-200'}`} onClick={() => navigate(`/skills/${skillId}/nodes/${n._id}`)}>
+                                    {s.isRunning ? <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0" /> : <Clock className="w-3 h-3 text-gray-400 shrink-0" />}
+                                    <span className="truncate flex-1">{s.notes || s.skillName || 'Active'}</span>
+                                    <span className={`font-mono text-[10px] shrink-0 ${s.isRunning ? 'text-green-600' : 'text-gray-500'}`}>{formatTimer(s.timer)}</span>
+                                  </div>
+                                ))}
+                                {nodeHistory.map(p => (
+                                  <div key={p._id} className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-green-50 border border-green-200 cursor-pointer hover:shadow-sm" onClick={() => navigate(`/skills/${skillId}/nodes/${n._id}`)}>
+                                    <CheckCircle className="w-3 h-3 text-green-500 shrink-0" />
+                                    <span className="truncate flex-1">{p.notes || p.skillName || n.title}</span>
+                                    <span className="text-[10px] text-gray-400 shrink-0">{p.minutesPracticed}m</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>

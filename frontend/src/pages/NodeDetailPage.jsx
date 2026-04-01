@@ -32,6 +32,7 @@ export default function NodeDetailPage() {
   const [page, setPage] = useState(1);
   const [sidebar, setSidebar] = useState(true);
   const [showRemove, setShowRemove] = useState(false);
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
   // Template session state
   const [tplTimer, setTplTimer] = useState(0);
   const [tplRunning, setTplRunning] = useState(false);
@@ -46,8 +47,16 @@ export default function NodeDetailPage() {
     }
     return () => clearInterval(tplIntervalRef.current);
   }, [tplRunning]);
-  // Reset timer when switching nodes
-  useEffect(() => { setTplTimer(0); setTplRunning(false); }, [nodeId]);
+  // Reset timer when switching nodes — restore from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(`tplTimer_${nodeId}`);
+    setTplTimer(saved ? parseInt(saved, 10) || 0 : 0);
+    setTplRunning(false);
+  }, [nodeId]);
+  // Persist timer to localStorage on change
+  useEffect(() => {
+    if (nodeId && tplTimer > 0) localStorage.setItem(`tplTimer_${nodeId}`, String(tplTimer));
+  }, [tplTimer, nodeId]);
   const fmtTplTimer = (s) => { const m = Math.floor(s / 60); const sec = s % 60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
   const completeTplSession = async (idx) => {
     if (tplCompleting) return;
@@ -61,6 +70,7 @@ export default function NodeDetailPage() {
         fetchD();
       }
       setTplTimer(0);
+      localStorage.removeItem(`tplTimer_${nodeId}`);
       setOk('Session completed!');
       setTimeout(() => setOk(''), 3000);
     } catch (e) {
@@ -114,7 +124,7 @@ export default function NodeDetailPage() {
     <div className="min-h-screen bg-site-bg flex relative">
       <div className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebar ? 'mr-0 lg:mr-80' : 'mr-0'}`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-          <button onClick={() => nav(`/skills/${skillId}`)} className="mb-6 px-5 py-2.5 rounded-lg font-medium bg-site-accent text-white hover:bg-site-accent-hover text-sm shadow-lg border-2 border-[#1f3518]">Back to Skill Map</button>
+          <button onClick={() => { if ((activeS && activeS.isRunning) || tplRunning) { setShowBackConfirm(true); } else { nav(`/skills/${skillId}`); } }} className="mb-6 px-5 py-2.5 rounded-lg font-medium bg-site-accent text-white hover:bg-site-accent-hover text-sm shadow-lg border-2 border-[#1f3518]">Back to Skill Map</button>
           {ok && <div className="mb-4 bg-green-50 border border-green-300 text-green-700 p-3 rounded-lg text-sm">{ok}</div>}
           {err && <div className="mb-4 bg-red-50 border border-red-300 text-red-700 p-3 rounded-lg text-sm">{err}</div>}
           {isLocked && <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl text-sm mb-6">Complete the previous node to unlock this one.</div>}
@@ -209,7 +219,8 @@ export default function NodeDetailPage() {
           </>
           )}
 
-          {/* Practice History */}
+          {/* Practice History - hidden for template nodes */}
+          {!hasTemplateSessions && (
           <div className="bg-site-surface rounded-xl border border-site-border p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-site-ink">Practice History ({hist.length})</h3>
@@ -239,6 +250,7 @@ export default function NodeDetailPage() {
               )}
             </>)}
           </div>
+          )}
         </div>
       </div>
 
@@ -282,6 +294,11 @@ export default function NodeDetailPage() {
       <button onClick={() => setSidebar(!sidebar)} className={`fixed top-4 p-2.5 bg-white border-2 border-site-accent rounded-full shadow-lg hover:shadow-xl transition-all z-50 hover:bg-site-soft ${sidebar ? 'right-[20.5rem]' : 'right-4'}`}>{sidebar ? <ChevronRight className="w-5 h-5 text-site-accent" /> : <ChevronLeft className="w-5 h-5 text-site-accent" />}</button>
       {sidebar && <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setSidebar(false)} />}
 
+      {/* Back confirm when session running */}
+      {showBackConfirm && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-xs p-6 text-center">
+        <h2 className="text-lg font-bold text-site-ink mb-2">Leave this page?</h2><p className="text-sm text-site-muted mb-4">Your session is still running. Progress will not be saved.</p>
+        <div className="flex gap-3"><button onClick={() => setShowBackConfirm(false)} className="flex-1 py-2 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg">Stay</button><button onClick={() => { setTplRunning(false); setShowBackConfirm(false); nav(`/skills/${skillId}`); }} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700">Leave</button></div>
+      </div></div>)}
       {/* Remove session confirm */}
       {showRemove && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-xs p-6 text-center">
         <h2 className="text-lg font-bold text-site-ink mb-2">Remove session?</h2><p className="text-sm text-site-muted mb-4">This will discard the active session and unsaved progress.</p>
