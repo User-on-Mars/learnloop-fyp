@@ -20,7 +20,11 @@ import skillMapRoutes, {
   getSkillMapFullHandler,
 } from "./routes/skillMaps.js";
 import nodeRoutes from "./routes/nodes.js";
+import adminRoutes from "./routes/admin.js";
+import xpRoutes from "./routes/xp.js";
+import leaderboardRoutes from "./routes/leaderboard.js";
 import { requireAuth } from "./middleware/auth.js";
+import { checkAccountStatus } from "./middleware/adminAuth.js";
 import { 
   securityHeaders, 
   generalRateLimit, 
@@ -38,6 +42,7 @@ import {
 } from "./middleware/errorHandler.js";
 import ErrorLoggingService from "./services/ErrorLoggingService.js";
 import SystemMonitoringService from "./services/SystemMonitoringService.js";
+import WeeklyResetScheduler from "./services/WeeklyResetScheduler.js";
 
 dotenv.config();
 const app = express();
@@ -102,6 +107,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // your API routes with audit logging
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/practice", auditLogger(SECURITY_EVENTS.NODE_UPDATE), practiceRoutes);
 app.use("/api/active-sessions", auditLogger(SECURITY_EVENTS.SESSION_START), activeSessionRoutes);
 app.use("/api/reflections", auditLogger(SECURITY_EVENTS.SESSION_COMPLETE), reflectionRoutes);
@@ -117,6 +123,8 @@ app.get("/api/skills/maps/:id/full", requireAuth, getSkillMapFullHandler);
 app.use("/api/skills", skillRoutes);
 app.use("/api/skill-maps", skillMapRoutes);
 app.use("/api/nodes", nodeRoutes);
+app.use("/api/xp", xpRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
 
 // Error handling middleware with security logging
 app.use((err, req, res, next) => {
@@ -176,6 +184,10 @@ async function startServer() {
     SystemMonitoringService.start();
     console.log('✅ System monitoring started');
     
+    // Start weekly reset scheduler
+    WeeklyResetScheduler.start();
+    console.log('✅ Weekly reset scheduler started');
+    
     // Start the server
     const serverInstance = server.listen(PORT, () => {
       console.log(`🚀 API running on http://localhost:${PORT}`);
@@ -200,6 +212,10 @@ async function startServer() {
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down gracefully...');
   try {
+    // Stop weekly reset scheduler
+    WeeklyResetScheduler.stop();
+    console.log('✅ Weekly reset scheduler stopped');
+    
     // Stop system monitoring
     SystemMonitoringService.stop();
     console.log('✅ System monitoring stopped');
@@ -226,6 +242,10 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   console.log('\n🛑 Shutting down gracefully (SIGTERM)...');
   try {
+    // Stop weekly reset scheduler
+    WeeklyResetScheduler.stop();
+    console.log('✅ Weekly reset scheduler stopped');
+    
     // Stop system monitoring
     SystemMonitoringService.stop();
     console.log('✅ System monitoring stopped');
