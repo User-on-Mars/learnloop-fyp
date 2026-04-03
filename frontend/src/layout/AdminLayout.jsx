@@ -1,11 +1,17 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Activity, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, Users, Activity, AlertCircle, TrendingUp, BookOpen, MessageSquare, FileText, Settings, ArrowLeft } from 'lucide-react'
 import LogoMark from '../components/LogoMark'
 
 const adminNav = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+  { id: 'alerts', label: 'Alerts', icon: AlertCircle, path: '/admin/alerts' },
   { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
   { id: 'activity', label: 'Activity', icon: Activity, path: '/admin/activity' },
+  { id: 'xp-leagues', label: 'XP Leaderboard', icon: TrendingUp, path: '/admin/xp-leagues' },
+  { id: 'skill-maps', label: 'Skill Maps', icon: BookOpen, path: '/admin/skill-maps' },
+  { id: 'reflections', label: 'Reflections', icon: MessageSquare, path: '/admin/reflections' },
+  { id: 'audit-log', label: 'Audit Log', icon: FileText, path: '/admin/audit-log' },
+  { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
 ]
 
 export default function AdminLayout() {
