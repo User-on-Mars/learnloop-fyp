@@ -234,7 +234,9 @@ class SessionController {
           const streakResult = await StreakService.processSession(userId, new Date());
           await XpService.awardXp(userId, 'session_completion', 10);
           if (streakResult.streakCount >= 1) {
-            await XpService.awardXp(userId, 'streak_bonus', 5 * streakResult.streakCount);
+            // Cap streak bonus at 35 XP (5 × 7 days max)
+            const streakBonus = Math.min(5 * streakResult.streakCount, 35);
+            await XpService.awardXp(userId, 'streak_bonus', streakBonus);
           }
         }
       } catch (xpError) {
