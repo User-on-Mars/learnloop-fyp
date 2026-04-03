@@ -5,7 +5,6 @@ import {
   ChevronRight,
   Zap,
   Award,
-  Calendar,
   Target,
   TrendingUp,
   Plus,
@@ -16,6 +15,7 @@ import Sidebar from "../components/Sidebar";
 import DashboardGreeting from "../components/DashboardGreeting";
 import WeeklyPerformanceChart from "../components/WeeklyPerformanceChart";
 import XpProfileCard from "../components/XpProfileCard";
+import LeagueInfo from "../components/admin/LeagueInfo";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -209,6 +209,14 @@ export default function Dashboard() {
               }}
             />
           </div>
+
+          {/* ── League Info ── */}
+          {xpProfile && (
+            <div className="mb-6 bg-site-surface rounded-xl shadow-sm border border-site-border p-5">
+              <h3 className="text-base font-semibold text-site-ink mb-4">League Progress</h3>
+              <LeagueInfo userXp={xpProfile.totalXp || 0} />
+            </div>
+          )}
 
           {/* ── Today's Activity + Overall Progress ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
