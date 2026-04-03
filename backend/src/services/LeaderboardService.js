@@ -129,13 +129,27 @@ class LeaderboardService {
     const [result] = await UserXpProfile.aggregate(pipeline);
     const total = result.total[0]?.count || 0;
 
-    // Enrich with display names and rank
+    // Enrich with display names and rank - try multiple sources
     const entries = await Promise.all(
       result.entries.map(async (entry, idx) => {
-        const user = await User.findById(entry.userId).select('name').lean();
+        let displayName = 'Unknown';
+        
+        // Try to get name from User collection by firebaseUid
+        let user = await User.findOne({ firebaseUid: entry.userId }).select('name email').lean();
+        
+        if (user?.name && user.name !== user.email?.split('@')[0]) {
+          displayName = user.name;
+          console.log(`✅ Found user by firebaseUid ${entry.userId}: ${displayName}`);
+        } else if (user?.email) {
+          displayName = user.email.split('@')[0];
+          console.log(`⚠️ Using email prefix for ${entry.userId}: ${displayName}`);
+        } else {
+          console.log(`❌ No user found for firebaseUid: ${entry.userId}`);
+        }
+        
         return {
           userId: entry.userId,
-          displayName: user?.name || 'Unknown',
+          displayName,
           weeklyXp: entry.weeklyXp,
           rank: skip + idx + 1,
           leagueTier: LeaderboardService.getTierForRank(skip + idx + 1)
@@ -180,10 +194,23 @@ class LeaderboardService {
 
     const entries = await Promise.all(
       result.entries.map(async (entry, idx) => {
-        const user = await User.findById(entry.userId).select('name').lean();
+        let displayName = 'Unknown';
+        
+        // Try to get name from User collection
+        const user = await User.findOne({ firebaseUid: entry.userId }).select('name email').lean();
+        if (user?.name && user.name !== user.email?.split('@')[0]) {
+          displayName = user.name;
+          console.log(`✅ Found user by firebaseUid ${entry.userId}: ${displayName}`);
+        } else if (user?.email) {
+          displayName = user.email.split('@')[0];
+          console.log(`⚠️ Using email prefix for ${entry.userId}: ${displayName}`);
+        } else {
+          console.log(`❌ No user found for firebaseUid: ${entry.userId}`);
+        }
+        
         return {
           userId: entry.userId,
-          displayName: user?.name || 'Unknown',
+          displayName,
           currentStreak: entry.currentStreak,
           rank: skip + idx + 1
         };
@@ -213,8 +240,8 @@ class LeaderboardService {
           from: 'users',
           let: { uid: '$userId' },
           pipeline: [
-            { $match: { $expr: { $eq: [{ $toString: '$_id' }, '$$uid'] } } },
-            { $project: { createdAt: 1, name: 1 } }
+            { $match: { $expr: { $eq: ['$firebaseUid', '$$uid'] } } },
+            { $project: { createdAt: 1, name: 1, email: 1 } }
           ],
           as: 'userInfo'
         }
@@ -222,7 +249,8 @@ class LeaderboardService {
       {
         $addFields: {
           userCreatedAt: { $ifNull: [{ $arrayElemAt: ['$userInfo.createdAt', 0] }, new Date()] },
-          displayName: { $ifNull: [{ $arrayElemAt: ['$userInfo.name', 0] }, 'Unknown'] }
+          userName: { $ifNull: [{ $arrayElemAt: ['$userInfo.name', 0] }, null] },
+          userEmail: { $ifNull: [{ $arrayElemAt: ['$userInfo.email', 0] }, null] }
         }
       },
       { $sort: { totalXp: -1, userCreatedAt: 1 } },
@@ -231,7 +259,7 @@ class LeaderboardService {
           entries: [
             { $skip: skip },
             { $limit: pageSize },
-            { $project: { userId: 1, totalXp: 1, displayName: 1 } }
+            { $project: { userId: 1, totalXp: 1, userName: 1, userEmail: 1 } }
           ],
           total: [{ $count: 'count' }]
         }
@@ -241,12 +269,28 @@ class LeaderboardService {
     const [result] = await UserXpProfile.aggregate(pipeline);
     const total = result.total[0]?.count || 0;
 
-    const entries = result.entries.map((entry, idx) => ({
-      userId: entry.userId,
-      displayName: entry.displayName,
-      totalXp: entry.totalXp,
-      rank: skip + idx + 1
-    }));
+    const entries = result.entries.map((entry, idx) => {
+      let displayName = 'Unknown';
+      
+      // Use name if it's set and not just email prefix
+      if (entry.userName && entry.userName !== entry.userEmail?.split('@')[0]) {
+        displayName = entry.userName;
+        console.log(`✅ Found user by aggregation ${entry.userId}: ${displayName}`);
+      } else if (entry.userEmail) {
+        // Fallback to email prefix
+        displayName = entry.userEmail.split('@')[0];
+        console.log(`⚠️ Using email prefix for ${entry.userId}: ${displayName}`);
+      } else {
+        console.log(`❌ No user data found for ${entry.userId}`);
+      }
+      
+      return {
+        userId: entry.userId,
+        displayName,
+        totalXp: entry.totalXp,
+        rank: skip + idx + 1
+      };
+    });
 
     const data = { entries, total, page };
     await LeaderboardService._setCache(cacheKey, data);
@@ -308,7 +352,7 @@ class LeaderboardService {
     let allTimeRank = 0;
     if (profile && profile.totalXp > 0) {
       const above = await UserXpProfile.countDocuments({ totalXp: { $gt: profile.totalXp } });
-      const user = await User.findById(userId).select('createdAt').lean();
+      const user = await User.findOne({ firebaseUid: userId }).select('createdAt').lean();
       let sameTotalEarlier = 0;
       if (user) {
         const tiedProfiles = await UserXpProfile.find({
@@ -317,7 +361,7 @@ class LeaderboardService {
         }).select('userId').lean();
 
         for (const tied of tiedProfiles) {
-          const tiedUser = await User.findById(tied.userId).select('createdAt').lean();
+          const tiedUser = await User.findOne({ firebaseUid: tied.userId }).select('createdAt').lean();
           if (tiedUser && tiedUser.createdAt < user.createdAt) {
             sameTotalEarlier++;
           }
@@ -398,6 +442,22 @@ class LeaderboardService {
         { operation: 'executeWeeklyReset' }
       );
       throw error;
+    }
+  }
+
+  /**
+   * Clear leaderboard cache (called when user data changes)
+   */
+  static async clearCache() {
+    if (!cacheService.isAvailable()) return;
+    try {
+      // Clear all leaderboard cache keys
+      const keys = ['weekly:1:50', 'weekly:2:50', 'weekly:3:50', 'streaks:1:50', 'streaks:2:50', 'alltime:1:50', 'alltime:2:50'];
+      for (const key of keys) {
+        await cacheService.client.del(`${CACHE_PREFIX}${key}`);
+      }
+    } catch (error) {
+      console.error('Failed to clear leaderboard cache:', error);
     }
   }
 }
