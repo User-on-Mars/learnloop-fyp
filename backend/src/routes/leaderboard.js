@@ -62,4 +62,16 @@ router.get('/my-ranks', async (req, res) => {
   }
 });
 
+// POST /api/leaderboard/clear-cache — Clear leaderboard cache (for debugging)
+router.post('/clear-cache', async (req, res) => {
+  try {
+    await LeaderboardService.clearCache();
+    console.log('✅ Leaderboard cache cleared manually');
+    res.json({ ok: true, message: 'Cache cleared' });
+  } catch (error) {
+    console.error('❌ Error clearing cache:', error.message);
+    res.status(500).json({ error: 'Failed to clear cache' });
+  }
+});
+
 export default router;
