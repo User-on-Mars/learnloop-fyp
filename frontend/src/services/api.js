@@ -100,6 +100,7 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   forgotPassword: (email) => api.post('/auth/forgot', { email }),
   resetPassword: (token, password) => api.post('/auth/reset', { token, password }),
+  syncProfile: (data) => api.post('/auth/sync-profile', data),
 };
 
 // Practice API
