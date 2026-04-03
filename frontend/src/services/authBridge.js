@@ -3,6 +3,24 @@ import { authService } from './auth';
 
 // Bridge between Firebase auth and backend JWT
 export const authBridge = {
+  // Sync Firebase user profile to backend
+  syncProfileToBackend: async (user) => {
+    try {
+      console.log(`🔄 Frontend: Syncing profile for ${user.email} with displayName: ${user.displayName}`);
+      const response = await authAPI.syncProfile({
+        email: user.email,
+        displayName: user.displayName || user.email.split('@')[0],
+        firebaseUid: user.uid  // CRITICAL: Send the Firebase UID
+      });
+      console.log(`✅ Frontend: Profile sync successful`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Frontend: Profile sync failed:', error);
+      // Don't throw - this is non-critical
+      return null;
+    }
+  },
+
   // Register user in backend after Firebase signup
   registerInBackend: async (user) => {
     try {
@@ -47,7 +65,10 @@ export const authBridge = {
   handleFirebaseAuth: async (user) => {
     if (user) {
       try {
-        // First try to login, if that fails, register
+        // Sync profile first to ensure display name is saved
+        await authBridge.syncProfileToBackend(user);
+        
+        // Then try to login, if that fails, register
         await authBridge.loginToBackend(user);
       } catch (error) {
         if (error.response?.status === 401) {
