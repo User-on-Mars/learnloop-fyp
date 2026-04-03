@@ -113,7 +113,18 @@ class SessionManager {
       const session = await LearningSession.findOne({ _id: sessionId, status: 'active' });
       if (!session) throw new Error('Active session not found');
 
-      const sessionDuration = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
+      // Calculate active time (only when session was not paused)
+      // If duration field is set, use it (it tracks active time)
+      // Otherwise calculate from start to now
+      let activeDuration = session.duration || 0;
+      if (!session.duration || session.duration === 0) {
+        // Fallback: calculate from startTime to now
+        // NOTE: This assumes session was never paused. For accurate active time,
+        // the session should track pause/resume events
+        activeDuration = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
+      }
+
+      const sessionDuration = activeDuration;
       if (sessionDuration > this.SESSION_TIMEOUT) {
         await this.abandonSession(sessionId, 'timeout');
         throw new Error('Session has been automatically abandoned due to timeout');
