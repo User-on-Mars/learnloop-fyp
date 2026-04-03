@@ -50,6 +50,12 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import AdminActivity from "./pages/admin/AdminActivity";
+import AdminAlerts from "./pages/admin/AdminAlerts";
+import AdminXpLeagues from "./pages/admin/AdminXpLeagues";
+import AdminSkillMaps from "./pages/admin/AdminSkillMaps";
+import AdminReflections from "./pages/admin/AdminReflections";
+import AdminAuditLog from "./pages/admin/AdminAuditLog";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 // Protect routes that require auth
 function Protected({ children }) {
@@ -145,9 +151,15 @@ const router = createBrowserRouter([
         element: <Protected><AdminLayout /></Protected>,
         children: [
           { index: true, element: <AdminDashboard /> },
+          { path: "alerts", element: <AdminAlerts /> },
           { path: "users", element: <AdminUsers /> },
           { path: "users/:userId", element: <AdminUserDetail /> },
           { path: "activity", element: <AdminActivity /> },
+          { path: "xp-leagues", element: <AdminXpLeagues /> },
+          { path: "skill-maps", element: <AdminSkillMaps /> },
+          { path: "reflections", element: <AdminReflections /> },
+          { path: "audit-log", element: <AdminAuditLog /> },
+          { path: "settings", element: <AdminSettings /> },
         ],
       },
     ]
