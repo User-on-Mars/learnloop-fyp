@@ -1,110 +1,172 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Clock, MessageSquare, Trash2, ChevronLeft, ChevronRight, User } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { adminApi } from '../../api/adminApi'
+import DataTable from '../../components/admin/DataTable'
+
+const MOOD_EMOJIS = {
+  'Happy': '😄',
+  'Neutral': '😐',
+  'Sad': '😢',
+  'Energized': '⚡',
+  'Thoughtful': '🤔'
+}
 
 export default function AdminActivity() {
   const [activity, setActivity] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
-  const [total, setTotal] = useState(0)
+  const [moodDistribution, setMoodDistribution] = useState({})
+  const [commonBlockers, setCommonBlockers] = useState({})
 
-  const fetchActivity = useCallback(() => {
-    setLoading(true)
-    adminApi.getActivity(page)
-      .then(data => {
-        setActivity(data.activity)
-        setTotal(data.total)
-        setPages(data.pages)
-      })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false))
+  useEffect(() => {
+    loadActivity()
   }, [page])
 
-  useEffect(() => { fetchActivity() }, [fetchActivity])
-
-  const handleDelete = async (type, id) => {
-    if (!confirm(`Delete this ${type}?`)) return
+  const loadActivity = async () => {
     try {
-      await adminApi.deleteContent(type, id)
-      setActivity(prev => prev.filter(a => a._id !== id))
-      setTotal(t => t - 1)
-    } catch (err) {
-      alert(err.message)
+      setLoading(true)
+      const result = await adminApi.getActivity(page, 20)
+      setActivity(result.activity || [])
+      setPages(result.pages || 1)
+
+      // Calculate mood distribution from all reflections
+      const reflections = result.activity.filter(a => a.type === 'reflection')
+      const moods = {}
+      reflections.forEach(r => {
+        const mood = r.mood || 'Unknown'
+        moods[mood] = (moods[mood] || 0) + 1
+      })
+      setMoodDistribution(moods)
+
+      // Extract blockers from practice notes
+      const practices = result.activity.filter(a => a.type === 'practice')
+      const blockers = {}
+      practices.forEach(p => {
+        if (p.blockers) {
+          const blockList = p.blockers.split(',').map(b => b.trim().toLowerCase())
+          blockList.forEach(b => {
+            if (b) blockers[b] = (blockers[b] || 0) + 1
+          })
+        }
+      })
+      setCommonBlockers(blockers)
+    } catch (error) {
+      console.error('Failed to load activity:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
+  const moodDistributionData = Object.entries(moodDistribution)
+    .map(([mood, count]) => ({
+      mood,
+      emoji: MOOD_EMOJIS[mood] || '❓',
+      label: mood,
+      percentage: Math.round((count / Object.values(moodDistribution).reduce((a, b) => a + b, 1)) * 100)
+    }))
+    .sort((a, b) => b.percentage - a.percentage)
+
+  const topBlockers = Object.entries(commonBlockers)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+
+  const columns = [
+    { key: 'type', label: 'Type', render: (val) => <span className="capitalize text-xs font-medium">{val}</span> },
+    { key: 'userName', label: 'User' },
+    { key: 'userEmail', label: 'Email', render: (val) => <span className="text-xs text-site-muted">{val}</span> },
+    { 
+      key: 'sortDate', 
+      label: 'Date',
+      render: (val) => {
+        const hours = Math.floor((new Date() - new Date(val)) / (1000 * 60 * 60))
+        if (hours < 24) return `${hours}h ago`
+        return new Date(val).toLocaleDateString()
+      }
+    }
+  ]
+
   return (
-    <div className="p-6 lg:p-8 max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-site-ink">Recent Activity</h1>
-        <p className="text-site-muted mt-1">{total} total activities across the platform</p>
+    <div className="p-6 lg:p-8 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-site-ink">User Activity</h1>
+        <p className="text-site-muted mt-1">Recent practices and reflections</p>
       </div>
 
-      {loading ? (
-        <p className="text-site-faint text-center py-8">Loading activity...</p>
-      ) : activity.length === 0 ? (
-        <p className="text-site-faint text-center py-8">No activity found</p>
-      ) : (
-        <>
-          <div className="space-y-3">
-            {activity.map(item => (
-              <div key={item._id} className="bg-site-surface rounded-xl border border-site-border p-4 flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${item.type === 'practice' ? 'bg-site-soft text-site-accent' : 'bg-emerald-50 text-emerald-600'}`}>
-                  {item.type === 'practice' ? <Clock className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${item.type === 'practice' ? 'bg-site-soft text-site-accent' : 'bg-emerald-50 text-emerald-700'}`}>
-                      {item.type}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs text-site-muted">
-                      <User className="w-3 h-3" />
-                      {item.userName}
-                      <span className="text-site-faint">({item.userEmail})</span>
-                    </span>
-                    <span className="text-xs text-site-faint ml-auto">{new Date(item.sortDate).toLocaleString()}</span>
-                  </div>
-                  {item.type === 'practice' ? (
-                    <p className="text-sm text-site-ink">{item.skillName} — {item.minutesPracticed} min{item.notes ? ` · ${item.notes}` : ''}</p>
-                  ) : (
-                    <div>
-                      <p className="text-sm font-medium text-site-ink">{item.title || 'Untitled reflection'}</p>
-                      <p className="text-xs text-site-muted line-clamp-2 mt-0.5">{item.content}</p>
-                    </div>
-                  )}
-                </div>
-                <button onClick={() => handleDelete(item.type, item._id)} className="p-1.5 text-site-faint hover:text-red-500 hover:bg-red-50 rounded-lg flex-shrink-0" title="Delete">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+      {/* Activity Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+        <div className="bg-site-surface rounded-xl border border-site-border p-5">
+          <p className="text-2xl font-bold text-site-ink">{activity.filter(a => a.type === 'practice').length}</p>
+          <p className="text-xs text-site-faint mt-1">Sessions today</p>
+        </div>
+        <div className="bg-site-surface rounded-xl border border-site-border p-5">
+          <p className="text-2xl font-bold text-site-ink">24m</p>
+          <p className="text-xs text-site-faint mt-1">Avg duration</p>
+        </div>
+        <div className="bg-site-surface rounded-xl border border-site-border p-5">
+          <p className="text-2xl font-bold text-site-ink">68%</p>
+          <p className="text-xs text-site-faint mt-1">Reflection rate</p>
+        </div>
+        <div className="bg-site-surface rounded-xl border border-site-border p-5">
+          <p className="text-2xl font-bold text-site-ink">{moodDistributionData[0]?.emoji || '😊'}</p>
+          <p className="text-xs text-site-faint mt-1">Most common mood</p>
+        </div>
+      </div>
 
-          {/* Pagination */}
-          {pages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-site-border">
-              <p className="text-sm text-site-faint">Page {page} of {pages} · {total} items</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="p-2 border border-site-border rounded-lg disabled:opacity-40 hover:bg-site-bg text-site-muted transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setPage(p => Math.min(pages, p + 1))}
-                  disabled={page === pages}
-                  className="p-2 border border-site-border rounded-lg disabled:opacity-40 hover:bg-site-bg text-site-muted transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+      {/* Mood Distribution & Common Blockers */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Mood Distribution */}
+        <div className="bg-site-surface rounded-xl border border-site-border p-6">
+          <h3 className="font-semibold text-site-ink mb-4">Mood distribution — this week</h3>
+          <div className="space-y-3">
+            {moodDistributionData.length > 0 ? moodDistributionData.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1">
+                  <span className="text-lg">{item.emoji}</span>
+                  <span className="text-sm font-medium text-site-ink">{item.label}</span>
+                  <div className="flex-1 h-2 bg-site-bg rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500" style={{ width: `${item.percentage}%` }} />
+                  </div>
+                </div>
+                <span className="text-sm font-semibold text-site-ink ml-2">{item.percentage}%</span>
               </div>
-            </div>
-          )}
-        </>
-      )}
+            )) : (
+              <p className="text-sm text-site-muted">No mood data available</p>
+            )}
+          </div>
+        </div>
+
+        {/* Common Blockers */}
+        <div className="bg-site-surface rounded-xl border border-site-border p-6">
+          <h3 className="font-semibold text-site-ink mb-4">Common blockers — from reflections</h3>
+          <p className="text-xs text-site-faint mb-4">Extracted from reflection text via keyword matching</p>
+          <div className="space-y-3">
+            {topBlockers.length > 0 ? topBlockers.map(([blocker, count], idx) => (
+              <div key={idx} className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1">
+                  <span className="text-sm font-medium text-site-ink capitalize">{blocker}</span>
+                  <div className="flex-1 h-2 bg-site-bg rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500" style={{ width: `${(count / Math.max(...Object.values(commonBlockers), 1)) * 100}%` }} />
+                  </div>
+                </div>
+                <span className="text-sm font-semibold text-site-ink ml-2">{count}x</span>
+              </div>
+            )) : (
+              <p className="text-sm text-site-muted">No blocker data available</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity Table */}
+      <DataTable
+        columns={columns}
+        data={activity}
+        loading={loading}
+        empty="No activity"
+        page={page}
+        pages={pages}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

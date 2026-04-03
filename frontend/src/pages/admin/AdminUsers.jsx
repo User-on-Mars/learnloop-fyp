@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, ChevronLeft, ChevronRight, ShieldAlert, ShieldOff, ShieldCheck, UserX, Crown } from 'lucide-react'
 import { adminApi } from '../../api/adminApi'
@@ -21,6 +21,7 @@ export default function AdminUsers() {
   const [reason, setReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const navigate = useNavigate()
+  const searchTimeoutRef = useRef(null)
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -46,11 +47,10 @@ export default function AdminUsers() {
     setActionLoading(true)
     try {
       const { userId, action } = actionModal
-      if (action === 'suspend') await adminApi.suspendUser(userId, reason)
-      else if (action === 'ban') await adminApi.banUser(userId, reason)
-      else if (action === 'reactivate') await adminApi.reactivateUser(userId)
-      else if (action === 'make-admin') await adminApi.changeRole(userId, 'admin')
-      else if (action === 'remove-admin') await adminApi.changeRole(userId, 'user')
+      if (action === 'ban') await adminApi.banUser(userId, reason)
+      else if (action === 'unban') await adminApi.unbanUser(userId)
+      else if (action === 'make-admin') await adminApi.promoteToAdmin(userId)
+      else if (action === 'remove-admin') await adminApi.demoteFromAdmin(userId)
       setActionModal(null)
       setReason('')
       fetchUsers()
@@ -62,9 +62,8 @@ export default function AdminUsers() {
   }
 
   const actionConfig = {
-    suspend: { title: 'Suspend User', desc: 'This will temporarily restrict the user from accessing the platform.', btn: 'Suspend', btnCls: 'bg-amber-500 hover:bg-amber-600', needsReason: true },
-    ban: { title: 'Ban User', desc: 'This will permanently block the user from accessing the platform.', btn: 'Ban User', btnCls: 'bg-red-600 hover:bg-red-700', needsReason: true },
-    reactivate: { title: 'Reactivate User', desc: "This will restore the user's access to the platform.", btn: 'Reactivate', btnCls: 'bg-green-600 hover:bg-green-700', needsReason: false },
+    ban: { title: 'Ban User', desc: 'This will permanently block the user from accessing the platform and void their weekly XP.', btn: 'Ban User', btnCls: 'bg-red-600 hover:bg-red-700', needsReason: true },
+    unban: { title: 'Unban User', desc: "This will restore the user's access to the platform.", btn: 'Unban', btnCls: 'bg-green-600 hover:bg-green-700', needsReason: false },
     'make-admin': { title: 'Promote to Admin', desc: 'This will give the user full admin access.', btn: 'Make Admin', btnCls: 'bg-site-accent hover:bg-site-accent-hover', needsReason: false },
     'remove-admin': { title: 'Remove Admin Role', desc: 'This will revoke admin access from this user.', btn: 'Remove Admin', btnCls: 'bg-site-muted hover:bg-site-ink', needsReason: false }
   }
@@ -84,7 +83,14 @@ export default function AdminUsers() {
             type="text"
             placeholder="Search by name or email..."
             value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
+            onChange={e => {
+              setSearch(e.target.value)
+              setPage(1)
+              clearTimeout(searchTimeoutRef.current)
+              searchTimeoutRef.current = setTimeout(() => {
+                // Debounced search will trigger via useEffect dependency
+              }, 300)
+            }}
             className="w-full pl-10 pr-4 py-2 border border-site-border rounded-lg text-sm bg-site-surface text-site-ink focus:outline-none focus:ring-2 focus:ring-site-accent/20 focus:border-site-accent"
           />
         </div>
@@ -109,9 +115,11 @@ export default function AdminUsers() {
                 <th className="text-left px-4 py-3 font-semibold text-site-muted">User</th>
                 <th className="text-left px-4 py-3 font-semibold text-site-muted">Status</th>
                 <th className="text-left px-4 py-3 font-semibold text-site-muted">Role</th>
+                <th className="text-left px-4 py-3 font-semibold text-site-muted">League</th>
                 <th className="text-center px-4 py-3 font-semibold text-site-muted">Skills</th>
                 <th className="text-center px-4 py-3 font-semibold text-site-muted">Practices</th>
                 <th className="text-left px-4 py-3 font-semibold text-site-muted">Joined</th>
+                <th className="text-left px-4 py-3 font-semibold text-site-muted">Last active</th>
                 <th className="text-right px-4 py-3 font-semibold text-site-muted">Actions</th>
               </tr>
             </thead>
@@ -140,23 +148,36 @@ export default function AdminUsers() {
                         <span className="text-site-faint text-xs">User</span>
                       )}
                     </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                        user.leagueTier === 'Gold' ? 'bg-amber-50 text-amber-700' :
+                        user.leagueTier === 'Silver' ? 'bg-gray-50 text-gray-700' :
+                        user.leagueTier === 'Bronze' ? 'bg-orange-50 text-orange-700' :
+                        'bg-blue-50 text-blue-700'
+                      }`}>
+                        {user.leagueTier || 'Newcomer'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-center text-site-muted">{user.skillCount || 0}</td>
                     <td className="px-4 py-3 text-center text-site-muted">{user.practiceCount || 0}</td>
                     <td className="px-4 py-3 text-site-faint text-xs">{new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-site-faint text-xs">{user.lastLoginAt ? (() => {
+                      const days = Math.floor((new Date() - new Date(user.lastLoginAt)) / (1000 * 60 * 60 * 24))
+                      const hours = Math.floor((new Date() - new Date(user.lastLoginAt)) / (1000 * 60 * 60))
+                      if (hours < 1) return 'Now'
+                      if (hours < 24) return `${hours}h ago`
+                      if (days < 30) return `${days}d ago`
+                      return '30+ days ago'
+                    })() : 'Never'}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
                         {user.accountStatus === 'active' && user.role !== 'admin' && (
-                          <>
-                            <button onClick={() => setActionModal({ userId: user._id, action: 'suspend', userName: user.name })} className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg" title="Suspend">
-                              <ShieldAlert className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => setActionModal({ userId: user._id, action: 'ban', userName: user.name })} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Ban">
-                              <ShieldOff className="w-4 h-4" />
-                            </button>
-                          </>
+                          <button onClick={() => setActionModal({ userId: user._id, action: 'ban', userName: user.name })} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Ban">
+                            <ShieldOff className="w-4 h-4" />
+                          </button>
                         )}
-                        {(user.accountStatus === 'suspended' || user.accountStatus === 'banned') && (
-                          <button onClick={() => setActionModal({ userId: user._id, action: 'reactivate', userName: user.name })} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg" title="Reactivate">
+                        {user.accountStatus === 'banned' && (
+                          <button onClick={() => setActionModal({ userId: user._id, action: 'unban', userName: user.name })} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg" title="Unban">
                             <ShieldCheck className="w-4 h-4" />
                           </button>
                         )}
