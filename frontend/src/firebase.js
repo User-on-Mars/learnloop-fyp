@@ -23,6 +23,9 @@ export const googleProvider = new GoogleAuthProvider();
 // Configure Google provider
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
+googleProvider.setCustomParameters({
+  prompt: 'consent'
+});
 
 // make sure login persists
 setPersistence(auth, browserLocalPersistence);
