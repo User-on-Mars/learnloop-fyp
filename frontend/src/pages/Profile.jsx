@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Alert from "../components/Alert";
+import { Avatar } from "../components/Avatar";
 import { useAuth } from "../useAuth";
 import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { auth } from "../firebase";
@@ -277,9 +278,13 @@ export default function Profile() {
                             
                             {/* Avatar Section - Styled with Indigo theme */}
                             <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-site-accent text-white flex items-center justify-center text-xl sm:text-2xl font-semibold flex-shrink-0 shadow-lg">
-                                    {getInitials()}
-                                </div>
+                                <Avatar
+                                  photoURL={user?.photoURL}
+                                  displayName={user?.displayName}
+                                  email={user?.email}
+                                  size="lg"
+                                  className="shadow-lg"
+                                />
                                 <div className="min-w-0">
                                     <p className="text-sm text-gray-600 font-medium">Account Profile</p>
                                     <p className="text-xs text-gray-500">Avatar based on your initials</p>
