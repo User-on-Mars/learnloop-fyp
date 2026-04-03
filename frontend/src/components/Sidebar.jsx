@@ -5,6 +5,7 @@ import { signOut } from "firebase/auth";
 import { useActiveSessions } from "../context/ActiveSessionContext";
 import { useAdmin } from "../hooks/useAdmin";
 import LogoMark from "./LogoMark";
+import { Avatar } from "./Avatar";
 
 // Icons
 const HomeIcon = () => (
@@ -215,18 +216,13 @@ export default function Sidebar() {
             }`}
           >
             {/* Avatar */}
-            <div className="relative flex-shrink-0">
-              {user?.photoURL ? (
-                <img 
-                  src={user.photoURL} 
-                  alt="User avatar" 
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-white"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-site-accent flex items-center justify-center text-white font-semibold text-sm">
-                  {getInitials()}
-                </div>
-              )}
+            <div className="relative">
+              <Avatar
+                photoURL={user?.photoURL}
+                displayName={user?.displayName}
+                email={user?.email}
+                size="md"
+              />
               {/* Online indicator */}
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
             </div>
