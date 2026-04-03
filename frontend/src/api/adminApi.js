@@ -10,6 +10,10 @@ async function getHeaders() {
   }
 }
 
+async function getToken() {
+  return await auth.currentUser?.getIdToken()
+}
+
 async function request(path, options = {}) {
   const headers = await getHeaders()
   const res = await fetch(`${API}${path}`, { ...options, headers })
@@ -21,17 +25,51 @@ async function request(path, options = {}) {
 }
 
 export const adminApi = {
+  getToken,
+  // Dashboard
   getStats: () => request('/admin/stats'),
-  getUserGrowth: (days = 30) => request(`/admin/stats/user-growth?days=${days}`),
+  
+  // Users
   getUsers: (params = {}) => {
     const q = new URLSearchParams(params).toString()
     return request(`/admin/users?${q}`)
   },
   getUserDetail: (userId) => request(`/admin/users/${userId}`),
-  suspendUser: (userId, reason) => request(`/admin/users/${userId}/suspend`, { method: 'POST', body: JSON.stringify({ reason }) }),
   banUser: (userId, reason) => request(`/admin/users/${userId}/ban`, { method: 'POST', body: JSON.stringify({ reason }) }),
-  reactivateUser: (userId) => request(`/admin/users/${userId}/reactivate`, { method: 'POST' }),
-  changeRole: (userId, role) => request(`/admin/users/${userId}/role`, { method: 'POST', body: JSON.stringify({ role }) }),
+  unbanUser: (userId) => request(`/admin/users/${userId}/unban`, { method: 'POST' }),
+  promoteToAdmin: (userId) => request(`/admin/users/${userId}/promote`, { method: 'POST' }),
+  demoteFromAdmin: (userId) => request(`/admin/users/${userId}/demote`, { method: 'POST' }),
+  adjustXp: (userId, amount, reason) => request(`/admin/users/${userId}/adjust-xp`, { method: 'POST', body: JSON.stringify({ amount, reason }) }),
+  
+  // Activity
   getActivity: (page = 1, limit = 20) => request(`/admin/activity?page=${page}&limit=${limit}`),
+  
+  // XP & Leaderboard
+  getXpLeaderboard: (limit = 50) => request(`/admin/xp-leaderboard?limit=${limit}`),
+  
+  // Skill Maps
+  getSkillMapStats: () => request('/admin/skill-maps/stats'),
+  getSkillMaps: () => request('/admin/skill-maps'),
+  
+  // Reflections
+  getReflections: (limit = 20) => request(`/admin/reflections?limit=${limit}`),
+  
+  // Audit Log
+  getAuditLog: (page = 1, limit = 50, filter = {}) => {
+    const q = new URLSearchParams({ page, limit, ...filter }).toString()
+    return request(`/admin/audit-log?${q}`)
+  },
+  
+  // Alerts / Flags
+  getAlerts: (page = 1, limit = 20) => request(`/admin/alerts?page=${page}&limit=${limit}`),
+  dismissAlert: (flagId) => request(`/admin/alerts/${flagId}/dismiss`, { method: 'POST' }),
+  actionAlert: (flagId) => request(`/admin/alerts/${flagId}/action`, { method: 'POST' }),
+  
+  // Admin Actions
+  manualReset: (confirmation) => request('/admin/manual-reset', { method: 'POST', body: JSON.stringify({ confirmation }) }),
+  recalculateXp: () => request('/admin/recalculate-xp', { method: 'POST' }),
+  exportUserData: () => request('/admin/export-users', { method: 'POST' }),
+  
+  // Content
   deleteContent: (type, id) => request(`/admin/content/${type}/${id}`, { method: 'DELETE' })
 }
