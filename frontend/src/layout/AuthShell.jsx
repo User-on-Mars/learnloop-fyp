@@ -19,12 +19,6 @@ export function AuthShell({ children }) {
       </header>
 
       <main className={styles.main}>{children}</main>
-
-      <footer className={styles.footer}>
-        <Link to="/" className={styles.footerLink}>
-          ← Back to home
-        </Link>
-      </footer>
     </div>
   );
 }
