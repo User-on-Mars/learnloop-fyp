@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import ReflectPage from '../ReflectPage';
 import * as useAuthModule from '../../useAuth';
-import api from '../../services/api';
+import client from '../../api/client';
 
 // Mock modules
 vi.mock('../../useAuth');
