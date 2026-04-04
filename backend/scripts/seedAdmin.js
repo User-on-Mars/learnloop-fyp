@@ -27,7 +27,7 @@ async function run() {
   if (user) {
     user.role = 'admin'
     await user.save()
-    console.log(`✅ Existing user ${email} promoted to admin`)
+    console.log(`Existing user ${email} promoted to admin`)
   } else {
     user = await User.create({
       name,
@@ -36,7 +36,7 @@ async function run() {
       role: 'admin',
       accountStatus: 'active'
     })
-    console.log(`✅ Created admin user: ${email}`)
+    console.log(`Created admin user: ${email}`)
   }
   
   await mongoose.disconnect()
