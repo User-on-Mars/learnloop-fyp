@@ -20,43 +20,33 @@ ChartJS.register(
 );
 
 export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = false }) {
-    // Default data if none provided
-    const defaultData = [
-        { day: 'Mon', practice: 4, reflections: 2, blockers: 0 },
-        { day: 'Tue', practice: 6, reflections: 3, blockers: 1 },
-        { day: 'Wed', practice: 4.5, reflections: 2, blockers: 0 },
-        { day: 'Thu', practice: 7, reflections: 0, blockers: 0 },
-        { day: 'Fri', practice: 3, reflections: 4, blockers: 1 },
-        { day: 'Sat', practice: 2, reflections: 1, blockers: 1 },
-        { day: 'Sun', practice: 1, reflections: 0, blockers: 0 }
-    ];
-
-    const data = weeklyData.length > 0 ? weeklyData : defaultData;
+    // Filter out days with no activity
+    const activeData = weeklyData.filter(d => d.practice > 0 || d.reflections > 0 || d.blockers > 0);
 
     const primaryBar = '#2e5023';
     const secondaryBar = '#4f7942';
     const tertiaryBar = '#a3c99a';
 
     const chartData = {
-        labels: data.map(d => d.day),
+        labels: activeData.map(d => d.day),
         datasets: [
             {
                 label: 'Practice (hours)',
-                data: data.map(d => d.practice),
+                data: activeData.map(d => d.practice),
                 backgroundColor: primaryBar,
                 borderRadius: 6,
                 barThickness: 40
             },
             {
                 label: 'Reflections',
-                data: data.map(d => d.reflections),
+                data: activeData.map(d => d.reflections),
                 backgroundColor: secondaryBar,
                 borderRadius: 6,
                 barThickness: 40
             },
             {
                 label: 'Blockers',
-                data: data.map(d => d.blockers),
+                data: activeData.map(d => d.blockers),
                 backgroundColor: tertiaryBar,
                 borderRadius: 6,
                 barThickness: 40
@@ -81,7 +71,7 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                 }
             },
             tooltip: {
-                backgroundColor: 'rgba(31, 41, 55, 0.9)', // Darker background
+                backgroundColor: 'rgba(31, 41, 55, 0.9)',
                 padding: 12,
                 titleFont: {
                     size: 13,
@@ -101,7 +91,15 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                         }
                         if (context.parsed.y !== null) {
                             if (context.dataset.label === 'Practice (hours)') {
-                                label += context.parsed.y + 'h';
+                                const hours = Math.floor(context.parsed.y);
+                                const minutes = Math.round((context.parsed.y - hours) * 60);
+                                if (hours > 0 && minutes > 0) {
+                                    label += `${hours}h ${minutes}m`;
+                                } else if (hours > 0) {
+                                    label += `${hours}h`;
+                                } else {
+                                    label += `${minutes}m`;
+                                }
                             } else {
                                 label += context.parsed.y;
                             }
@@ -136,7 +134,10 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                         family: "var(--font-body), system-ui, sans-serif"
                     },
                     color: '#475569',
-                    stepSize: 2
+                    stepSize: 1,
+                    callback: function(value) {
+                        return value + 'h';
+                    }
                 }
             }
         },
@@ -151,6 +152,18 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
             <div className="h-64 sm:h-80 flex items-center justify-center">
                 <div className="animate-pulse text-site-accent/60 font-medium">
                     Loading chart data...
+                </div>
+            </div>
+        );
+    }
+
+    // Show empty state if no data
+    if (activeData.length === 0) {
+        return (
+            <div className="h-64 sm:h-80 flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-site-muted mb-2">No practice data this week</p>
+                    <p className="text-xs text-site-faint">Start logging practice sessions to see your weekly performance</p>
                 </div>
             </div>
         );
