@@ -6,6 +6,13 @@ export default function LeagueInfo({ userXp = 0 }) {
     { name: 'Newcomer', range: 'New users', minXp: 0, color: 'bg-blue-50 text-blue-700 border-blue-200' }
   ]
 
+  const xpSources = [
+    { activity: 'Practice Session (10+ min)', xp: '10 XP', frequency: 'Once per day' },
+    { activity: 'Reflection', xp: '20 XP', frequency: 'Once per day' },
+    { activity: 'Streak Bonus', xp: '5 XP × streak days', frequency: 'Daily (with 7+ day streak: 2× multiplier)' },
+    { activity: 'Template Skill Map Completion', xp: '50 XP', frequency: 'Once per template skill map (all nodes completed)' }
+  ]
+
   const getCurrentLeague = () => {
     if (userXp >= 1000) return 'Gold'
     if (userXp >= 500) return 'Silver'
@@ -55,6 +62,31 @@ export default function LeagueInfo({ userXp = 0 }) {
           )}
         </div>
       )}
+
+      {/* XP Earning Guide */}
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 p-4">
+        <p className="text-sm font-semibold text-green-900 mb-3">How to Earn XP</p>
+        <div className="space-y-2">
+          {xpSources.map((source, idx) => (
+            <div key={idx} className="flex items-start gap-3 text-xs">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-200 text-green-700 flex items-center justify-center font-bold">
+                {idx + 1}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-green-900">{source.activity}</p>
+                <p className="text-green-700 mt-0.5">
+                  <span className="font-semibold">{source.xp}</span> • {source.frequency}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 pt-3 border-t border-green-200">
+          <p className="text-xs text-green-700">
+            <span className="font-semibold">💡 Tip:</span> Maintain a 7+ day streak to unlock 2× XP multiplier on all activities! Template skill maps award XP when all nodes are completed.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
