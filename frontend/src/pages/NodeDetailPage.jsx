@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSkillMap } from '../context/SkillMapContext';
 import { useActiveSessions } from '../context/ActiveSessionContext';
-import { practiceAPI } from '../services/api';
-import api from '../services/api';
+import { useToast } from '../context/ToastContext';
+import { showXpNotification } from '../utils/xpNotifications';
+import { practiceAPI } from '../api/client';
+import client from '../api/client';
 import { auth } from '../firebase';
 import { Lock, Unlock, CheckCircle, Rocket, Play, Pause, RotateCcw, Star, AlertTriangle, ArrowRight, X, ChevronLeft, ChevronRight, Clock, Target } from 'lucide-react';
 const CONF = ['','Not confident','Slightly','Moderate','Confident','Very confident'];
@@ -11,6 +13,7 @@ const PER = 5;
 export default function NodeDetailPage() {
   const { skillId, nodeId } = useParams();
   const nav = useNavigate();
+  const { showSuccess } = useToast();
   const { currentSkill, nodes, loadSkillMapFull, updateNodeStatus, updateNodeContent, getNodeDetails } = useSkillMap();
   const { activeSessions, addSession, removeSession, toggleSession, resetSession, formatTimer, getProgress } = useActiveSessions();
   const [nodeDetails, setNodeDetails] = useState(null);
@@ -64,7 +67,7 @@ export default function NodeDetailPage() {
     setTplRunning(false);
     try {
       const token = await auth.currentUser.getIdToken();
-      const res = await api.post(`/nodes/${nodeId}/complete-template-session`, { sessionIndex: idx }, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await client.post(`/nodes/${nodeId}/complete-template-session`, { sessionIndex: idx }, { headers: { Authorization: `Bearer ${token}` } });
       if (res.data.node) {
         await loadSkillMapFull(skillId);
         fetchD();
@@ -103,7 +106,7 @@ export default function NodeDetailPage() {
   const dispStatus = isCompleted ? 'Completed' : isLocked ? 'Locked' : hist.length > 0 ? 'In Progress' : node?.status === 'In_Progress' ? 'In Progress' : 'Not Started';
   const paged = hist.slice((page-1)*PER, page*PER);
   const totPages = Math.max(1, Math.ceil(hist.length / PER));
-  const markDone = async () => { try { await updateNodeStatus(nodeId, 'Completed'); setShowMark(false); setOk('Node completed!'); setTimeout(()=>setOk(''),3000); fetchD(); fetchH(); } catch(e) { setErr(e.message||'Failed'); setTimeout(()=>setErr(''),4000); } };
+  const markDone = async () => { try { const response = await updateNodeStatus(nodeId, 'Completed'); if (response?.skillMapXpAwarded) { showXpNotification(showSuccess, response.skillMapXpAwarded); } setShowMark(false); setOk('Node completed!'); setTimeout(()=>setOk(''),3000); fetchD(); fetchH(); } catch(e) { setErr(e.message||'Failed'); setTimeout(()=>setErr(''),4000); } };
   const saveDesc = async () => { try { await updateNodeContent(nodeId, { description: descIn.trim() }); setEditDesc(false); setOk('Saved!'); setTimeout(()=>setOk(''),2000); fetchD(); } catch { setErr('Failed to save'); setTimeout(()=>setErr(''),3000); } };
   const startPractice = () => {
     if (!node || !sessTitle.trim()) return;
