@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { leaderboardAPI, xpAPI } from '../services/api';
+import { leaderboardAPI, xpAPI } from '../api/client';
 import Sidebar from '../components/Sidebar';
 import XpProfileCard from '../components/XpProfileCard';
 import LeaderboardTable from '../components/LeaderboardTable';
