@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { practiceAPI, skillsAPI } from '../services/api';
+import { practiceAPI, skillsAPI } from '../api/client';
 import { useActiveSessions } from '../context/ActiveSessionContext';
+import { useToast } from '../context/ToastContext';
+import { showXpNotification } from '../utils/xpNotifications';
 import Sidebar from '../components/Sidebar';
 import { Play, Pause, RotateCcw, Plus, X, Search, FileText, Trash2, CheckCircle, Star, AlertTriangle, ArrowRight, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Flame, Info, ExternalLink } from 'lucide-react';
 const CONF = ['','Not confident','Slightly','Moderate','Confident','Very confident'];
@@ -9,6 +11,7 @@ const PER_PAGE = 5;
 const SESSIONS_PER_PAGE = 3;
 export default function LogPractice() {
   const navigate = useNavigate();
+  const { showSuccess } = useToast();
   const [practices, setPractices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -68,7 +71,7 @@ export default function LogPractice() {
   const tryStart=(now)=>{if(!form.skillName.trim())return;if(now&&running){setBlockMsg(`"${running.skillName}" is running. Pause or complete it first.`);setTimeout(()=>setBlockMsg(''),5000);return;}addSession({skillName:form.skillName.trim(),tags:form.tags,notes:form.notes,timer:countdown?tgtTime:0,targetTime:tgtTime,isCountdown:countdown,isRunning:now});resetForm();setShowNew(false);setSuccess(now?'Session started!':'Session saved.');setTimeout(()=>setSuccess(''),3000);};
   const tryToggle=(s)=>{if(!s.isRunning&&running&&running.id!==s.id){setBlockMsg(`"${running.skillName}" is running. Pause it first.`);setTimeout(()=>setBlockMsg(''),5000);return;}toggleSession(s.id);};
   const openComp=(s)=>{if(s.isCountdown&&s.timer===s.targetTime){setError('Start the timer first.');setTimeout(()=>setError(''),4000);return;}if(s.isRunning)toggleSession(s.id);setCompSess(s);setComp({notes:s.notes||'',confidence:3,blockers:'',nextStep:''});setShowComp(true);};
-  const submitComp=async()=>{if(!compSess)return;setSubmitting(true);try{const{m,sec}=getDur(compSess);await practiceAPI.createPractice({skillName:compSess.skillName,minutesPracticed:m,tags:compSess.tags,timerSeconds:sec,notes:comp.notes,confidence:comp.confidence,blockers:comp.blockers,nextStep:comp.nextStep,date:new Date().toISOString()});removeSession(compSess.id);setShowComp(false);setCompSess(null);doFetch();setSuccess('Practice logged!');setTimeout(()=>setSuccess(''),3000);}catch(err){setError(err.response?.data?.message||'Failed');setTimeout(()=>setError(''),5000);}finally{setSubmitting(false);}};
+  const submitComp=async()=>{if(!compSess)return;setSubmitting(true);try{const{m,sec}=getDur(compSess);const response = await practiceAPI.createPractice({skillName:compSess.skillName,minutesPracticed:m,tags:compSess.tags,timerSeconds:sec,notes:comp.notes,confidence:comp.confidence,blockers:comp.blockers,nextStep:comp.nextStep,date:new Date().toISOString()});if(response.data?.xpAwarded){showXpNotification(showSuccess,response.data.xpAwarded);}removeSession(compSess.id);setShowComp(false);setCompSess(null);doFetch();setSuccess('Practice logged!');setTimeout(()=>setSuccess(''),3000);}catch(err){setError(err.response?.data?.message||'Failed');setTimeout(()=>setError(''),5000);}finally{setSubmitting(false);}};
   const doDelete=async()=>{if(delInput!=='CONFIRM'||!deleteId)return;try{await practiceAPI.deletePractice(deleteId);setDeleteId(null);setDelInput('');doFetch();}catch{setError('Failed to delete');}};
   return (<div className="flex min-h-screen bg-site-bg"><Sidebar /><main className="flex-1 overflow-y-auto w-full"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8"><div><h1 className="text-2xl sm:text-3xl font-bold text-site-ink">Practice Sessions</h1><p className="text-site-muted mt-1">Log what you practiced, confidence, blockers, and next step</p></div><button onClick={()=>{resetForm();setShowNew(true);}} className="flex items-center gap-2 px-5 py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-colors shadow-md"><Plus className="w-5 h-5" /> New Practice</button></div>
