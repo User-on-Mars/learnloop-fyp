@@ -387,7 +387,7 @@ class AdminService {
    */
   async getXpLeaderboard(limit = 50) {
     try {
-      const profiles = await UserXpProfile.find()
+      const profiles = await UserXpProfile.find({ totalXp: { $gt: 0 } })
         .sort({ totalXp: -1 })
         .limit(limit)
         .lean()
@@ -567,11 +567,12 @@ class AdminService {
       // Reset all users' weekly XP
       await UserXpProfile.updateMany({}, { weeklyXp: 0 })
 
-      // Log reset
+      // Log reset with the current date as weekEndDate
       await WeeklyResetHistory.create({
-        triggeredBy: adminId,
-        triggeredByEmail: adminEmail,
-        reason: 'Manual admin reset'
+        weekEndDate: new Date(),
+        totalRankedUsers: await UserXpProfile.countDocuments(),
+        promotions: [],
+        relegations: []
       })
 
       // Log audit
