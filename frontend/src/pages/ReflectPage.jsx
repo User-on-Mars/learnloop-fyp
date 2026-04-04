@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../useAuth';
+import { useToast } from '../context/ToastContext';
+import { showXpNotification } from '../utils/xpNotifications';
 import Sidebar from '../components/Sidebar';
-import api from '../services/api';
+import client from '../api/client';
 import { CheckCircle, AlertCircle, Trash2, Download, ChevronDown, ChevronUp, Loader2, BookOpen, Smile, Meh, Frown, Zap, Brain, X } from 'lucide-react';
 
 const MOODS = [
@@ -17,6 +19,7 @@ const MOOD_MAP = Object.fromEntries(MOODS.map(m => [m.value, m]));
 export default function ReflectPage() {
   const user = useAuth();
   const navigate = useNavigate();
+  const { showSuccess } = useToast();
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
   const [mood, setMood] = useState(null);
@@ -41,7 +44,7 @@ export default function ReflectPage() {
   useEffect(() => { if (user === null) navigate('/login'); }, [user, navigate]);
 
   const fetchHistory = useCallback(async () => {
-    try { setHistLoading(true); const r = await api.get('/reflections'); setReflections(r.data || []); }
+    try { setHistLoading(true); const r = await client.get('/reflections'); setReflections(r.data || []); }
     catch { /* silent */ }
     finally { setHistLoading(false); }
   }, []);
@@ -50,10 +53,15 @@ export default function ReflectPage() {
   const addTag = (e) => { e.preventDefault(); const t = tagInput.trim(); if (t && !tags.includes(t) && tags.length < 10) { setTags([...tags, t]); setTagInput(''); } };
 
   const handleSave = async () => {
-    if (!content.trim()) { setError('Write something before saving.'); setTimeout(() => setError(null), 4000); return; }
+    if (!title.trim()) { setError('Title is required.'); setTimeout(() => setError(null), 4000); return; }
+    if (!content.trim()) { setError('Content is required.'); setTimeout(() => setError(null), 4000); return; }
+    if (!mood) { setError('Please select a mood.'); setTimeout(() => setError(null), 4000); return; }
     setSaving(true); setError(null); setSuccess(false);
     try {
-      await api.post('/reflections', { title: title.trim(), content: content.trim(), mood, tags });
+      const response = await client.post('/reflections', { title: title.trim(), content: content.trim(), mood, tags });
+      if (response.data?.xpAwarded) {
+        showXpNotification(showSuccess, response.data.xpAwarded);
+      }
       setSuccess(true); setTimeout(() => setSuccess(false), 3000);
       setTimeout(() => { setContent(''); setTitle(''); setMood(null); setTags([]); }, 1000);
       fetchHistory();
@@ -63,14 +71,14 @@ export default function ReflectPage() {
 
   const handleDelete = async () => {
     if (!deleteId) return; setDeleting(true);
-    try { await api.delete(`/reflections/${deleteId}`); setReflections(r => r.filter(x => x._id !== deleteId)); if (expandedId === deleteId) setExpandedId(null); setDeleteId(null); }
+    try { await client.delete(`/reflections/${deleteId}`); setReflections(r => r.filter(x => x._id !== deleteId)); if (expandedId === deleteId) setExpandedId(null); setDeleteId(null); }
     catch { setError('Failed to delete.'); setTimeout(() => setError(null), 4000); }
     finally { setDeleting(false); }
   };
   const handleExport = async (id) => {
     setExporting(id);
     try {
-      const r = await api.get(`/reflections/${id}/pdf`, { responseType: 'blob' });
+      const r = await client.get(`/reflections/${id}/pdf`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([r.data]));
       const a = document.createElement('a'); a.href = url;
       const ref = reflections.find(x => x._id === id);
@@ -106,8 +114,8 @@ export default function ReflectPage() {
 
             {/* Title */}
             <div className="mb-3">
-              <label className="block text-sm font-medium text-site-ink mb-1.5">Title</label>
-              <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Give your reflection a title (optional)" maxLength={200}
+              <label className="block text-sm font-medium text-site-ink mb-1.5">Title <span className="text-red-500">*</span></label>
+              <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Give your reflection a title" maxLength={200} required
                 className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent bg-site-bg focus:bg-white text-sm text-site-ink placeholder:text-site-faint" />
             </div>
 
@@ -118,7 +126,7 @@ export default function ReflectPage() {
 
             {/* Mood */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-site-ink mb-2">How are you feeling?</label>
+              <label className="block text-sm font-medium text-site-ink mb-2">How are you feeling? <span className="text-red-500">*</span></label>
               <div className="flex flex-wrap gap-2">
                 {MOODS.map(m => {
                   const Icon = m.icon;
@@ -152,8 +160,8 @@ export default function ReflectPage() {
             </div>
 
             {/* Save */}
-            <button onClick={handleSave} disabled={saving || !content.trim()}
-              className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-semibold text-sm transition-all ${saving || !content.trim() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-site-accent text-white hover:bg-site-accent-hover shadow-md'}`}>
+            <button onClick={handleSave} disabled={saving || !title.trim() || !content.trim() || !mood}
+              className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-semibold text-sm transition-all ${saving || !title.trim() || !content.trim() || !mood ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-site-accent text-white hover:bg-site-accent-hover shadow-md'}`}>
               {saving ? 'Saving...' : 'Save Reflection'}
             </button>
           </div>
