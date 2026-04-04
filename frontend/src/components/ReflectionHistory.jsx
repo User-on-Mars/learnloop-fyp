@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trash2, Download, AlertCircle, Loader2 } from 'lucide-react';
-import api from '../services/api';
+import client from '../api/client';
 
 const MOODS = {
   'Happy': '😊',
