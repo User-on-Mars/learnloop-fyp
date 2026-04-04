@@ -17,13 +17,25 @@ export function useAdmin() {
     async function check() {
       try {
         const token = await auth.currentUser?.getIdToken()
-        if (!token) { setIsAdmin(false); setChecking(false); return }
+        if (!token) { 
+          console.log('🔐 useAdmin: No token found')
+          setIsAdmin(false)
+          setChecking(false)
+          return 
+        }
 
         const res = await fetch(`${API}/admin/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         })
-        if (!cancelled) setIsAdmin(res.ok)
-      } catch {
+        
+        console.log(`🔐 useAdmin: /admin/stats returned ${res.status}`)
+        
+        if (!cancelled) {
+          setIsAdmin(res.ok)
+          console.log(`🔐 useAdmin: isAdmin set to ${res.ok}`)
+        }
+      } catch (err) {
+        console.error('🔐 useAdmin: Error checking admin status:', err)
         if (!cancelled) setIsAdmin(false)
       } finally {
         if (!cancelled) setChecking(false)
