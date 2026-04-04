@@ -5,7 +5,7 @@ import * as fc from 'fast-check';
 import ProgressionPath from '../ProgressionPath';
 import { SkillMapProvider } from '../../context/SkillMapContext';
 import { ActiveSessionProvider } from '../../context/ActiveSessionContext';
-import api from '../../services/api';
+import client from '../../api/client';
 
 vi.mock('../../services/api', () => ({
   default: {
