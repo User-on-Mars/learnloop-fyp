@@ -11,11 +11,8 @@ import Reflection from '../models/Reflection.js'
 
 const router = Router()
 
-// All admin routes require auth + admin role
-router.use(requireAuth, requireAdmin)
-
-// ─── Dashboard Stats ───────────────────────────────────────────
-router.get('/stats', async (req, res) => {
+// ─── Dashboard Stats (requires admin role) ───────────────
+router.get('/stats', requireAuth, requireAdmin, async (req, res) => {
   try {
     const stats = await AdminService.getDashboardStats()
     res.json(stats)
@@ -24,6 +21,9 @@ router.get('/stats', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch stats' })
   }
 })
+
+// All other admin routes require auth + admin role
+router.use(requireAuth, requireAdmin)
 
 // ─── Users List ────────────────────────────────────────────────
 router.get('/users', async (req, res) => {
@@ -265,7 +265,7 @@ router.post('/manual-reset', async (req, res) => {
     res.json(result)
   } catch (error) {
     console.error('Manual reset error:', error)
-    res.status(500).json({ message: 'Failed to trigger reset' })
+    res.status(500).json({ message: error.message || 'Failed to trigger reset' })
   }
 })
 
