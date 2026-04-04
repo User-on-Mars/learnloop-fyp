@@ -50,9 +50,13 @@ router.post('/',
       console.log('✅ Reflection created:', reflection._id)
 
       // Award reflection XP if mood and content present (never blocks response)
+      let xpAwarded = null;
       try {
         if (reflection.mood && reflection.content) {
-          await XpService.awardXp(req.user.id, 'reflection', 20)
+          const xp = await XpService.awardXp(req.user.id, 'reflection', 20);
+          if (xp) {
+            xpAwarded = { type: 'reflection', amount: xp.finalAmount };
+          }
         }
       } catch (xpError) {
         await ErrorLoggingService.logError(xpError, {
@@ -62,7 +66,7 @@ router.post('/',
         })
       }
 
-      res.status(201).json(reflection)
+      res.status(201).json({ ...reflection.toObject(), xpAwarded })
     } catch (error) {
       console.error('❌ Error creating reflection:', error.message)
       res.status(400).json({ 
