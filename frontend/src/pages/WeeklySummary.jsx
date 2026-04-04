@@ -4,8 +4,8 @@ import {
   Calendar, Clock, TrendingUp, TrendingDown, Award, Target,
   ChevronLeft, ChevronRight, ChevronDown, FileText, Flame, Zap, BookOpen,
 } from "lucide-react";
-import { practiceAPI } from "../services/api";
-import api from "../services/api";
+import { practiceAPI, skillsAPI } from "../api/client";
+import client from "../api/client";
 import Sidebar from "../components/Sidebar";
 
 function getWeekStart(date) {
@@ -46,6 +46,8 @@ export default function WeeklySummary() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [practices, setPractices] = useState([]);
   const [reflections, setReflections] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [learningSessions, setLearningSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [skillPage, setSkillPage] = useState(1);
 
@@ -65,12 +67,16 @@ export default function WeeklySummary() {
     async function fetchData() {
       setLoading(true);
       try {
-        const [practiceRes, reflectionRes] = await Promise.all([
+        const [practiceRes, reflectionRes, skillsRes, sessionsRes] = await Promise.all([
           practiceAPI.getPractices({ limit: 1000 }).catch(() => ({ data: { practices: [] } })),
-          api.get("/reflections").catch(() => ({ data: { reflections: [] } })),
+          client.get("/reflections").catch(() => ({ data: { reflections: [] } })),
+          skillsAPI.getAll().catch(() => ({ data: { skills: [] } })),
+          client.get("/sessions").catch(() => ({ data: { sessions: [] } })),
         ]);
         setPractices(practiceRes.data.practices || practiceRes.data || []);
         setReflections(reflectionRes.data.reflections || reflectionRes.data || []);
+        setSkills(skillsRes.data.skills || []);
+        setLearningSessions(sessionsRes.data.sessions || sessionsRes.data || []);
       } catch (err) {
         console.error("Error fetching weekly data:", err);
       } finally {
@@ -106,14 +112,30 @@ export default function WeeklySummary() {
   const prevMinutes = prevPractices.reduce((s, p) => s + (p.minutesPracticed || 0), 0);
   const prevSessions = prevPractices.length;
 
-  // Group by skill map (tags[0]) instead of node (skillName)
+  // Group by actual skill maps using learning sessions
   const skillMapCounts = {};
-  weekPractices.forEach(p => {
-    const mapName = (p.tags && p.tags.length > 0 && p.tags[0]) ? p.tags[0] : (p.skillName || "Other");
-    if (!skillMapCounts[mapName]) skillMapCounts[mapName] = { minutes: 0, sessions: 0 };
-    skillMapCounts[mapName].minutes += p.minutesPracticed || 0;
-    skillMapCounts[mapName].sessions += 1;
+  
+  // Filter learning sessions for the current week
+  const weekLearningSessions = learningSessions.filter(s => inRange(s.startTime, weekStart, weekEnd));
+  
+  // Build a map of skillId to skill name
+  const skillIdToName = {};
+  skills.forEach(skill => {
+    skillIdToName[skill._id] = skill.name;
   });
+  
+  // Count sessions and time per skill map
+  weekLearningSessions.forEach(session => {
+    const skillName = skillIdToName[session.skillId] || "Unknown Skill";
+    if (!skillMapCounts[skillName]) {
+      skillMapCounts[skillName] = { minutes: 0, sessions: 0 };
+    }
+    // Duration is in seconds, convert to minutes
+    const minutes = Math.floor((session.duration || 0) / 60);
+    skillMapCounts[skillName].minutes += minutes;
+    skillMapCounts[skillName].sessions += 1;
+  });
+  
   const sortedSkillMaps = Object.entries(skillMapCounts).sort((a, b) => b[1].minutes - a[1].minutes);
   const topSkillMap = sortedSkillMaps[0];
   const skillTotalPages = Math.max(1, Math.ceil(sortedSkillMaps.length / SKILLS_PER_PAGE));
