@@ -3,7 +3,7 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as fc from 'fast-check';
 import ReflectionHistory from '../ReflectionHistory';
-import api from '../../services/api';
+import client from '../../api/client';
 
 // Mock API
 vi.mock('../../services/api');
