@@ -19,7 +19,9 @@ async function request(path, options = {}) {
   const res = await fetch(`${API}${path}`, { ...options, headers })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
-    throw new Error(data.message || `Request failed: ${res.status}`)
+    const errorMsg = data.message || `Request failed with status ${res.status}`
+    console.error(`API Error [${res.status}] ${path}:`, data)
+    throw new Error(errorMsg)
   }
   return res.json()
 }
