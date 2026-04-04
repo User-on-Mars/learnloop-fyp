@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { auth } from '../firebase.js';
-import api from '../services/api.js';
+import client from '../api/client';
 
 const SkillMapContext = createContext(null);
 
@@ -89,10 +89,10 @@ export function SkillMapProvider({ children }) {
       const headers = { Authorization: `Bearer ${token}` };
       let response;
       try {
-        response = await api.get(`/skills/maps/${skillId}/full`, { headers });
+        response = await client.get(`/skills/maps/${skillId}/full`, { headers });
       } catch (e) {
         if (e.response?.status === 404) {
-          response = await api.get(`/skill-maps/${skillId}/full`, { headers });
+          response = await client.get(`/skill-maps/${skillId}/full`, { headers });
         } else {
           throw e;
         }
@@ -127,10 +127,10 @@ export function SkillMapProvider({ children }) {
       const headers = { Authorization: `Bearer ${token}` };
       let response;
       try {
-        response = await api.post('/skills/maps', payload, { headers });
+        response = await client.post('/skills/maps', payload, { headers });
       } catch (e) {
         if (e.response?.status === 404) {
-          response = await api.post('/skill-maps', payload, { headers });
+          response = await client.post('/skill-maps', payload, { headers });
         } else {
           throw e;
         }
@@ -155,7 +155,7 @@ export function SkillMapProvider({ children }) {
       setError(null);
 
       const token = await getAuthToken();
-      const response = await api.get('/skills', {
+      const response = await client.get('/skills', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -187,7 +187,7 @@ export function SkillMapProvider({ children }) {
       }
 
       const token = await getAuthToken();
-      await api.delete(`/skills/${skillId}`, {
+      await client.delete(`/skills/${skillId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (err) {
@@ -250,7 +250,7 @@ export function SkillMapProvider({ children }) {
       }
 
       const token = await getAuthToken();
-      const response = await api.patch(`/nodes/${nodeId}/status`,
+      const response = await client.patch(`/nodes/${nodeId}/status`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -292,7 +292,7 @@ export function SkillMapProvider({ children }) {
         loadSkillMapFull(sid, { background: true });
       }
 
-      return { node: updatedNode, nextNode };
+      return { node: updatedNode, nextNode, skillMapXpAwarded: response.data.skillMapXpAwarded };
     } catch (err) {
       setNodes(previousNodes);
       setSkills(previousSkills);
@@ -320,7 +320,7 @@ export function SkillMapProvider({ children }) {
       ));
 
       const token = await getAuthToken();
-      const response = await api.patch(`/nodes/${nodeId}/content`,
+      const response = await client.patch(`/nodes/${nodeId}/content`,
         updates,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -352,7 +352,7 @@ export function SkillMapProvider({ children }) {
       setError(null);
 
       const token = await getAuthToken();
-      const response = await api.post(`/skills/${skillId}/nodes`,
+      const response = await client.post(`/skills/${skillId}/nodes`,
         { title, description: description || '' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -386,7 +386,7 @@ export function SkillMapProvider({ children }) {
       setError(null);
 
       const token = await getAuthToken();
-      const response = await api.delete(`/nodes/${nodeId}`, {
+      const response = await client.delete(`/nodes/${nodeId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -431,7 +431,7 @@ export function SkillMapProvider({ children }) {
       }
 
       const token = await getAuthToken();
-      const response = await api.post(`/nodes/${nodeId}/sessions`,
+      const response = await client.post(`/nodes/${nodeId}/sessions`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -467,7 +467,7 @@ export function SkillMapProvider({ children }) {
       setError(null);
 
       const token = await getAuthToken();
-      const response = await api.get(`/nodes/${nodeId}/details`, {
+      const response = await client.get(`/nodes/${nodeId}/details`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -495,7 +495,7 @@ export function SkillMapProvider({ children }) {
       ));
 
       const token = await getAuthToken();
-      const response = await api.patch(`/skills/${skillId}`,
+      const response = await client.patch(`/skills/${skillId}`,
         updates,
         { headers: { Authorization: `Bearer ${token}` } }
       );
