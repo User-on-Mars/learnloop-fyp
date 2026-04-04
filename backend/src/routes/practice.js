@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import mongoose from 'mongoose'
 import Practice from '../models/Practice.js'
+import Reflection from '../models/Reflection.js'
 import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
@@ -128,25 +130,61 @@ router.get('/stats/weekly', async (req, res) => {
   try {
     console.log('📈 Getting weekly stats for user:', req.user.id)
     const userId = req.user.id
-    const weeksBack = parseInt(req.query.weeks) || 12
     
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - (weeksBack * 7))
+    // Get start of current week (Monday)
+    const now = new Date()
+    const dayOfWeek = now.getDay() // 0 = Sunday, 1 = Monday, ...
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Days since Monday
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - daysFromMonday)
+    weekStart.setHours(0, 0, 0, 0)
     
-    const weeklyData = await Practice.aggregate([
-      { $match: { userId, date: { $gte: startDate } } },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$date' },
-            week: { $week: '$date' }
-          },
-          totalMinutes: { $sum: '$minutesPracticed' },
-          sessionCount: { $sum: 1 }
+    // Get practices for current week
+    const practices = await Practice.find({
+      userId,
+      date: { $gte: weekStart }
+    }).lean()
+    
+    // Get reflections for current week
+    const reflections = await Reflection.find({
+      userId,
+      createdAt: { $gte: weekStart }
+    }).lean()
+    
+    // Initialize weekly data for 7 days
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const weeklyData = dayNames.map((day, index) => ({
+      day,
+      practice: 0, // hours
+      reflections: 0,
+      blockers: 0
+    }))
+    
+    // Aggregate practice data by day
+    practices.forEach(p => {
+      const practiceDate = new Date(p.date)
+      const dayIndex = practiceDate.getDay() === 0 ? 6 : practiceDate.getDay() - 1 // Convert to Mon=0, Sun=6
+      if (dayIndex >= 0 && dayIndex < 7) {
+        weeklyData[dayIndex].practice += (p.minutesPracticed || 0) / 60 // Convert to hours
+        if (p.blockers && p.blockers.trim()) {
+          weeklyData[dayIndex].blockers += 1
         }
-      },
-      { $sort: { '_id.year': 1, '_id.week': 1 } }
-    ])
+      }
+    })
+    
+    // Aggregate reflection data by day
+    reflections.forEach(r => {
+      const reflectionDate = new Date(r.createdAt)
+      const dayIndex = reflectionDate.getDay() === 0 ? 6 : reflectionDate.getDay() - 1
+      if (dayIndex >= 0 && dayIndex < 7) {
+        weeklyData[dayIndex].reflections += 1
+      }
+    })
+    
+    // Round practice hours to 1 decimal place
+    weeklyData.forEach(day => {
+      day.practice = Math.round(day.practice * 10) / 10
+    })
     
     console.log('✅ Weekly stats retrieved')
     res.json({ weeklyData })
