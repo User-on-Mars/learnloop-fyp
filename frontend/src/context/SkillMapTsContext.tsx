@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback, useRef } from 'react'
 import type { Session, SkillMapFull } from '../types/skillmap'
-import * as api from '../api/skillMapApi'
+import { skillMapAPI } from '../api/client'
 import * as cache from '../cache/skillMapCache'
 
 interface SkillMapTsState {
@@ -119,7 +119,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
   const applyFreshFull = useCallback(async (skillMapId: string) => {
     const userId = userIdRef.current
     if (!userId) return
-    const fresh = await api.fetchSkillMapFull(skillMapId)
+    const fresh = await skillMapAPI.fetchSkillMapFull(skillMapId)
     cache.setCache(userId, skillMapId, fresh)
     dispatch({ type: 'APPLY_FULL', payload: fresh })
   }, [])
@@ -133,7 +133,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
       dispatch({ type: 'BACKGROUND_REFRESH_START' })
       const token = cache.createFetchToken(userId, skillMapId)
       try {
-        const freshData = await api.fetchSkillMapFull(skillMapId)
+        const freshData = await skillMapAPI.fetchSkillMapFull(skillMapId)
         if (cache.isFetchTokenValid(userId, skillMapId, token)) {
           cache.setCache(userId, skillMapId, freshData)
           dispatch({ type: 'BACKGROUND_REFRESH_DONE', payload: freshData })
@@ -146,7 +146,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
 
     dispatch({ type: 'LOADING_START' })
     try {
-      const data = await api.fetchSkillMapFull(skillMapId)
+      const data = await skillMapAPI.fetchSkillMapFull(skillMapId)
       cache.setCache(userId, skillMapId, data)
       dispatch({ type: 'LOAD_SUCCESS', payload: data })
     } catch {
@@ -159,7 +159,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
 
   const loadNodeSessions = useCallback(async (nodeId: string) => {
     try {
-      const sessions = await api.fetchNodeSessions(nodeId)
+      const sessions = await skillMapAPI.fetchNodeSessions(nodeId)
       dispatch({ type: 'NODE_SESSIONS_LOADED', payload: sessions })
     } catch {
       dispatch({ type: 'NODE_SESSIONS_LOADED', payload: [] })
@@ -180,7 +180,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
 
       const promise = (async () => {
         cache.invalidateCache(userId, mapId)
-        const session = await api.createSession(nodeId)
+        const session = await skillMapAPI.createSession(nodeId)
         await applyFreshFull(mapId)
         return session
       })()
@@ -201,7 +201,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
       if (!userId || !mapId) return
       cache.invalidateCache(userId, mapId)
       if (reflection) {
-        const updated = await api.completeSession(sessionId, { durationSeconds, reflection })
+        const updated = await skillMapAPI.completeSession(sessionId, { durationSeconds, reflection })
         dispatch({ type: 'SESSION_COMPLETED', payload: updated })
       }
       await applyFreshFull(mapId)
@@ -215,7 +215,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
       const mapId = state.skillMap?.id
       if (!userId || !mapId) return
       cache.invalidateCache(userId, mapId)
-      await api.abandonSession(sessionId)
+      await skillMapAPI.abandonSession(sessionId)
       await applyFreshFull(mapId)
     },
     [applyFreshFull, state.skillMap?.id]
@@ -227,7 +227,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
       const mapId = state.skillMap?.id
       if (!userId || !mapId) throw new Error('Map not ready')
       cache.invalidateCache(userId, mapId)
-      const full = await api.completeNode(nodeId, mapId)
+      const full = await skillMapAPI.completeNode(nodeId, mapId)
       cache.setCache(userId, mapId, full)
       dispatch({ type: 'APPLY_FULL', payload: full })
       return full
@@ -241,7 +241,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
       const mapId = state.skillMap?.id
       if (!userId || !mapId) return
       cache.invalidateCache(userId, mapId)
-      await api.deleteNode(nodeId)
+      await skillMapAPI.deleteNode(nodeId)
       await applyFreshFull(mapId)
     },
     [applyFreshFull, state.skillMap?.id]
@@ -253,7 +253,7 @@ export function SkillMapTsProvider({ children }: { children: React.ReactNode }) 
       const mapId = state.skillMap?.id
       if (!userId || !mapId) return
       cache.invalidateCache(userId, mapId)
-      await api.updateNode(nodeId, data)
+      await skillMapAPI.updateNode(nodeId, data)
       await applyFreshFull(mapId)
     },
     [applyFreshFull, state.skillMap?.id]
