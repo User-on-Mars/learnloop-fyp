@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { TEMPLATES } from '../data/templates';
-import { createSkillMapFromTemplate } from '../api/skillMapApi';
+import { skillMapAPI } from '../api/client';
 import { SkillIcon } from './IconPicker';
 import TemplatePreview from './TemplatePreview';
 
@@ -26,13 +26,14 @@ export default function TemplateGallery({ isOpen, onClose, onCreated, onSwitchTo
     setIsApplying(true);
     setError('');
     try {
-      const { skill } = await createSkillMapFromTemplate({
+      const { data } = await skillMapAPI.createSkillMapFromTemplate({
         title: template.title,
         description: template.description,
         icon: template.icon,
         goal: template.goal,
         nodes: template.nodes,
       });
+      const skill = data.skill;
       const id = skill._id ?? skill.id;
       onCreated?.({ skillId: String(id), title: template.title });
       reset();
