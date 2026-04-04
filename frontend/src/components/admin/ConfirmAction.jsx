@@ -9,7 +9,8 @@ export default function ConfirmAction({
   isDangerous = false,
   onConfirm = () => {},
   onCancel = () => {},
-  loading = false
+  loading = false,
+  children
 }) {
   if (!isOpen) return null
 
@@ -29,26 +30,7 @@ export default function ConfirmAction({
           </button>
         </div>
 
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onCancel}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg border border-site-border text-site-muted hover:bg-site-soft disabled:opacity-50 transition-colors text-sm font-medium"
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className={`px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-50 transition-colors ${
-              isDangerous 
-                ? 'bg-red-600 hover:bg-red-700' 
-                : 'bg-site-accent hover:bg-site-accent-hover'
-            }`}
-          >
-            {loading ? 'Loading...' : confirmText}
-          </button>
-        </div>
+        {children}
       </div>
     </div>
   )
