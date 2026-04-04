@@ -23,7 +23,7 @@ async function run() {
   }
   user.role = 'admin'
   await user.save()
-  console.log(`✅ ${email} is now an admin`)
+  console.log(`${email} is now an admin`)
   await mongoose.disconnect()
 }
 
