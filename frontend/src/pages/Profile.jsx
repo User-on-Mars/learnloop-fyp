@@ -6,6 +6,7 @@ import { Avatar } from "../components/Avatar";
 import { useAuth } from "../useAuth";
 import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { auth } from "../firebase";
+import { authAPI } from "../api/client";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function Profile() {
@@ -87,6 +88,18 @@ export default function Profile() {
             await updateProfile(auth.currentUser, {
                 displayName: trimmedName
             });
+            
+            // Sync profile to backend using API client
+            try {
+                await authAPI.syncProfile({
+                    email: auth.currentUser.email,
+                    displayName: trimmedName,
+                    firebaseUid: auth.currentUser.uid
+                });
+                console.log('✅ Profile synced to backend');
+            } catch (syncError) {
+                console.warn('⚠️ Failed to sync profile to backend:', syncError);
+            }
             
             // Update local state
             setOriginalDisplayName(trimmedName);
