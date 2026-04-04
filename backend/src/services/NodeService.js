@@ -168,6 +168,7 @@ class NodeService {
       });
 
       // Award skill map completion XP if all nodes are now completed (never blocks response)
+      let skillMapXpAwarded = null;
       if (newStatus === 'Completed') {
         try {
           const allNodes = await Node.find({ skillId: node.skillId });
@@ -175,7 +176,10 @@ class NodeService {
           if (allCompleted) {
             const skill = await Skill.findById(node.skillId);
             if (skill && skill.fromTemplate === true) {
-              await XpService.awardXp(userId, 'skillmap_completion', 200, { skillMapId: node.skillId.toString() });
+              const xp = await XpService.awardXp(userId, 'skillmap_completion', 50, { skillMapId: node.skillId.toString() });
+              if (xp) {
+                skillMapXpAwarded = { type: 'skillmap_completion', amount: xp.finalAmount, skillMapName: skill.name };
+              }
             }
           }
         } catch (xpError) {
@@ -190,7 +194,8 @@ class NodeService {
 
       return {
         node: node.toObject(),
-        nextNode
+        nextNode,
+        skillMapXpAwarded
       };
     } catch (error) {
       await session.abortTransaction();
