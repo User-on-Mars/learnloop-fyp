@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ReflectionHistory from '../ReflectionHistory';
-import api from '../../services/api';
+import client from '../../api/client';
 
 // Mock API
 vi.mock('../../services/api');
