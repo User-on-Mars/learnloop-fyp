@@ -2,6 +2,7 @@ import XpTransaction from '../models/XpTransaction.js';
 import UserXpProfile from '../models/UserXpProfile.js';
 import StreakService from './StreakService.js';
 import ErrorLoggingService from './ErrorLoggingService.js';
+import LeaderboardService from './LeaderboardService.js';
 
 /**
  * XpService - Awards XP, enforces daily caps, applies streak multiplier,
@@ -31,6 +32,18 @@ class XpService {
     const dayEnd = new Date(dayStart);
     dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
     return { dayStart, dayEnd };
+  }
+
+  /**
+   * Calculate league tier based on total XP
+   * @param {number} totalXp
+   * @returns {'Gold'|'Silver'|'Bronze'|'Newcomer'}
+   */
+  static _calculateLeagueTier(totalXp) {
+    if (totalXp >= 1000) return 'Gold';
+    if (totalXp >= 500) return 'Silver';
+    if (totalXp >= 100) return 'Bronze';
+    return 'Newcomer';
   }
 
   /**
@@ -115,10 +128,10 @@ class XpService {
         }
       }
 
-      // Atomically update UserXpProfile
+      // Atomically update UserXpProfile and recalculate league tier
       const weekStart = XpService._getWeekStart(now);
       try {
-        await UserXpProfile.findOneAndUpdate(
+        const updatedProfile = await UserXpProfile.findOneAndUpdate(
           { userId },
           {
             $inc: { totalXp: finalAmount, weeklyXp: finalAmount },
@@ -126,6 +139,15 @@ class XpService {
           },
           { upsert: true, new: true }
         );
+
+        // Update league tier based on new total XP
+        const newTier = XpService._calculateLeagueTier(updatedProfile.totalXp);
+        if (updatedProfile.leagueTier !== newTier) {
+          await UserXpProfile.updateOne(
+            { userId },
+            { leagueTier: newTier }
+          );
+        }
       } catch (profileError) {
         await ErrorLoggingService.logError(
           { message: `UserXpProfile update failed: ${profileError.message}`, category: 'xp', code: 'XP_PROFILE_UPDATE_FAILED' },
@@ -155,13 +177,48 @@ class XpService {
 
     const totalXp = profile?.totalXp ?? 0;
     const weeklyXp = profile?.weeklyXp ?? 0;
-    const leagueTier = profile?.leagueTier ?? 'Newcomer';
+    
+    // Calculate league tier based on total XP (not stored value)
+    const leagueTier = XpService._calculateLeagueTier(totalXp);
+    
+    // Update stored tier if it's different
+    if (profile && profile.leagueTier !== leagueTier) {
+      await UserXpProfile.updateOne(
+        { userId },
+        { leagueTier }
+      );
+    }
 
-    // Compute weekly rank: count users with higher weeklyXp + 1
+    // Compute weekly rank using LeaderboardService for consistency with leaderboard display
     let weeklyRank = 0;
-    if (profile) {
-      const usersAbove = await UserXpProfile.countDocuments({ weeklyXp: { $gt: weeklyXp } });
-      weeklyRank = usersAbove + 1;
+    if (profile && profile.weeklyXp > 0) {
+      const above = await UserXpProfile.countDocuments({ weeklyXp: { $gt: weeklyXp } });
+      
+      // For tiebreaker, count users with same weeklyXp but earlier first transaction this week
+      const weekStart = LeaderboardService._getWeekStart();
+      const userFirstTx = await XpTransaction.findOne({
+        userId,
+        createdAt: { $gte: weekStart }
+      }).sort({ createdAt: 1 }).select('createdAt').lean();
+
+      let sameXpEarlier = 0;
+      if (userFirstTx) {
+        const tiedUsers = await UserXpProfile.find({
+          weeklyXp: weeklyXp,
+          userId: { $ne: userId }
+        }).select('userId').lean();
+
+        for (const tied of tiedUsers) {
+          const tiedFirstTx = await XpTransaction.findOne({
+            userId: tied.userId,
+            createdAt: { $gte: weekStart }
+          }).sort({ createdAt: 1 }).select('createdAt').lean();
+          if (tiedFirstTx && tiedFirstTx.createdAt < userFirstTx.createdAt) {
+            sameXpEarlier++;
+          }
+        }
+      }
+      weeklyRank = above + sameXpEarlier + 1;
     }
 
     return {
