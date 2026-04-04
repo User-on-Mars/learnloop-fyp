@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSkillMap } from '../context/SkillMapContext';
 import { useActiveSessions } from '../context/ActiveSessionContext';
-import { practiceAPI } from '../services/api';
+import { practiceAPI } from '../api/client';
 import { Pencil, Check, X, ChevronRight, ChevronLeft, FileText, Target, Rocket, Trophy, Lock, Unlock, CheckCircle, Trash2, Clock } from 'lucide-react';
 import SkillMapPageSkeleton from './SkillMapPageSkeleton';
 import IconPicker, { SkillIcon } from './IconPicker';
