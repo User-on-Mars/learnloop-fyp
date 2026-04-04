@@ -10,10 +10,9 @@ import {
   Plus,
   MapPin,
 } from "lucide-react";
-import { practiceAPI, skillsAPI, xpAPI } from "../services/api";
+import { practiceAPI, skillsAPI, xpAPI } from "../api/client";
 import Sidebar from "../components/Sidebar";
 import DashboardGreeting from "../components/DashboardGreeting";
-import WeeklyPerformanceChart from "../components/WeeklyPerformanceChart";
 import XpProfileCard from "../components/XpProfileCard";
 import LeagueInfo from "../components/admin/LeagueInfo";
 
@@ -23,7 +22,6 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [practices, setPractices] = useState([]);
   const [skills, setSkills] = useState([]);
-  const [weeklyData, setWeeklyData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [xpProfile, setXpProfile] = useState(null);
@@ -35,7 +33,7 @@ export default function Dashboard() {
       setIsLoading(true);
       setError("");
 
-      const [statsRes, practicesRes, weeklyRes, skillsRes] = await Promise.all([
+      const [statsRes, practicesRes, skillsRes] = await Promise.all([
         practiceAPI.getStats().catch(() => ({
           data: {
             summary: { totalMinutes: 0, totalSessions: 0, weeklyMinutes: 0 },
@@ -43,13 +41,11 @@ export default function Dashboard() {
           },
         })),
         practiceAPI.getPractices({ limit: 5 }).catch(() => ({ data: { practices: [] } })),
-        practiceAPI.getWeeklyStats(12).catch(() => ({ data: { weeklyData: [] } })),
         skillsAPI.getAll().catch(() => ({ data: { skills: [] } })),
       ]);
 
       setStats(statsRes.data);
       setPractices(practicesRes.data.practices || []);
-      setWeeklyData(weeklyRes.data.weeklyData || []);
       setSkills(skillsRes.data.skills || []);
 
       // Fetch XP profile separately so failures don't block the dashboard
@@ -101,6 +97,8 @@ export default function Dashboard() {
   // skill map stats
   const totalNodes = skills.reduce((s, sk) => s + (sk.nodeCount || 0), 0);
   const completedNodes = skills.reduce((s, sk) => s + (sk.completedNodes || 0), 0);
+  const completedSkillMaps = skills.filter(sk => sk.completionPercentage === 100).length;
+  const remainingSkillMaps = skills.length - completedSkillMaps;
   const overallProgress =
     totalNodes > 0 ? Math.round((completedNodes / totalNodes) * 100) : 0;
 
@@ -288,12 +286,12 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3 bg-green-50 rounded-lg px-3 py-2.5">
                     <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
                     <span className="text-xs text-site-muted flex-1">Completed</span>
-                    <span className="text-sm font-bold text-green-700">{completedNodes}</span>
+                    <span className="text-sm font-bold text-green-700">{completedSkillMaps}</span>
                   </div>
                   <div className="flex items-center gap-3 bg-amber-50 rounded-lg px-3 py-2.5">
                     <div className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0" />
                     <span className="text-xs text-site-muted flex-1">Remaining</span>
-                    <span className="text-sm font-bold text-amber-700">{totalNodes - completedNodes}</span>
+                    <span className="text-sm font-bold text-amber-700">{remainingSkillMaps}</span>
                   </div>
                 </div>
               </div>
@@ -415,51 +413,51 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Top Skills by Time */}
+            {/* Top Skill Maps by Progress */}
             <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-site-ink">Top Skills</h3>
-                <span className="text-xs text-site-faint">By time spent</span>
+                <h3 className="text-base font-semibold text-site-ink">Top Skill Maps</h3>
+                <span className="text-xs text-site-faint">By progress</span>
               </div>
 
-              {topSkills.length === 0 ? (
+              {skills.length === 0 ? (
                 <div className="text-center py-8">
                   <Award className="w-10 h-10 text-site-faint mx-auto mb-3" />
-                  <p className="text-site-muted">Start practicing to see your top skills</p>
+                  <p className="text-site-muted">Create skill maps to track your progress</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {topSkills.slice(0, 5).map((skill, i) => {
-                    const max = topSkills[0]?.totalMinutes || 1;
-                    const pct = Math.round((skill.totalMinutes / max) * 100);
-                    const hrs = Math.floor(skill.totalMinutes / 60);
-                    const mins = skill.totalMinutes % 60;
-                    return (
-                      <div key={skill.skillName}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-site-ink">{skill.skillName}</span>
-                          <span className="text-xs text-site-faint">
-                            {hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`} · {skill.sessionCount} sessions
-                          </span>
+                  {skills
+                    .sort((a, b) => (b.completionPercentage || 0) - (a.completionPercentage || 0))
+                    .slice(0, 5)
+                    .map((skill, i) => {
+                      const pct = skill.completionPercentage || 0;
+                      const done = skill.completedNodes || 0;
+                      const total = skill.nodeCount || 0;
+                      return (
+                        <div 
+                          key={skill._id}
+                          onClick={() => navigate(`/skills/${skill._id}`)}
+                          className="cursor-pointer hover:bg-site-bg rounded-lg p-2 -mx-2 transition-colors"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-site-ink truncate pr-2">{skill.name}</span>
+                            <span className="text-xs text-site-faint flex-shrink-0">
+                              {done}/{total} nodes
+                            </span>
+                          </div>
+                          <div className="h-2 bg-site-bg rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-site-accent rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%`, opacity: 1 - i * 0.12 }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-2 bg-site-bg rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-site-accent rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%`, opacity: 1 - i * 0.12 }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               )}
             </div>
-          </div>
-
-          {/* ── Weekly Performance Chart ── */}
-          <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-5">
-            <h3 className="text-base font-semibold text-site-ink mb-4">Weekly Performance</h3>
-            <WeeklyPerformanceChart weeklyData={weeklyData} isLoading={false} />
           </div>
         </div>
       </main>
