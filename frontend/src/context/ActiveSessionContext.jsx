@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { activeSessionAPI } from '../services/api.js';
+import { activeSessionAPI } from '../api/client';
 import { auth } from '../firebase.js';
 
 const ActiveSessionContext = createContext(null);
