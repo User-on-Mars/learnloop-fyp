@@ -1,4 +1,4 @@
-import { authAPI } from './api';
+import { authAPI } from '../api/client';
 import { authService } from './auth';
 
 // Bridge between Firebase auth and backend JWT
