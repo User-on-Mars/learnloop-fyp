@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { sessionAPI } from '../../services/api';
+import { sessionAPI } from '../../api/client';
 
 // Async thunks for session management
 export const startSession = createAsyncThunk(
