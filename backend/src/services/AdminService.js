@@ -102,12 +102,12 @@ class AdminService {
           UserXpProfile.findOne({ userId: uid }).lean()
         ])
         
-        // Calculate league tier based on XP thresholds
+        // Calculate league tier based on weekly XP thresholds
         let leagueTier = 'Newcomer'
-        const totalXp = xpProfile?.totalXp || 0
-        if (totalXp >= 1000) leagueTier = 'Gold'
-        else if (totalXp >= 500) leagueTier = 'Silver'
-        else if (totalXp >= 100) leagueTier = 'Bronze'
+        const weeklyXp = xpProfile?.weeklyXp || 0
+        if (weeklyXp >= 200) leagueTier = 'Gold'
+        else if (weeklyXp >= 100) leagueTier = 'Silver'
+        else if (weeklyXp >= 50) leagueTier = 'Bronze'
         
         return { 
           ...user, 
@@ -157,6 +157,9 @@ class AdminService {
     try {
       if (!reason || reason.length < 10) {
         throw new Error('Ban reason must be at least 10 characters')
+      }
+      if (reason.length > 50) {
+        throw new Error('Ban reason must not exceed 50 characters')
       }
 
       const user = await User.findById(userId)
@@ -387,8 +390,9 @@ class AdminService {
    */
   async getXpLeaderboard(limit = 50) {
     try {
-      const profiles = await UserXpProfile.find({ totalXp: { $gt: 0 } })
-        .sort({ totalXp: -1 })
+      // Sort by weeklyXp for the weekly leaderboard
+      const profiles = await UserXpProfile.find({ weeklyXp: { $gt: 0 } })
+        .sort({ weeklyXp: -1, totalXp: -1 })  // Sort by weekly first, then total as tiebreaker
         .limit(limit)
         .lean()
 
@@ -403,10 +407,10 @@ class AdminService {
         const rank = idx + 1
         let leagueTier = 'Newcomer'
         
-        // Assign league based on XP thresholds, not rank
-        if (p.totalXp >= 1000) leagueTier = 'Gold'
-        else if (p.totalXp >= 500) leagueTier = 'Silver'
-        else if (p.totalXp >= 100) leagueTier = 'Bronze'
+        // Assign league based on weekly XP thresholds, not rank
+        if (p.weeklyXp >= 200) leagueTier = 'Gold'
+        else if (p.weeklyXp >= 100) leagueTier = 'Silver'
+        else if (p.weeklyXp >= 50) leagueTier = 'Bronze'
         else leagueTier = 'Newcomer'
 
         return {
@@ -684,6 +688,55 @@ class AdminService {
       return rows.join('\n')
     } catch (error) {
       console.error('AdminService.exportUserDataCsv error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete a skill map and all associated data
+   */
+  async deleteSkillMap(skillMapId, adminId, adminEmail) {
+    try {
+      const skill = await Skill.findById(skillMapId)
+      if (!skill) throw new Error('Skill map not found')
+
+      // Check if it's a template - prevent deletion
+      const isTemplate = skill.fromTemplate === true || skill.userId === 'template' || skill.userId === 'admin'
+      if (isTemplate) {
+        throw new Error('Cannot delete template skill maps')
+      }
+
+      // Delete all associated nodes
+      const deletedNodes = await Node.deleteMany({ skillId: skillMapId })
+      
+      // Delete all associated practices
+      const deletedPractices = await Practice.deleteMany({ skillId: skillMapId })
+      
+      // Delete all associated learning sessions
+      const deletedSessions = await LearningSession.deleteMany({ skillId: skillMapId })
+      
+      // Delete the skill map itself
+      await Skill.findByIdAndDelete(skillMapId)
+
+      // Log audit
+      await AdminAuditLog.record(
+        adminId,
+        adminEmail,
+        'delete_skill_map',
+        skill.userId,
+        null,
+        `Deleted skill map "${skill.name}" and ${deletedNodes.deletedCount} nodes, ${deletedPractices.deletedCount} practices, ${deletedSessions.deletedCount} sessions`
+      )
+
+      console.log(`🗑️ Admin deleted skill map ${skill.name} (${skillMapId})`)
+      return { 
+        message: 'Skill map deleted successfully',
+        deletedNodes: deletedNodes.deletedCount,
+        deletedPractices: deletedPractices.deletedCount,
+        deletedSessions: deletedSessions.deletedCount
+      }
+    } catch (error) {
+      console.error('AdminService.deleteSkillMap error:', error)
       throw error
     }
   }
