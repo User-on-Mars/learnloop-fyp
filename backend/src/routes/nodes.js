@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { z } from 'zod';
 import NodeService from '../services/NodeService.js';
 import SessionLinkingService from '../services/SessionLinkingService.js';
+import StreakService from '../services/StreakService.js';
 import Node from '../models/Node.js';
 
 const router = Router();
@@ -463,6 +464,17 @@ router.post('/:id/complete-template-session', async (req, res) => {
     }
     completed.push(sessionIndex);
     node.completedSessions = completed;
+    
+    // Process streak for template session completion
+    let streakResult = null;
+    try {
+      streakResult = await StreakService.processSession(req.user.id, new Date());
+      console.log(`✅ Streak processed for template session: ${streakResult.streakCount} days`);
+    } catch (streakError) {
+      console.error('⚠️ Error processing streak for template session:', streakError.message);
+      // Don't fail the request if streak processing fails
+    }
+    
     // If all sessions completed, mark node as Completed and unlock next
     let nextNode = null;
     if (completed.length === node.sessionDefinitions.length) {
@@ -476,7 +488,12 @@ router.post('/:id/complete-template-session', async (req, res) => {
       node.status = 'In_Progress';
     }
     await node.save();
-    res.json({ node: node.toObject(), nextNode: nextNode ? nextNode.toObject() : null });
+    
+    res.json({ 
+      node: node.toObject(), 
+      nextNode: nextNode ? nextNode.toObject() : null,
+      streakCount: streakResult?.streakCount || null
+    });
   } catch (error) {
     console.error('Error completing template session:', error.message);
     res.status(500).json({ type: 'SERVER_ERROR', message: error.message });
