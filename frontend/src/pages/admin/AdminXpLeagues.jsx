@@ -39,9 +39,14 @@ export default function AdminXpLeagues() {
     },
     { key: 'userName', label: 'User' },
     { 
+      key: 'weeklyXp', 
+      label: 'Weekly XP',
+      render: (val) => <span className="font-semibold text-green-600">{val.toLocaleString()}</span>
+    },
+    { 
       key: 'totalXp', 
       label: 'Total XP',
-      render: (val) => <span className="font-semibold text-site-accent">{val.toLocaleString()}</span>
+      render: (val) => <span className="font-medium text-site-muted text-sm">{val.toLocaleString()}</span>
     },
     {
       key: 'leagueTier',
@@ -79,27 +84,44 @@ export default function AdminXpLeagues() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* XP Leaderboard */}
         <div className="bg-site-surface rounded-xl border border-site-border p-6">
-          <h3 className="font-semibold text-site-ink mb-4">XP leaderboard — this week</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-site-ink">XP leaderboard — this week</h3>
+            <button 
+              onClick={loadLeaderboard}
+              className="text-xs text-site-accent hover:text-site-accent-hover font-medium"
+            >
+              Refresh
+            </button>
+          </div>
           <div className="space-y-2">
-            {leaderboard.slice(0, 5).map((user, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-site-ink">{user.rank}</span>
-                  <span className="text-sm font-medium text-site-ink">{user.userName}</span>
+            {loading ? (
+              <div className="text-center py-8 text-site-faint">Loading...</div>
+            ) : leaderboard.length === 0 ? (
+              <div className="text-center py-8 text-site-faint">No weekly XP yet</div>
+            ) : (
+              leaderboard.slice(0, 5).map((user, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-site-ink">{user.rank}</span>
+                    <span className="text-sm font-medium text-site-ink">{user.userName}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="font-semibold text-green-600">{user.weeklyXp.toLocaleString()}</div>
+                      <div className="text-xs text-site-faint">{user.totalXp.toLocaleString()} total</div>
+                    </div>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${
+                      user.leagueTier === 'Gold' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      user.leagueTier === 'Silver' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+                      user.leagueTier === 'Bronze' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                      'bg-blue-50 text-blue-700 border-blue-200'
+                    }`}>
+                      {user.leagueTier}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-site-accent">{user.totalXp.toLocaleString()}</span>
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${
-                    user.leagueTier === 'Gold' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                    user.leagueTier === 'Silver' ? 'bg-gray-50 text-gray-700 border-gray-200' :
-                    user.leagueTier === 'Bronze' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                    'bg-blue-50 text-blue-700 border-blue-200'
-                  }`}>
-                    {user.leagueTier}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -120,15 +142,14 @@ export default function AdminXpLeagues() {
               <span className="font-semibold text-site-accent">20 XP</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
-              <span className="text-sm text-site-ink">Daily session cap</span>
-              <span className="font-semibold text-site-accent">3 sessions</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
               <span className="text-sm text-site-ink">Streak multiplier threshold</span>
               <span className="font-semibold text-site-accent">7 days</span>
             </div>
-            <button className="w-full px-4 py-2 border border-site-border rounded-lg text-site-muted hover:bg-site-bg transition-colors text-sm font-medium mt-2">
-              Edit XP settings →
+            <button 
+              disabled 
+              className="w-full px-4 py-2 border border-site-border rounded-lg text-site-faint bg-site-bg cursor-not-allowed text-sm font-medium mt-2 opacity-50"
+            >
+              Edit XP settings
             </button>
           </div>
         </div>
