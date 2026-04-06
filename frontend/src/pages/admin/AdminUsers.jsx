@@ -14,6 +14,7 @@ export default function AdminUsers() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
+  const [limit, setLimit] = useState(20)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(true)
@@ -26,7 +27,7 @@ export default function AdminUsers() {
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const params = { page, limit: 20 }
+      const params = { page, limit }
       if (search) params.search = search
       if (statusFilter) params.status = statusFilter
       const data = await adminApi.getUsers(params)
@@ -38,7 +39,7 @@ export default function AdminUsers() {
     } finally {
       setLoading(false)
     }
-  }, [page, search, statusFilter])
+  }, [page, limit, search, statusFilter])
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
 
@@ -67,6 +68,49 @@ export default function AdminUsers() {
     'make-admin': { title: 'Promote to Admin', desc: 'This will give the user full admin access.', btn: 'Make Admin', btnCls: 'bg-site-accent hover:bg-site-accent-hover', needsReason: false },
     'remove-admin': { title: 'Remove Admin Role', desc: 'This will revoke admin access from this user.', btn: 'Remove Admin', btnCls: 'bg-site-muted hover:bg-site-ink', needsReason: false }
   }
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pageNumbers = []
+    const maxVisible = 5
+    
+    if (pages <= maxVisible) {
+      // Show all pages if total is less than max
+      for (let i = 1; i <= pages; i++) {
+        pageNumbers.push(i)
+      }
+    } else {
+      // Always show first page
+      pageNumbers.push(1)
+      
+      // Calculate range around current page
+      let start = Math.max(2, page - 1)
+      let end = Math.min(pages - 1, page + 1)
+      
+      // Add ellipsis after first page if needed
+      if (start > 2) {
+        pageNumbers.push('...')
+      }
+      
+      // Add pages around current page
+      for (let i = start; i <= end; i++) {
+        pageNumbers.push(i)
+      }
+      
+      // Add ellipsis before last page if needed
+      if (end < pages - 1) {
+        pageNumbers.push('...')
+      }
+      
+      // Always show last page
+      pageNumbers.push(pages)
+    }
+    
+    return pageNumbers
+  }
+
+  const startItem = (page - 1) * limit + 1
+  const endItem = Math.min(page * limit, total)
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl">
@@ -103,6 +147,16 @@ export default function AdminUsers() {
           <option value="active">Active</option>
           <option value="suspended">Suspended</option>
           <option value="banned">Banned</option>
+        </select>
+        <select
+          value={limit}
+          onChange={e => { setLimit(Number(e.target.value)); setPage(1) }}
+          className="px-3 py-2 border border-site-border rounded-lg text-sm bg-site-surface text-site-ink focus:outline-none focus:ring-2 focus:ring-site-accent/20"
+        >
+          <option value="10">10 per page</option>
+          <option value="20">20 per page</option>
+          <option value="50">50 per page</option>
+          <option value="100">100 per page</option>
         </select>
       </div>
 
@@ -202,13 +256,55 @@ export default function AdminUsers() {
 
         {/* Pagination */}
         {pages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-site-border">
-            <p className="text-sm text-site-faint">Page {page} of {pages}</p>
-            <div className="flex gap-2">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 border border-site-border rounded-lg disabled:opacity-40 hover:bg-site-bg">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-site-border">
+            <div className="text-sm text-site-faint">
+              Showing {startItem} to {endItem} of {total} users
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Previous button */}
+              <button 
+                onClick={() => setPage(p => Math.max(1, p - 1))} 
+                disabled={page === 1} 
+                className="p-2 border border-site-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-site-bg transition-colors"
+                title="Previous page"
+              >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="p-1.5 border border-site-border rounded-lg disabled:opacity-40 hover:bg-site-bg">
+              
+              {/* Page numbers */}
+              <div className="hidden sm:flex items-center gap-1">
+                {getPageNumbers().map((pageNum, idx) => (
+                  pageNum === '...' ? (
+                    <span key={`ellipsis-${idx}`} className="px-3 py-1 text-site-faint">...</span>
+                  ) : (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`min-w-[36px] px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        page === pageNum
+                          ? 'bg-site-accent text-white'
+                          : 'text-site-ink hover:bg-site-bg border border-site-border'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                ))}
+              </div>
+              
+              {/* Mobile page indicator */}
+              <div className="sm:hidden px-3 py-1 text-sm text-site-ink font-medium">
+                {page} / {pages}
+              </div>
+              
+              {/* Next button */}
+              <button 
+                onClick={() => setPage(p => Math.min(pages, p + 1))} 
+                disabled={page === pages} 
+                className="p-2 border border-site-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-site-bg transition-colors"
+                title="Next page"
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -226,14 +322,20 @@ export default function AdminUsers() {
 
             {actionConfig[actionModal.action]?.needsReason && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-site-ink mb-1">Reason</label>
+                <label className="block text-sm font-medium text-site-ink mb-1">
+                  Reason (10-50 characters)
+                </label>
                 <textarea
                   value={reason}
                   onChange={e => setReason(e.target.value)}
                   placeholder="Provide a reason for this action..."
+                  maxLength={50}
                   className="w-full px-3 py-2 border border-site-border rounded-lg text-sm bg-site-surface text-site-ink focus:outline-none focus:ring-2 focus:ring-site-accent/20 resize-none"
                   rows={3}
                 />
+                <p className="text-xs text-site-faint mt-1">
+                  {reason.length}/50 characters {reason.length < 10 && `(minimum 10)`}
+                </p>
               </div>
             )}
 
@@ -241,7 +343,11 @@ export default function AdminUsers() {
               <button onClick={() => { setActionModal(null); setReason('') }} className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg transition-colors text-sm">
                 Cancel
               </button>
-              <button onClick={handleAction} disabled={actionLoading} className={`flex-1 py-2.5 text-white rounded-lg font-medium transition-colors text-sm ${actionConfig[actionModal.action]?.btnCls}`}>
+              <button 
+                onClick={handleAction} 
+                disabled={actionLoading || (actionConfig[actionModal.action]?.needsReason && (reason.length < 10 || reason.length > 50))} 
+                className={`flex-1 py-2.5 text-white rounded-lg font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed ${actionConfig[actionModal.action]?.btnCls}`}
+              >
                 {actionLoading ? 'Processing...' : actionConfig[actionModal.action]?.btn}
               </button>
             </div>
