@@ -62,11 +62,27 @@ export async function requireAuth(req, res, next) {
       }
 
       console.log('✅ Auth: Firebase token decoded, user:', userId, 'email:', email)
+      
       req.user = { id: userId, email: email }
 
       // Check account status for banned/suspended users
       // Auto-create User record for Firebase users if it doesn't exist
-      let dbUser = await User.findOne({ email }).select('accountStatus role firebaseUid').lean()
+      let dbUser = await User.findOne({ email }).select('accountStatus role firebaseUid emailVerified').lean()
+      
+      // Check if email is verified in Firebase token
+      const emailVerified = payload.email_verified || false
+      
+      // Only enforce email verification for NEW users (users not in database yet)
+      // Existing users (especially Google sign-in users) can bypass this check
+      if (!dbUser && !emailVerified) {
+        console.log('❌ Auth: Email not verified for new user:', email)
+        logSecurityEvent(SECURITY_EVENTS.AUTH_FAILED, req, 'Email not verified for new user')
+        return res.status(403).json({ 
+          message: 'Please verify your email before accessing the platform. Check your inbox for the verification link.',
+          emailVerified: false
+        })
+      }
+      
       if (!dbUser && email) {
         try {
           dbUser = await User.create({
@@ -75,26 +91,43 @@ export async function requireAuth(req, res, next) {
             passwordHash: 'firebase-auth-user',
             role: 'user',
             accountStatus: 'active',
-            firebaseUid: userId
+            firebaseUid: userId,
+            emailVerified: emailVerified
           })
           console.log(`📝 Auto-created User record for Firebase user: ${email}`)
         } catch (createErr) {
           // Might fail on duplicate — race condition, just re-fetch
-          dbUser = await User.findOne({ email }).select('accountStatus role firebaseUid').lean()
+          dbUser = await User.findOne({ email }).select('accountStatus role firebaseUid emailVerified').lean()
         }
       }
 
-      // Update firebaseUid if not set yet
-      if (dbUser && !dbUser.firebaseUid) {
-        await User.updateOne({ _id: dbUser._id }, { firebaseUid: userId })
+      // Update firebaseUid and emailVerified if not set yet
+      if (dbUser) {
+        const updates = {}
+        if (!dbUser.firebaseUid) {
+          updates.firebaseUid = userId
+        }
+        if (!dbUser.emailVerified && emailVerified) {
+          updates.emailVerified = true
+        }
+        if (Object.keys(updates).length > 0) {
+          await User.updateOne({ _id: dbUser._id }, updates)
+        }
       }
 
       if (dbUser) {
         if (dbUser.accountStatus === 'banned') {
-          return res.status(403).json({ message: 'Your account has been banned.', accountStatus: 'banned' })
+          console.log(`🚫 Banned user attempted to access: ${email}`)
+          return res.status(403).json({ 
+            message: 'This account has been banned and cannot access the platform.',
+            accountStatus: 'banned'
+          })
         }
         if (dbUser.accountStatus === 'suspended') {
-          return res.status(403).json({ message: 'Your account has been suspended.', accountStatus: 'suspended' })
+          return res.status(403).json({ 
+            message: 'This account has been suspended.',
+            accountStatus: 'suspended'
+          })
         }
         req.user.role = dbUser.role
       }
