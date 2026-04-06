@@ -1,9 +1,9 @@
-export default function LeagueInfo({ userXp = 0 }) {
+export default function LeagueInfo({ userXp = 0, weeklyXp = 0 }) {
   const leagues = [
-    { name: 'Gold league', range: 'Top tier', minXp: 1000, color: 'bg-amber-50 text-amber-700 border-amber-200' },
-    { name: 'Silver league', range: 'Rank 11-30', minXp: 500, color: 'bg-gray-50 text-gray-700 border-gray-200' },
-    { name: 'Bronze league', range: 'Rank 31-100', minXp: 100, color: 'bg-orange-50 text-orange-700 border-orange-200' },
-    { name: 'Newcomer', range: 'New users', minXp: 0, color: 'bg-blue-50 text-blue-700 border-blue-200' }
+    { name: 'Gold league', range: 'Top performers', minXp: 200, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+    { name: 'Silver league', range: 'Strong progress', minXp: 100, color: 'bg-gray-50 text-gray-700 border-gray-200' },
+    { name: 'Bronze league', range: 'Good effort', minXp: 50, color: 'bg-orange-50 text-orange-700 border-orange-200' },
+    { name: 'Newcomer', range: 'Getting started', minXp: 0, color: 'bg-blue-50 text-blue-700 border-blue-200' }
   ]
 
   const xpSources = [
@@ -14,22 +14,22 @@ export default function LeagueInfo({ userXp = 0 }) {
   ]
 
   const getCurrentLeague = () => {
-    if (userXp >= 1000) return 'Gold'
-    if (userXp >= 500) return 'Silver'
-    if (userXp >= 100) return 'Bronze'
+    if (weeklyXp >= 200) return 'Gold'
+    if (weeklyXp >= 100) return 'Silver'
+    if (weeklyXp >= 50) return 'Bronze'
     return 'Newcomer'
   }
 
   const getNextLeague = () => {
-    if (userXp < 100) return leagues[2] // Bronze
-    if (userXp < 500) return leagues[1] // Silver
-    if (userXp < 1000) return leagues[0] // Gold
+    if (weeklyXp < 50) return leagues[2] // Bronze
+    if (weeklyXp < 100) return leagues[1] // Silver
+    if (weeklyXp < 200) return leagues[0] // Gold
     return null
   }
 
   const currentLeague = getCurrentLeague()
   const nextLeague = getNextLeague()
-  const xpToNext = nextLeague ? nextLeague.minXp - userXp : 0
+  const xpToNext = nextLeague ? nextLeague.minXp - weeklyXp : 0
 
   return (
     <div className="space-y-4">
@@ -43,7 +43,7 @@ export default function LeagueInfo({ userXp = 0 }) {
             >
               <p className="text-sm font-semibold">{league.name}</p>
               <p className="text-xs mt-1">{league.range}</p>
-              <p className="text-xs font-bold mt-2">XP: {league.minXp}+</p>
+              <p className="text-xs font-bold mt-2">Weekly XP: {league.minXp}+</p>
               {isCurrent && <p className="text-xs font-semibold mt-2">✓ Current</p>}
             </div>
           )
@@ -52,12 +52,24 @@ export default function LeagueInfo({ userXp = 0 }) {
 
       {userXp !== undefined && (
         <div className="bg-site-surface rounded-xl border border-site-border p-4">
-          <p className="text-sm font-semibold text-site-ink">Your Progress</p>
-          <p className="text-2xl font-bold text-site-accent mt-2">{userXp} XP</p>
-          <p className="text-xs text-site-muted mt-1">Current league: <span className="font-semibold">{currentLeague}</span></p>
+          <p className="text-sm font-semibold text-site-ink mb-3">Your Progress</p>
+          
+          {/* All-time XP */}
+          <div className="mb-3">
+            <p className="text-xs text-site-faint mb-1">All-time XP</p>
+            <p className="text-2xl font-bold text-site-accent">{userXp.toLocaleString()} XP</p>
+          </div>
+          
+          {/* Weekly XP */}
+          <div className="mb-3 pb-3 border-b border-site-border">
+            <p className="text-xs text-site-faint mb-1">This week</p>
+            <p className="text-xl font-bold text-green-600">{weeklyXp.toLocaleString()} XP</p>
+          </div>
+          
+          <p className="text-xs text-site-muted">Current league: <span className="font-semibold">{currentLeague}</span></p>
           {nextLeague && (
             <p className="text-xs text-site-muted mt-2">
-              {xpToNext} XP to reach <span className="font-semibold">{nextLeague.name}</span>
+              {xpToNext.toLocaleString()} XP to reach <span className="font-semibold">{nextLeague.name}</span>
             </p>
           )}
         </div>
@@ -83,7 +95,7 @@ export default function LeagueInfo({ userXp = 0 }) {
         </div>
         <div className="mt-3 pt-3 border-t border-green-200">
           <p className="text-xs text-green-700">
-            <span className="font-semibold">💡 Tip:</span> Maintain a 7+ day streak to unlock 2× XP multiplier on all activities! Template skill maps award XP when all nodes are completed.
+            <span className="font-semibold">💡 Tip:</span> Maintain a 7+ day streak to unlock 2× XP multiplier on all activities! Leagues are based on weekly XP and reset every Monday.
           </p>
         </div>
       </div>
