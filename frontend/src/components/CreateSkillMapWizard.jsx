@@ -79,7 +79,14 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
     setStep(4);
   };
 
-  const skipStep3 = () => setStep(4);
+  const skipStep3 = () => {
+    // Check for duplicates even when skipping
+    if (sketchTitlesNonUnique()) {
+      markAttempt(3);
+      return;
+    }
+    setStep(4);
+  };
 
   const filledSketchTitles = nodeInputs.map((x) => x.trim()).filter(Boolean);
   const contentCount = filledSketchTitles.length;
