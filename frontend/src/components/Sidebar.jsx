@@ -115,11 +115,7 @@ export default function Sidebar() {
 
   const handleLogoutClick = () => {
     setShowUserMenu(false);
-    if (hasActiveSessions) {
-      setShowLogoutConfirm(true);
-    } else {
-      performLogout();
-    }
+    setShowLogoutConfirm(true);
   };
 
   const performLogout = async () => {
@@ -274,47 +270,63 @@ export default function Sidebar() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
           <div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-sm p-6 border border-site-border">
             <div className="flex flex-col items-center text-center">
-              <AlertIcon />
-              <h3 className="text-lg font-bold text-site-ink mt-4 mb-2">
-                Active Sessions Running
-              </h3>
-              <p className="text-site-muted text-sm mb-4">
-                You have {activeSessions.length} active session{activeSessions.length > 1 ? 's' : ''}
-                {runningSessions.length > 0 && (
-                  <span className="text-amber-600 font-medium">
-                    {' '}({runningSessions.length} currently running)
-                  </span>
-                )}. 
-                Logging out will discard all unsaved progress.
-              </p>
-              
-              {/* Session Preview */}
-              <div className="w-full bg-site-bg rounded-lg p-3 mb-4 max-h-32 overflow-y-auto border border-site-border">
-                {activeSessions.slice(0, 3).map(session => (
-                  <div key={session.id} className="flex items-center justify-between py-1 text-sm">
-                    <span className="text-site-ink truncate">{session.skillName}</span>
-                    <span className={`font-mono ${session.isRunning ? 'text-green-600' : 'text-gray-500'}`}>
-                      {Math.floor(session.timer / 60)}m
-                    </span>
+              {hasActiveSessions ? (
+                <>
+                  <AlertIcon />
+                  <h3 className="text-lg font-bold text-site-ink mt-4 mb-2">
+                    Active Sessions Running
+                  </h3>
+                  <p className="text-site-muted text-sm mb-4">
+                    You have {activeSessions.length} active session{activeSessions.length > 1 ? 's' : ''}
+                    {runningSessions.length > 0 && (
+                      <span className="text-amber-600 font-medium">
+                        {' '}({runningSessions.length} currently running)
+                      </span>
+                    )}. 
+                    Logging out will discard all unsaved progress.
+                  </p>
+                  
+                  {/* Session Preview */}
+                  <div className="w-full bg-site-bg rounded-lg p-3 mb-4 max-h-32 overflow-y-auto border border-site-border">
+                    {activeSessions.slice(0, 3).map(session => (
+                      <div key={session.id} className="flex items-center justify-between py-1 text-sm">
+                        <span className="text-site-ink truncate">{session.skillName}</span>
+                        <span className={`font-mono ${session.isRunning ? 'text-green-600' : 'text-gray-500'}`}>
+                          {Math.floor(session.timer / 60)}m
+                        </span>
+                      </div>
+                    ))}
+                    {activeSessions.length > 3 && (
+                      <p className="text-xs text-site-faint mt-1">+{activeSessions.length - 3} more</p>
+                    )}
                   </div>
-                ))}
-                {activeSessions.length > 3 && (
-                  <p className="text-xs text-site-faint mt-1">+{activeSessions.length - 3} more</p>
-                )}
-              </div>
+                </>
+              ) : (
+                <>
+                  <svg className="w-12 h-12 text-site-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <h3 className="text-lg font-bold text-site-ink mt-4 mb-2">
+                    Sign out?
+                  </h3>
+                  <p className="text-site-muted text-sm mb-4">
+                    Are you sure you want to sign out?
+                  </p>
+                </>
+              )}
 
               <div className="flex gap-3 w-full">
                 <button
                   onClick={() => setShowLogoutConfirm(false)}
                   className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg transition-colors"
                 >
-                  Cancel
+                  No
                 </button>
                 <button
                   onClick={performLogout}
                   className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                 >
-                  Sign Out Anyway
+                  {hasActiveSessions ? 'Sign Out Anyway' : 'Yes'}
                 </button>
               </div>
             </div>
