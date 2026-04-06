@@ -212,7 +212,7 @@ export default function Dashboard() {
           {xpProfile && (
             <div className="mb-6 bg-site-surface rounded-xl shadow-sm border border-site-border p-5">
               <h3 className="text-base font-semibold text-site-ink mb-4">League Progress</h3>
-              <LeagueInfo userXp={xpProfile.totalXp || 0} />
+              <LeagueInfo userXp={xpProfile.totalXp || 0} weeklyXp={xpProfile.weeklyXp || 0} />
             </div>
           )}
 
