@@ -3,6 +3,7 @@ import { z } from 'zod'
 import mongoose from 'mongoose'
 import Practice from '../models/Practice.js'
 import Reflection from '../models/Reflection.js'
+import StreakService from '../services/StreakService.js'
 import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
@@ -12,15 +13,15 @@ router.use(requireAuth)
 
 // Validation schemas
 const createPracticeSchema = z.object({
-  skillName: z.string().min(1).max(100).trim(),
+  skillName: z.string().min(1).max(20).trim(),
   minutesPracticed: z.number().min(1).max(1440),
-  tags: z.array(z.string().max(50).trim()).max(10).default([]),
+  tags: z.array(z.string().max(10).trim()).max(10).default([]),
   timerSeconds: z.number().min(0).default(0),
   date: z.string().datetime().optional(),
-  notes: z.string().max(1000).trim().optional(),
+  notes: z.string().max(50).trim().optional(),
   confidence: z.number().int().min(1).max(5).optional().nullable(),
-  blockers: z.string().max(500).trim().optional().default(''),
-  nextStep: z.string().max(500).trim().optional().default('')
+  blockers: z.string().max(50).trim().optional().default(''),
+  nextStep: z.string().max(50).trim().optional().default('')
 })
 
 const updatePracticeSchema = createPracticeSchema.partial()
@@ -259,11 +260,21 @@ router.post('/', async (req, res) => {
     console.log('📝 Creating practice for user:', req.user.id, 'data:', req.body)
     const data = createPracticeSchema.parse(req.body)
     
+    const practiceDate = data.date ? new Date(data.date) : new Date()
+    
     const practice = await Practice.create({
       ...data,
       userId: req.user.id,
-      date: data.date ? new Date(data.date) : new Date()
+      date: practiceDate
     })
+    
+    // Process streak for log practice session (no minimum duration)
+    try {
+      await StreakService.processSession(req.user.id, practiceDate)
+    } catch (streakError) {
+      console.error('⚠️ Error processing streak for practice:', streakError.message)
+      // Don't fail the request if streak processing fails
+    }
     
     console.log('✅ Practice created:', practice._id)
     res.status(201).json(practice)
