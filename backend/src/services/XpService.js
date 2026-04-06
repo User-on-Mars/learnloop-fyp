@@ -35,14 +35,14 @@ class XpService {
   }
 
   /**
-   * Calculate league tier based on total XP
-   * @param {number} totalXp
+   * Calculate league tier based on weekly XP
+   * @param {number} weeklyXp
    * @returns {'Gold'|'Silver'|'Bronze'|'Newcomer'}
    */
-  static _calculateLeagueTier(totalXp) {
-    if (totalXp >= 1000) return 'Gold';
-    if (totalXp >= 500) return 'Silver';
-    if (totalXp >= 100) return 'Bronze';
+  static _calculateLeagueTier(weeklyXp) {
+    if (weeklyXp >= 200) return 'Gold';
+    if (weeklyXp >= 100) return 'Silver';
+    if (weeklyXp >= 50) return 'Bronze';
     return 'Newcomer';
   }
 
@@ -140,8 +140,8 @@ class XpService {
           { upsert: true, new: true }
         );
 
-        // Update league tier based on new total XP
-        const newTier = XpService._calculateLeagueTier(updatedProfile.totalXp);
+        // Update league tier based on new weekly XP
+        const newTier = XpService._calculateLeagueTier(updatedProfile.weeklyXp);
         if (updatedProfile.leagueTier !== newTier) {
           await UserXpProfile.updateOne(
             { userId },
@@ -178,8 +178,8 @@ class XpService {
     const totalXp = profile?.totalXp ?? 0;
     const weeklyXp = profile?.weeklyXp ?? 0;
     
-    // Calculate league tier based on total XP (not stored value)
-    const leagueTier = XpService._calculateLeagueTier(totalXp);
+    // Calculate league tier based on weekly XP (not stored value)
+    const leagueTier = XpService._calculateLeagueTier(weeklyXp);
     
     // Update stored tier if it's different
     if (profile && profile.leagueTier !== leagueTier) {
