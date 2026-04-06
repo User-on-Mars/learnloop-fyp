@@ -52,6 +52,7 @@ export const adminApi = {
   // Skill Maps
   getSkillMapStats: () => request('/admin/skill-maps/stats'),
   getSkillMaps: () => request('/admin/skill-maps'),
+  deleteSkillMap: (skillMapId) => request(`/admin/skill-maps/${skillMapId}`, { method: 'DELETE' }),
   
   // Reflections
   getReflections: (limit = 20) => request(`/admin/reflections?limit=${limit}`),
