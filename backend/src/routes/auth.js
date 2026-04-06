@@ -6,6 +6,7 @@ import User from '../models/User.js'
 import LeaderboardService from '../services/LeaderboardService.js'
 import crypto from 'crypto'
 import nodemailer from 'nodemailer'
+import { validateEmail } from '../utils/emailValidator.js'
 
 const router = Router()
 
@@ -23,17 +24,35 @@ const loginSchema = z.object({
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = registerSchema.parse(req.body)
+    
+    // Validate email domain
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.valid) {
+      return res.status(400).json({ message: emailValidation.message })
+    }
+    
     const existing = await User.findOne({ email })
     if (existing) {
+      // Check if user is banned
+      if (existing.accountStatus === 'banned') {
+        return res.status(403).json({ 
+          message: 'This account has been banned and cannot be used.',
+          accountStatus: 'banned'
+        })
+      }
       // If user exists, update their name if provided
       if (name && !existing.name) {
         await User.updateOne({ email }, { name })
       }
       return res.status(409).json({ message: 'Email already registered' })
     }
-    const passwordHash = await bcrypt.hash(password, 10)
-    const user = await User.create({ name, email, passwordHash })
-    return res.status(201).json({ id: user._id, email: user.email })
+    
+    // Note: We don't create the user in our database yet
+    // Firebase will handle account creation and email verification
+    // User will be created in our DB only after email verification via sync-profile
+    return res.status(201).json({ 
+      message: 'Please verify your email to complete registration. Check your inbox for the verification link.' 
+    })
   } catch (e){
     return res.status(400).json({ message: e.message })
   }
@@ -44,6 +63,15 @@ router.post('/login', async (req, res) => {
     const { email, password } = loginSchema.parse(req.body)
     const user = await User.findOne({ email })
     if (!user) return res.status(401).json({ message: 'Invalid credentials' })
+    
+    // Check if user is banned before validating password
+    if (user.accountStatus === 'banned') {
+      return res.status(403).json({ 
+        message: 'This account has been banned and cannot access the platform.',
+        accountStatus: 'banned'
+      })
+    }
+    
     const ok = await bcrypt.compare(password, user.passwordHash)
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' })
     
@@ -99,10 +127,17 @@ router.post('/reset', async (req, res) => {
 
 // Sync Firebase user profile (display name, email) to backend
 // Called after Firebase auth to ensure user record has correct display name
+// This is where we create the user in our database AFTER email verification
 router.post('/sync-profile', async (req, res) => {
   try {
     const { email, displayName, firebaseUid } = req.body
     if (!email) return res.status(400).json({ message: 'Email is required' })
+    
+    // Validate email domain
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.valid) {
+      return res.status(400).json({ message: emailValidation.message })
+    }
     
     const name = displayName || email.split('@')[0]
     
@@ -112,6 +147,7 @@ router.post('/sync-profile', async (req, res) => {
     let user = await User.findOne({ email })
     if (!user) {
       console.log(`📝 Creating new user: ${email}`)
+      // Only create user if they've verified their email (Firebase handles this)
       user = await User.create({
         name,
         email,
@@ -119,10 +155,20 @@ router.post('/sync-profile', async (req, res) => {
         passwordHash: 'firebase-auth-user',
         role: 'user',
         accountStatus: 'active',
+        emailVerified: true,  // Firebase users are verified through Firebase
         lastLoginAt: new Date()
       })
       console.log(`✅ User created: ${user._id} with firebaseUid: ${user.firebaseUid}`)
     } else {
+      // Check if user is banned
+      if (user.accountStatus === 'banned') {
+        console.log(`🚫 Banned user attempted to sync profile: ${email}`)
+        return res.status(403).json({ 
+          message: 'This account has been banned and cannot access the platform.',
+          accountStatus: 'banned'
+        })
+      }
+      
       console.log(`👤 User exists: ${user._id}, current name: ${user.name}, current firebaseUid: ${user.firebaseUid}`)
       // Always update name if displayName is provided and different
       const updateData = { lastLoginAt: new Date() }
@@ -134,6 +180,10 @@ router.post('/sync-profile', async (req, res) => {
       if (!user.firebaseUid && firebaseUid) {
         console.log(`🔄 Setting firebaseUid to ${firebaseUid}`)
         updateData.firebaseUid = firebaseUid
+      }
+      // Ensure emailVerified is true for Firebase users
+      if (!user.emailVerified) {
+        updateData.emailVerified = true
       }
       if (Object.keys(updateData).length > 0) {
         await User.updateOne({ email }, updateData)
