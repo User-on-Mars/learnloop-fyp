@@ -30,15 +30,22 @@ export default function Signup() {
         return;
       }
 
+      // Create Firebase account and send verification email
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await sendEmailVerification(userCredential.user);
-      setMsg("Account created! Please check your email to verify before logging in.");
-      nav("/login");
+      
+      // Sign out immediately - user must verify email first
+      await auth.signOut();
+      
+      setMsg("Verification email sent! Please check your inbox and verify your email before logging in.");
+      
+      // Redirect to login after 3 seconds
+      setTimeout(() => nav("/login"), 3000);
     } catch (e) {
       const code = e?.code || "";
       const map = {
-        "auth/email-already-in-use": "This email is already registered.",
-        "auth/invalid-email": "Enter a valid email address.",
+        "auth/email-already-in-use": "This email is already registered. Please login instead.",
+        "auth/invalid-email": "Please enter a valid email address from a recognized provider (Gmail, Yahoo, Outlook, etc.).",
         "auth/weak-password": "Password should be at least 6 characters.",
         "auth/operation-not-allowed": "Email/password accounts are not enabled.",
       };
