@@ -12,8 +12,7 @@ export default function AdminSettings() {
     resetDay: 'Monday 00:00 UTC',
     goldTierSize: 'Top 10',
     silverTierSize: 'Rank 11-30',
-    bronzeTierSize: 'Rank 31-100',
-    minXpForPromotion: '50 XP'
+    bronzeTierSize: 'Rank 31-100'
   })
   const [autoFlagSettings, setAutoFlagSettings] = useState({
     sessionsPerDay: '20',
@@ -25,6 +24,7 @@ export default function AdminSettings() {
   const handleManualReset = async () => {
     if (resetConfirmation !== 'RESET') {
       setMessage('Please type "RESET" to confirm')
+      setTimeout(() => setMessage(''), 3000)
       return
     }
 
@@ -34,20 +34,24 @@ export default function AdminSettings() {
       const response = await adminApi.manualReset('RESET')
       console.log('Reset API response:', response)
       
-      setMessage('✅ Weekly reset completed successfully')
+      setMessage('Weekly reset completed successfully')
       setResetLoading(false)
       setConfirmReset(false)
       setResetConfirmation('')
       
-      // Trigger a page refresh to update the leaderboard
+      // Auto-dismiss message after 3 seconds, then refresh
       setTimeout(() => {
+        setMessage('')
         window.location.reload()
-      }, 1500)
+      }, 3000)
     } catch (error) {
       console.error('Reset error details:', error)
       setResetLoading(false)
-      setMessage(`❌ Error: ${error.message || 'Failed to trigger reset'}`)
-      // Keep modal open on error so user can see the error and retry
+      setMessage(`Error: ${error.message || 'Failed to trigger reset'}`)
+      // Auto-dismiss error message after 5 seconds
+      setTimeout(() => {
+        setMessage('')
+      }, 5000)
     }
   }
 
@@ -72,12 +76,24 @@ export default function AdminSettings() {
       a.download = `learnloop-users-${new Date().toISOString().split('T')[0]}.csv`
       document.body.appendChild(a)
       a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-
-      setMessage('✅ User data exported successfully')
+      
+      // Wait for download to complete before showing success message
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        setMessage('User data exported successfully')
+        
+        // Auto-dismiss message after 3 seconds
+        setTimeout(() => {
+          setMessage('')
+        }, 3000)
+      }, 100)
     } catch (error) {
-      setMessage(`❌ Error: ${error.message}`)
+      setMessage(`Error: ${error.message}`)
+      // Auto-dismiss error message after 5 seconds
+      setTimeout(() => {
+        setMessage('')
+      }, 5000)
     } finally {
       setExportLoading(false)
     }
@@ -91,7 +107,7 @@ export default function AdminSettings() {
       </div>
 
       {message && (
-        <div className={`mb-6 p-4 rounded-lg border ${message.includes('✅') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+        <div className={`mb-6 p-4 rounded-lg border ${message.toLowerCase().includes('error') ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'}`}>
           {message}
         </div>
       )}

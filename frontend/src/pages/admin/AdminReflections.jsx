@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MessageSquare, Trash2 } from 'lucide-react'
+import { MessageSquare, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { adminApi } from '../../api/adminApi'
 import DataTable from '../../components/admin/DataTable'
 import ConfirmAction from '../../components/admin/ConfirmAction'
@@ -17,6 +17,8 @@ export default function AdminReflections() {
   const [loading, setLoading] = useState(true)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const itemsPerPage = 20
 
   useEffect(() => {
     loadReflections()
@@ -46,6 +48,12 @@ export default function AdminReflections() {
       setActionLoading(false)
     }
   }
+
+  // Pagination logic
+  const totalPages = Math.ceil(reflections.length / itemsPerPage)
+  const startIndex = (page - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedReflections = reflections.slice(startIndex, endIndex)
 
   const columns = [
     { key: 'userName', label: 'User' },
@@ -91,12 +99,42 @@ export default function AdminReflections() {
         <p className="text-site-muted mt-1">Recent reflections — flagged or worth reviewing</p>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={reflections}
-        loading={loading}
-        empty="No reflections"
-      />
+      <div className="bg-site-surface rounded-xl border border-site-border">
+        <DataTable
+          columns={columns}
+          data={paginatedReflections}
+          loading={loading}
+          empty="No reflections"
+        />
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-site-border">
+            <p className="text-sm text-site-faint">
+              Showing {startIndex + 1} to {Math.min(endIndex, reflections.length)} of {reflections.length} reflections
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-2 border border-site-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-site-bg transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm text-site-ink font-medium">
+                {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="p-2 border border-site-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-site-bg transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <ConfirmAction
         isOpen={!!confirmDelete}
