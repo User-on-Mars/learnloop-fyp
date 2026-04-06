@@ -230,9 +230,11 @@ class SessionController {
       // Award XP for session completion (never blocks response)
       let xpAwarded = null;
       try {
+        // Process streak for any completed session (no minimum duration)
+        const streakResult = await StreakService.processSession(userId, new Date());
+        
         const minutesPracticed = (result.duration || 0) / 60;
         if (minutesPracticed >= 10) {
-          const streakResult = await StreakService.processSession(userId, new Date());
           const sessionXp = await XpService.awardXp(userId, 'session_completion', 10);
           if (sessionXp) {
             xpAwarded = { type: 'session_completion', amount: sessionXp.finalAmount };
