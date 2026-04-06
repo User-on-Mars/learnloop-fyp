@@ -342,4 +342,19 @@ router.delete('/content/:type/:id', async (req, res) => {
   }
 })
 
+// ─── Delete Skill Map ──────────────────────────────────────────
+router.delete('/skill-maps/:skillMapId', async (req, res) => {
+  try {
+    const { skillMapId } = req.params
+    const adminId = req.user.id
+    const adminEmail = req.user.email
+
+    const result = await AdminService.deleteSkillMap(skillMapId, adminId, adminEmail)
+    res.json(result)
+  } catch (error) {
+    console.error('Delete skill map error:', error)
+    res.status(error.message.includes('not found') || error.message.includes('Cannot delete') ? 400 : 500).json({ message: error.message })
+  }
+})
+
 export default router
