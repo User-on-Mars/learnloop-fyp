@@ -22,7 +22,16 @@ export default function Login() {
     setMsg("");
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Check if email is verified
+      if (!userCredential.user.emailVerified) {
+        await auth.signOut();
+        setErr("Please verify your email before logging in. Check your inbox for the verification link.");
+        setLoading(false);
+        return;
+      }
+      
       setMsg("Welcome back!");
       nav("/dashboard", { replace: true });
     } catch (e) {
