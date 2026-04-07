@@ -50,30 +50,7 @@ export default function LeagueInfo({ userXp = 0, weeklyXp = 0 }) {
         })}
       </div>
 
-      {userXp !== undefined && (
-        <div className="bg-site-surface rounded-xl border border-site-border p-4">
-          <p className="text-sm font-semibold text-site-ink mb-3">Your Progress</p>
-          
-          {/* All-time XP */}
-          <div className="mb-3">
-            <p className="text-xs text-site-faint mb-1">All-time XP</p>
-            <p className="text-2xl font-bold text-site-accent">{userXp.toLocaleString()} XP</p>
-          </div>
-          
-          {/* Weekly XP */}
-          <div className="mb-3 pb-3 border-b border-site-border">
-            <p className="text-xs text-site-faint mb-1">This week</p>
-            <p className="text-xl font-bold text-green-600">{weeklyXp.toLocaleString()} XP</p>
-          </div>
-          
-          <p className="text-xs text-site-muted">Current league: <span className="font-semibold">{currentLeague}</span></p>
-          {nextLeague && (
-            <p className="text-xs text-site-muted mt-2">
-              {xpToNext.toLocaleString()} XP to reach <span className="font-semibold">{nextLeague.name}</span>
-            </p>
-          )}
-        </div>
-      )}
+
 
       {/* XP Earning Guide */}
       <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 p-4">
