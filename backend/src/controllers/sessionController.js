@@ -227,32 +227,13 @@ class SessionController {
         }
       }
 
-      // Award XP for session completion (never blocks response)
-      let xpAwarded = null;
+      // Process streak for completed session (no XP awarded for session completion itself)
       try {
-        // Process streak for any completed session (no minimum duration)
-        const streakResult = await StreakService.processSession(userId, new Date());
-        
-        const minutesPracticed = (result.duration || 0) / 60;
-        if (minutesPracticed >= 10) {
-          const sessionXp = await XpService.awardXp(userId, 'session_completion', 10);
-          if (sessionXp) {
-            xpAwarded = { type: 'session_completion', amount: sessionXp.finalAmount };
-          }
-          if (streakResult.streakCount >= 1) {
-            // Cap streak bonus at 35 XP (5 × 7 days max)
-            const streakBonus = Math.min(5 * streakResult.streakCount, 35);
-            const bonusXp = await XpService.awardXp(userId, 'streak_bonus', streakBonus);
-            if (bonusXp && xpAwarded) {
-              xpAwarded.amount += bonusXp.finalAmount;
-              xpAwarded.type = 'session_with_streak';
-            }
-          }
-        }
-      } catch (xpError) {
-        await ErrorLoggingService.logError(xpError, {
+        await StreakService.processSession(userId, new Date());
+      } catch (streakError) {
+        await ErrorLoggingService.logError(streakError, {
           ...context,
-          operation: 'session_xp_award'
+          operation: 'session_streak_processing'
         });
       }
       
@@ -260,7 +241,7 @@ class SessionController {
       const duration = Date.now() - startTime;
       await ErrorLoggingService.logPerformance('complete_session', duration, context);
       
-      res.json({ ...result, xpAwarded });
+      res.json(result);
       
     } catch (error) {
       // Enhanced error logging
