@@ -14,6 +14,7 @@ import {
 } from '../controllers/reflectionController.js'
 import { generateReflectionPDF } from '../services/pdfGenerator.js'
 import XpService from '../services/XpService.js'
+import XpSettings from '../models/XpSettings.js'
 import ErrorLoggingService from '../services/ErrorLoggingService.js'
 
 const router = Router()
@@ -49,14 +50,25 @@ router.post('/',
       const reflection = await createReflection(req.user.id, req.body)
       console.log('✅ Reflection created:', reflection._id)
 
-      // Award reflection XP if mood and content present (never blocks response)
+      // Award reflection XP (daily cap enforced in XpService)
       let xpAwarded = null;
       try {
-        if (reflection.mood && reflection.content) {
-          const xp = await XpService.awardXp(req.user.id, 'reflection', 20);
-          if (xp) {
-            xpAwarded = { type: 'reflection', amount: xp.finalAmount };
-          }
+        const settings = await XpSettings.getSettings();
+        const xp = await XpService.awardXp(
+          req.user.id, 
+          'reflection', 
+          settings.reflectionXp,
+          { reflectionId: reflection._id.toString() }
+        );
+        if (xp) {
+          xpAwarded = { 
+            baseAmount: xp.baseAmount,
+            multiplier: xp.multiplier,
+            finalAmount: xp.finalAmount
+          };
+          console.log(`✅ Awarded ${xp.finalAmount} XP for reflection`);
+        } else {
+          console.log('ℹ️ No XP awarded (daily cap reached or other constraint)');
         }
       } catch (xpError) {
         await ErrorLoggingService.logError(xpError, {
