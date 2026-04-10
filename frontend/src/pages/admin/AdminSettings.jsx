@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { AlertCircle, RotateCcw, Settings as SettingsIcon, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { AlertCircle, RotateCcw, Settings as SettingsIcon, X, Save } from 'lucide-react'
 import { adminApi } from '../../api/adminApi'
 
 export default function AdminSettings() {
@@ -8,6 +8,17 @@ export default function AdminSettings() {
   const [resetLoading, setResetLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [xpSettings, setXpSettings] = useState({
+    reflectionXp: 20,
+    practiceXpPerMinute: 2,
+    streak5DayMultiplier: 2,
+    streak7DayMultiplier: 5
+  })
+  const [xpSettingsLoading, setXpSettingsLoading] = useState(true)
+  const [xpSettingsEditing, setXpSettingsEditing] = useState(false)
+  const [xpSettingsSaving, setXpSettingsSaving] = useState(false)
+  const [editedXpSettings, setEditedXpSettings] = useState({})
+  
   const [leaderboardSettings, setLeaderboardSettings] = useState({
     resetDay: 'Monday 00:00 UTC',
     goldTierSize: 'Top 10',
@@ -20,6 +31,65 @@ export default function AdminSettings() {
     xpDayAlertThreshold: '500 XP',
     notifyAdminOn: 'Email + dashboard'
   })
+
+  // Fetch XP settings on mount
+  useEffect(() => {
+    fetchXpSettings()
+  }, [])
+
+  const fetchXpSettings = async () => {
+    try {
+      setXpSettingsLoading(true)
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/admin/xp-settings`, {
+        headers: {
+          'Authorization': `Bearer ${await adminApi.getToken()}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setXpSettings(data)
+        setEditedXpSettings(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch XP settings:', error)
+      setMessage('Error: Failed to load XP settings')
+      setTimeout(() => setMessage(''), 5000)
+    } finally {
+      setXpSettingsLoading(false)
+    }
+  }
+
+  const handleSaveXpSettings = async () => {
+    try {
+      setXpSettingsSaving(true)
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/admin/xp-settings`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${await adminApi.getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editedXpSettings)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to update XP settings')
+      }
+
+      const data = await response.json()
+      setXpSettings(data.settings)
+      setEditedXpSettings(data.settings)
+      setXpSettingsEditing(false)
+      setMessage('XP settings updated successfully')
+      setTimeout(() => setMessage(''), 3000)
+    } catch (error) {
+      console.error('Failed to save XP settings:', error)
+      setMessage(`Error: ${error.message}`)
+      setTimeout(() => setMessage(''), 5000)
+    } finally {
+      setXpSettingsSaving(false)
+    }
+  }
 
   const handleManualReset = async () => {
     if (resetConfirmation !== 'RESET') {
@@ -113,6 +183,115 @@ export default function AdminSettings() {
       )}
 
       <div className="space-y-6">
+        {/* XP Settings */}
+        <div className="bg-site-surface rounded-xl border border-site-border p-6">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-lg bg-purple-50">
+              <SettingsIcon className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-site-ink mb-4">XP Reward Settings</h3>
+              {xpSettingsLoading ? (
+                <div className="text-site-muted">Loading...</div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
+                      <span className="text-sm text-site-ink">Daily Reflection XP</span>
+                      {xpSettingsEditing ? (
+                        <input
+                          type="number"
+                          min="0"
+                          max="1000"
+                          value={editedXpSettings.reflectionXp}
+                          onChange={(e) => setEditedXpSettings({...editedXpSettings, reflectionXp: Number(e.target.value)})}
+                          className="w-20 px-2 py-1 border border-site-border rounded text-sm"
+                        />
+                      ) : (
+                        <span className="font-semibold text-site-accent">{xpSettings.reflectionXp} XP</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
+                      <span className="text-sm text-site-ink">Practice XP per Minute</span>
+                      {xpSettingsEditing ? (
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={editedXpSettings.practiceXpPerMinute}
+                          onChange={(e) => setEditedXpSettings({...editedXpSettings, practiceXpPerMinute: Number(e.target.value)})}
+                          className="w-20 px-2 py-1 border border-site-border rounded text-sm"
+                        />
+                      ) : (
+                        <span className="font-semibold text-site-accent">{xpSettings.practiceXpPerMinute} XP/min</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
+                      <span className="text-sm text-site-ink">5-Day Streak Multiplier</span>
+                      {xpSettingsEditing ? (
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          step="0.1"
+                          value={editedXpSettings.streak5DayMultiplier}
+                          onChange={(e) => setEditedXpSettings({...editedXpSettings, streak5DayMultiplier: Number(e.target.value)})}
+                          className="w-20 px-2 py-1 border border-site-border rounded text-sm"
+                        />
+                      ) : (
+                        <span className="font-semibold text-site-accent">{xpSettings.streak5DayMultiplier}x</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
+                      <span className="text-sm text-site-ink">7+ Day Streak Multiplier</span>
+                      {xpSettingsEditing ? (
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          step="0.1"
+                          value={editedXpSettings.streak7DayMultiplier}
+                          onChange={(e) => setEditedXpSettings({...editedXpSettings, streak7DayMultiplier: Number(e.target.value)})}
+                          className="w-20 px-2 py-1 border border-site-border rounded text-sm"
+                        />
+                      ) : (
+                        <span className="font-semibold text-site-accent">{xpSettings.streak7DayMultiplier}x</span>
+                      )}
+                    </div>
+                  </div>
+                  {xpSettingsEditing ? (
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={handleSaveXpSettings}
+                        disabled={xpSettingsSaving}
+                        className="flex-1 px-4 py-2 bg-site-accent text-white rounded-lg hover:bg-site-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        {xpSettingsSaving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setXpSettingsEditing(false)
+                          setEditedXpSettings(xpSettings)
+                        }}
+                        className="px-4 py-2 border border-site-border rounded-lg text-site-ink hover:bg-site-bg transition-colors text-sm font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setXpSettingsEditing(true)}
+                      className="w-full mt-4 px-4 py-2 border border-site-border rounded-lg text-site-ink hover:bg-site-bg transition-colors text-sm font-medium"
+                    >
+                      Edit XP Settings
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
         {/* Leaderboard Settings */}
         <div className="bg-site-surface rounded-xl border border-site-border p-6">
           <div className="flex items-start gap-4">
