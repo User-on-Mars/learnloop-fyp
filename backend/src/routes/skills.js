@@ -67,6 +67,7 @@ const createFromTemplateSchema = z.object({
     title: z.string().trim().min(1, 'Title is required').max(30, 'Title must be 30 characters or less'),
     description: z.string().trim().max(120, 'Description must be 120 characters or less').default(''),
     icon: z.string().trim().min(1).max(30),
+    color: z.string().trim().max(20).optional(),
     goal: z.string().trim().min(1, 'Goal is required').max(16, 'Goal must be 16 characters or less'),
     nodes: z.array(templateNodeSchema).min(2, 'At least 2 nodes required').max(15, 'At most 15 nodes allowed')
   })
@@ -319,7 +320,8 @@ const updateSkillSchema = z.object({
     .optional(),
   description: z.string().max(500, 'Description must be 500 characters or less').optional(),
   goal: z.string().max(200, 'Goal must be 200 characters or less').optional(),
-  icon: z.string().max(30, 'Icon must be 30 characters or less').optional()
+  icon: z.string().max(30, 'Icon must be 30 characters or less').optional(),
+  color: z.string().max(20, 'Color must be 20 characters or less').optional()
 });
 
 router.patch('/:id', validateRequest(updateSkillSchema), async (req, res) => {
