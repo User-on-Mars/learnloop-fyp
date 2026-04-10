@@ -5,11 +5,11 @@ const XpTransactionSchema = new mongoose.Schema({
   source: {
     type: String,
     required: true,
-    enum: ['session_completion', 'reflection', 'streak_bonus', 'skillmap_completion']
+    enum: ['practice', 'reflection', 'admin_adjustment']
   },
-  baseAmount: { type: Number, required: true, min: 1 },
-  multiplier: { type: Number, required: true, enum: [1, 2] },
-  finalAmount: { type: Number, required: true, min: 1 },
+  baseAmount: { type: Number, required: true, min: 0 },
+  multiplier: { type: Number, required: true, min: 1 },
+  finalAmount: { type: Number, required: true, min: 0 },
   referenceId: { type: String, default: null },
   metadata: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { timestamps: true });
