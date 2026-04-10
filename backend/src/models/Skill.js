@@ -30,6 +30,12 @@ const SkillSchema = new mongoose.Schema({
     trim: true,
     maxlength: 30
   },
+  color: {
+    type: String,
+    default: '#2e5023',
+    trim: true,
+    maxlength: 20
+  },
   goal: {
     type: String,
     default: '',
