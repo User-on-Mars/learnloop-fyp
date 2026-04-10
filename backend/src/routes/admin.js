@@ -8,6 +8,7 @@ import AdminFlag from '../models/AdminFlag.js'
 import User from '../models/User.js'
 import Practice from '../models/Practice.js'
 import Reflection from '../models/Reflection.js'
+import XpSettings from '../models/XpSettings.js'
 
 const router = Router()
 
@@ -354,6 +355,78 @@ router.delete('/skill-maps/:skillMapId', async (req, res) => {
   } catch (error) {
     console.error('Delete skill map error:', error)
     res.status(error.message.includes('not found') || error.message.includes('Cannot delete') ? 400 : 500).json({ message: error.message })
+  }
+})
+
+// ─── Get XP Settings ───────────────────────────────────────────
+router.get('/xp-settings', async (req, res) => {
+  try {
+    const settings = await XpSettings.getSettings()
+    res.json(settings)
+  } catch (error) {
+    console.error('Get XP settings error:', error)
+    res.status(500).json({ message: 'Failed to fetch XP settings' })
+  }
+})
+
+// ─── Update XP Settings ────────────────────────────────────────
+router.put('/xp-settings', async (req, res) => {
+  try {
+    const { reflectionXp, practiceXpPerMinute, streak5DayMultiplier, streak7DayMultiplier } = req.body
+    const adminId = req.user.id
+    const adminEmail = req.user.email
+
+    // Validate inputs
+    const updates = {}
+    if (reflectionXp !== undefined) {
+      const val = Number(reflectionXp)
+      if (isNaN(val) || val < 0 || val > 1000) {
+        return res.status(400).json({ message: 'reflectionXp must be between 0 and 1000' })
+      }
+      updates.reflectionXp = val
+    }
+    if (practiceXpPerMinute !== undefined) {
+      const val = Number(practiceXpPerMinute)
+      if (isNaN(val) || val < 0 || val > 100) {
+        return res.status(400).json({ message: 'practiceXpPerMinute must be between 0 and 100' })
+      }
+      updates.practiceXpPerMinute = val
+    }
+    if (streak5DayMultiplier !== undefined) {
+      const val = Number(streak5DayMultiplier)
+      if (isNaN(val) || val < 1 || val > 10) {
+        return res.status(400).json({ message: 'streak5DayMultiplier must be between 1 and 10' })
+      }
+      updates.streak5DayMultiplier = val
+    }
+    if (streak7DayMultiplier !== undefined) {
+      const val = Number(streak7DayMultiplier)
+      if (isNaN(val) || val < 1 || val > 10) {
+        return res.status(400).json({ message: 'streak7DayMultiplier must be between 1 and 10' })
+      }
+      updates.streak7DayMultiplier = val
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: 'No valid updates provided' })
+    }
+
+    const settings = await XpSettings.updateSettings(updates)
+
+    // Log audit
+    await AdminAuditLog.record(
+      adminId,
+      adminEmail,
+      'update_xp_settings',
+      null,
+      null,
+      `Updated XP settings: ${JSON.stringify(updates)}`
+    )
+
+    res.json({ message: 'XP settings updated', settings })
+  } catch (error) {
+    console.error('Update XP settings error:', error)
+    res.status(500).json({ message: 'Failed to update XP settings' })
   }
 })
 
