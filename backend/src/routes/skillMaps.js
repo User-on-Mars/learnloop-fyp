@@ -11,6 +11,7 @@ export const createSkillMapSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(60, 'Title must be 60 characters or less'),
   description: z.string().trim().max(120, 'Description must be 120 characters or less').nullable().optional(),
   icon: z.string().trim().min(1, 'Icon is required').max(30),
+  color: z.string().trim().max(20).optional(),
   goal: z.string().trim().min(1, 'Goal is required').max(200, 'Goal must be 200 characters or less'),
   sketchTitles: z.array(z.string()).max(6).optional().default([])
 }).superRefine((data, ctx) => {
@@ -52,13 +53,14 @@ export const validateCreateSkillMapBody = (schema) => (req, res, next) => {
 
 export async function postCreateSkillMap(req, res) {
   try {
-    const { title, description, icon, goal, sketchTitles } = req.body;
+    const { title, description, icon, color, goal, sketchTitles } = req.body;
     const normalizedTitles = (sketchTitles || []).map((t) => String(t).trim()).filter(Boolean);
     const desc = description == null || String(description).trim() === '' ? null : String(description).trim();
     const result = await SkillService.createSkillMap(req.user.id, {
       title,
       description: desc,
       icon,
+      color,
       goal,
       sketchTitles: normalizedTitles
     });
