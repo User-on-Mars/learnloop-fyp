@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useSkillMap } from '../context/SkillMapContext';
 import IconPicker, { SkillIcon } from './IconPicker';
+import ColorPicker, { COLOR_THEMES } from './ColorPicker';
 import { DEFAULT_ICONS } from '../utils/iconLibrary';
 
 const STEPS = [
@@ -22,6 +23,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState(DEFAULT_ICONS[0]);
+  const [color, setColor] = useState(COLOR_THEMES[0].value);
   const [goal, setGoal] = useState('');
   const [nodeInputs, setNodeInputs] = useState(['', '', '']);
   const [attemptedNext, setAttemptedNext] = useState({});
@@ -39,6 +41,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
     setTitle('');
     setDescription('');
     setIcon(DEFAULT_ICONS[0]);
+    setColor(COLOR_THEMES[0].value);
     setGoal('');
     setNodeInputs(['', '', '']);
     setAttemptedNext({});
@@ -114,6 +117,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
         title: title.trim(),
         description: description.trim() || null,
         icon,
+        color,
         goal: goal.trim(),
         sketchTitles: filledSketchTitles
       });
@@ -212,12 +216,12 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
                 <input
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value.slice(0, 30))}
+                  onChange={(e) => setTitle(e.target.value.slice(0, 20))}
                   className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
                   placeholder="My learning path"
-                  maxLength={30}
+                  maxLength={20}
                 />
-                <div className="flex justify-end mt-1 text-xs text-gray-500">{title.length}/30</div>
+                <div className="flex justify-end mt-1 text-xs text-gray-500">{title.length}/20</div>
                 {attemptedNext[1] && !title.trim() && (
                   <p className="text-sm text-red-600 mt-1">Title is required</p>
                 )}
@@ -242,6 +246,10 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
                 <IconPicker value={icon} onChange={setIcon} />
+              </div>
+
+              <div>
+                <ColorPicker selectedColor={color} onColorChange={setColor} label="Theme Color" />
               </div>
             </div>
           )}
@@ -340,16 +348,16 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
             <div className="space-y-4 text-sm">
               <div className="flex items-start gap-2">
                 <SkillIcon name={icon} size={28} className="text-site-accent shrink-0" />
-                <div>
-                  <p className="font-semibold text-gray-900 text-base">{title.trim() || '—'}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-gray-900 text-base break-words">{title.trim() || '—'}</p>
                   {(description || '').trim() ? (
-                    <p className="text-gray-600 mt-1">{description.trim()}</p>
+                    <p className="text-gray-600 mt-1 break-words whitespace-normal">{description.trim()}</p>
                   ) : null}
                 </div>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Goal</p>
-                <div className="mt-2 rounded-lg border border-site-border bg-site-soft p-3 text-xs sm:text-sm text-site-accent whitespace-pre-wrap font-medium">
+                <div className="mt-2 rounded-lg border border-site-border bg-site-soft p-3 text-xs sm:text-sm text-site-accent break-words whitespace-normal font-medium">
                   {goal.trim()}
                 </div>
               </div>
@@ -362,7 +370,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
                     {filledSketchTitles.map((t, i) => (
                       <span
                         key={`${i}-${t}`}
-                        className="inline-flex px-2 py-1 bg-site-soft text-site-accent rounded-full text-xs"
+                        className="inline-flex px-2 py-1 bg-site-soft text-site-accent rounded-full text-xs break-words"
                       >
                         {i + 1}. {t}
                       </span>
@@ -430,7 +438,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
                   onClick={goNextFrom3}
                   className="px-4 py-2 text-sm font-medium text-white bg-site-accent rounded-lg hover:bg-site-accent-hover"
                 >
-                  Continue →
+                  Continue
                 </button>
               </>
             )}
