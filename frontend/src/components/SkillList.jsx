@@ -1,24 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, ChevronRight, ChevronLeft, Target } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, ChevronLeft, Target, Palette, Check, X } from 'lucide-react';
 import { useSkillMap } from '../context/SkillMapContext';
 import { useToast } from '../context/ToastContext';
 import CreateSkillMapWizard from './CreateSkillMapWizard';
 import TemplateGallery from './TemplateGallery';
 import { SkillIcon } from './IconPicker';
+import { COLOR_THEMES } from './ColorPicker';
 
 const PER_PAGE = 9;
 
 export default function SkillList() {
   const navigate = useNavigate();
   const { showSuccess } = useToast();
-  const { skills, deleteSkill, loadSkills, isLoading } = useSkillMap();
+  const { skills, deleteSkill, loadSkills, updateSkillMap, isLoading } = useSkillMap();
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [deletingSkillId, setDeletingSkillId] = useState(null);
   const [skillPendingDeleteId, setSkillPendingDeleteId] = useState(null);
   const [page, setPage] = useState(1);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [colorPickerOpen, setColorPickerOpen] = useState(null); // Track which card's color picker is open
+
+  // Close color picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (colorPickerOpen) {
+        setColorPickerOpen(null);
+      }
+    };
+    
+    if (colorPickerOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [colorPickerOpen]);
 
   const openDeleteSkillModal = (skillId, e) => {
     e.stopPropagation();
@@ -49,106 +65,283 @@ export default function SkillList() {
     navigate(`/skills/${skillId}`);
   };
 
+  const handleColorChange = async (skillId, newColor, e) => {
+    e.stopPropagation();
+    setColorPickerOpen(null);
+    
+    try {
+      // Update immediately without reloading
+      await updateSkillMap(skillId, { color: newColor });
+      showSuccess('Color updated!');
+    } catch (error) {
+      console.error('Error updating color:', error);
+      showSuccess('Failed to update color');
+    }
+  };
+
   return (
     <div className="px-3 sm:px-4 py-4 sm:py-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-site-ink">Skill Maps</h1>
-          <p className="text-sm sm:text-base text-site-muted mt-1">Track your learning journey with visual progression paths</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Skill Maps
+          </h1>
+          <p className="text-gray-600 mt-1.5">Track your learning journey with visual progression paths</p>
         </div>
         <button
           onClick={() => setIsGalleryOpen(true)}
-          className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover active:opacity-90 transition-all shadow-md hover:shadow-lg min-h-[44px] text-sm sm:text-base"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
         >
-          <Plus className="w-5 h-5" />
-          <span>Create New Skill Map</span>
+          <span>Create Skill Map</span>
         </button>
       </div>
 
       {/* Skills Grid */}
       {skills.length === 0 ? (
-        <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-8 sm:p-12 text-center">
-          <div className="w-16 sm:w-20 h-16 sm:h-20 bg-site-soft rounded-full flex items-center justify-center mx-auto mb-4 border border-site-border">
-            <Target className="w-8 sm:w-10 h-8 sm:h-10 text-site-accent" />
+        <div className="bg-white rounded-xl p-16 text-center border border-gray-200 shadow-sm">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center mx-auto mb-6 shadow-inner">
+            <Target className="w-10 h-10 text-gray-400" />
           </div>
-          <h3 className="text-lg sm:text-xl font-bold text-site-ink mb-2">No skills yet</h3>
-          <p className="text-sm sm:text-base text-site-muted mb-6">Create your first skill map to start tracking your learning journey</p>
+          
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            No skill maps yet
+          </h3>
+          <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+            Create your first skill map to start tracking your learning progress and visualize your journey
+          </p>
+          
           <button
             onClick={() => setIsGalleryOpen(true)}
-            className="inline-flex items-center gap-2 px-5 sm:px-6 py-3 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover active:opacity-90 transition-all min-h-[44px] text-sm sm:text-base"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
           >
-            <Plus className="w-5 h-5" />
-            <span>Create Your First Skill</span>
+            <span>Create Your First Skill Map</span>
           </button>
         </div>
       ) : (
         <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {skills.slice((page - 1) * PER_PAGE, page * PER_PAGE).map((skill) => (
-            <div
-              key={skill._id}
-              onClick={() => handleSkillClick(skill._id)}
-              className={`rounded-xl shadow-sm p-5 sm:p-6 hover:shadow-lg transition-all cursor-pointer group relative min-h-[140px] touch-manipulation border-l-4 ${
-                (skill.completionPercentage || 0) >= 100
-                  ? 'bg-green-50/60 border-l-green-500 border border-green-200'
-                  : (skill.completionPercentage || 0) > 0
-                  ? 'bg-site-soft/40 border-l-site-accent border border-site-border'
-                  : 'bg-site-surface border-l-gray-300 border border-site-border'
-              }`}
-            >
-              {/* Delete Button - touch-friendly */}
-              <button
-                onClick={(e) => openDeleteSkillModal(skill._id, e)}
-                className="absolute top-3 sm:top-4 right-3 sm:right-4 p-2.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 rounded-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                aria-label="Delete skill"
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {skills.slice((page - 1) * PER_PAGE, page * PER_PAGE).map((skill) => {
+            const progress = skill.completionPercentage || 0;
+            const isCompleted = progress >= 100;
+            const isInProgress = progress > 0 && progress < 100;
+            const themeColor = skill.color || '#2e5023';
+            
+            // Helper function to lighten color for backgrounds
+            const getLightColor = (hex) => {
+              // Convert hex to RGB
+              const r = parseInt(hex.slice(1, 3), 16);
+              const g = parseInt(hex.slice(3, 5), 16);
+              const b = parseInt(hex.slice(5, 7), 16);
+              // Return very light version
+              return `rgba(${r}, ${g}, ${b}, 0.1)`;
+            };
+            
+            return (
+              <div
+                key={skill._id}
+                onClick={() => handleSkillClick(skill._id)}
+                className="group relative bg-white rounded-xl p-5 cursor-pointer transition-all duration-200 hover:shadow-xl border border-gray-200"
+                style={{
+                  borderColor: isCompleted || isInProgress ? themeColor : undefined,
+                  borderWidth: isCompleted || isInProgress ? '2px' : '1px'
+                }}
               >
-                <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
-              </button>
+                {/* Header with icon, title, and actions */}
+                <div className="flex items-start gap-3 mb-4">
+                  {/* Icon */}
+                  <div 
+                    className="w-14 h-14 rounded-xl flex items-center justify-center shadow-sm text-white shrink-0"
+                    style={{
+                      backgroundColor: themeColor
+                    }}
+                  >
+                    <SkillIcon name={skill.icon || 'Map'} size={26} />
+                  </div>
 
-              {/* Title + icon */}
-              <h3 className="text-lg sm:text-xl font-bold text-site-ink mb-3 pr-12 sm:pr-8 flex items-center gap-2 min-w-0">
-                <span className="shrink-0" aria-hidden>
-                  <SkillIcon name={skill.icon || 'Map'} size={24} className="text-site-accent" />
-                </span>
-                <span className="truncate">{skill.name}</span>
-              </h3>
+                  {/* Title and node count */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-gray-900 truncate mb-1">
+                      {skill.name}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {skill.completedNodes || 0}/{skill.nodeCount} nodes
+                    </p>
+                  </div>
 
-              {/* Progress Bar */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
-                  <span className="text-site-muted">Progress</span>
-                  <span className="font-semibold text-site-accent">
-                    {Math.round(skill.completionPercentage || 0)}%
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Color picker button */}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setColorPickerOpen(colorPickerOpen === skill._id ? null : skill._id);
+                        }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all opacity-0 group-hover:opacity-100"
+                        aria-label="Change color"
+                        title="Change color"
+                      >
+                        <Palette className="w-4 h-4" />
+                      </button>
+
+                      {/* Color picker dropdown */}
+                      {colorPickerOpen === skill._id && (
+                        <div 
+                          className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50 w-64"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-semibold text-gray-700">Choose Color</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setColorPickerOpen(null);
+                              }}
+                              className="text-gray-400 hover:text-gray-600"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            {COLOR_THEMES.map((theme) => (
+                              <button
+                                key={theme.value}
+                                type="button"
+                                onClick={(e) => handleColorChange(skill._id, theme.value, e)}
+                                className="group/color relative"
+                                title={theme.name}
+                              >
+                                <div
+                                  className={`w-full aspect-square rounded-lg transition-all hover:scale-110 ${
+                                    themeColor === theme.value
+                                      ? 'ring-2 ring-offset-2 ring-gray-900'
+                                      : 'hover:shadow-md'
+                                  }`}
+                                  style={{ backgroundColor: theme.value }}
+                                >
+                                  {themeColor === theme.value && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <Check className="w-4 h-4 text-white drop-shadow-lg" strokeWidth={3} />
+                                    </div>
+                                  )}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Delete button */}
+                    <button
+                      onClick={(e) => openDeleteSkillModal(skill._id, e)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                      aria-label="Delete skill"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Progress section */}
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Progress</span>
+                    <span 
+                      className="text-base font-bold"
+                      style={{
+                        color: themeColor
+                      }}
+                    >
+                      {Math.round(progress)}%
+                    </span>
+                  </div>
+                  
+                  {/* Progress bar with custom color */}
+                  <div className="relative h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+                      style={{
+                        width: `${progress}%`,
+                        background: `linear-gradient(to right, ${themeColor}, ${themeColor}dd)`
+                      }}
+                    >
+                      {/* Shine effect */}
+                      {progress > 10 && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent" 
+                             style={{ 
+                               backgroundSize: '200% 100%',
+                               animation: 'shimmer 3s infinite'
+                             }} 
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                  <span 
+                    className="text-xs font-medium"
+                    style={{
+                      color: themeColor
+                    }}
+                  >
+                    {isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Not Started'}
                   </span>
+                  <div 
+                    className="flex items-center gap-1 text-sm font-medium text-gray-400 transition-colors"
+                    style={{
+                      color: undefined
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = themeColor}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
+                  >
+                    <span>View</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-site-accent rounded-full transition-all duration-500"
-                    style={{ width: `${skill.completionPercentage || 0}%` }}
-                  />
-                </div>
               </div>
-
-              {/* Stats */}
-              <div className="flex items-center justify-between text-xs sm:text-sm">
-                <span className="text-site-muted">
-                  {skill.completedNodes || 0}/{skill.nodeCount} nodes
-                </span>
-                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-site-accent transition-colors" />
-              </div>
-
-              </div>
-          ))}
+            );
+          })}
         </div>
         {/* Pagination */}
         {skills.length > PER_PAGE && (
-          <div className="flex items-center justify-center gap-2 mt-8 mb-4">
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="flex items-center gap-1 px-3 py-2 rounded-lg border border-site-border text-sm font-medium text-site-muted hover:bg-site-soft hover:text-site-accent disabled:opacity-30 transition-colors"><ChevronLeft className="w-4 h-4" /> Prev</button>
-            {Array.from({ length: Math.ceil(skills.length / PER_PAGE) }, (_, i) => (
-              <button key={i} onClick={() => setPage(i + 1)} className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors ${page === i + 1 ? 'bg-site-accent text-white shadow-md' : 'border border-site-border text-site-muted hover:bg-site-soft hover:text-site-accent'}`}>{i + 1}</button>
-            ))}
-            <button onClick={() => setPage(p => Math.min(Math.ceil(skills.length / PER_PAGE), p + 1))} disabled={page >= Math.ceil(skills.length / PER_PAGE)} className="flex items-center gap-1 px-3 py-2 rounded-lg border border-site-border text-sm font-medium text-site-muted hover:bg-site-soft hover:text-site-accent disabled:opacity-30 transition-colors">Next <ChevronRight className="w-4 h-4" /></button>
+          <div className="flex items-center justify-center gap-2 mt-10 mb-4">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))} 
+              disabled={page === 1} 
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-white border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-4 h-4" /> 
+              <span className="hidden sm:inline">Previous</span>
+            </button>
+            
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: Math.ceil(skills.length / PER_PAGE) }, (_, i) => (
+                <button 
+                  key={i} 
+                  onClick={() => setPage(i + 1)} 
+                  className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
+                    page === i + 1 
+                      ? 'bg-site-accent text-white shadow-md' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-gray-400 shadow-sm'
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            
+            <button 
+              onClick={() => setPage(p => Math.min(Math.ceil(skills.length / PER_PAGE), p + 1))} 
+              disabled={page >= Math.ceil(skills.length / PER_PAGE)} 
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-white border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )}
         </>
