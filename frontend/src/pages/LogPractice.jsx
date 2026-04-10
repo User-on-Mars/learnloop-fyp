@@ -102,7 +102,12 @@ export default function LogPractice() {
   const addTagH=(e)=>{e.preventDefault();const t=newTag.trim();if(t&&!form.tags.includes(t))setForm(p=>({...p,tags:[...p.tags,t]}));setNewTag('');};
   const getDur=(s)=>{if(!s)return{m:0,sec:0};const t=s.isCountdown?Math.max(0,s.targetTime-s.timer):s.timer;return{m:Math.max(1,Math.floor(t/60)),sec:t};};
   const fmtDur=(s)=>{const{sec}=getDur(s);const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`;};
-  const canComp=(s)=>s.isCountdown?s.timer<s.targetTime:s.timer>0;
+  const canComp=(s)=>{
+    if(!s) return false;
+    const elapsed = s.isCountdown ? (s.targetTime - s.timer) : s.timer;
+    // Require at least 60 seconds (1 minute)
+    return elapsed >= 60;
+  };
   const fmtDate=(d)=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   const hasFilters=search||fSkill||fConf||fDate;
 
@@ -138,6 +143,14 @@ export default function LogPractice() {
   };
 
   const openComp=(s)=>{
+    const elapsed = s.isCountdown ? (s.targetTime - s.timer) : s.timer;
+    
+    if(elapsed < 60){
+      setError('Session must be at least 1 minute to log.');
+      setTimeout(()=>setError(''),4000);
+      return;
+    }
+    
     if(s.isCountdown&&s.timer===s.targetTime){
       setError('Start the timer first.');
       setTimeout(()=>setError(''),4000);
@@ -205,7 +218,7 @@ export default function LogPractice() {
               <p className="text-site-muted mt-1">Log what you practiced, confidence, blockers, and next step</p>
             </div>
             <button onClick={()=>{resetForm();setShowNew(true);}} className="flex items-center gap-2 px-5 py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-colors shadow-md">
-              <Plus className="w-5 h-5" /> New Practice
+              New Practice
             </button>
           </div>
 
@@ -222,6 +235,9 @@ export default function LogPractice() {
               const isFree = !s.skillId && !s.nodeId;
               const isTimerDone = s.isCountdown && s.timer <= 0;
               const minutesCompleted = s.isCountdown ? Math.floor((s.targetTime - s.timer) / 60) : Math.floor(s.timer / 60);
+              const elapsed = s.isCountdown ? (s.targetTime - s.timer) : s.timer;
+              const meetsMinimum = elapsed >= 60;
+              const secondsRemaining = meetsMinimum ? 0 : (60 - elapsed);
               
               return (
                 <div key={s.id} className={`rounded-2xl border-2 p-5 shadow-sm transition-all ${isR?'border-green-500 bg-green-50/50 shadow-green-100': isFree ? 'border-purple-200 bg-purple-50/30' : 'border-site-border bg-site-surface'}`}>
@@ -245,7 +261,9 @@ export default function LogPractice() {
                       </button>
                       <button onClick={()=>setResetConfirmId(s.id)} className="px-3 py-2.5 border border-site-border text-site-muted rounded-lg hover:bg-site-bg"><RotateCcw className="w-4 h-4"/></button>
                     </div>
-                    <button onClick={()=>openComp(s)} disabled={!canComp(s)} className={`w-full py-2.5 rounded-lg font-semibold text-sm ${canComp(s)?'bg-green-600 text-white hover:bg-green-700':'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>Complete & Log</button>
+                    <button onClick={()=>openComp(s)} disabled={!canComp(s)} className={`w-full py-2.5 rounded-lg font-semibold text-sm ${canComp(s)?'bg-green-600 text-white hover:bg-green-700':'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                      {meetsMinimum ? 'Complete & Log' : `${secondsRemaining}s until 1 min`}
+                    </button>
                   </>) : (<>
                     {s.isCountdown&&<div className="w-full h-1.5 bg-gray-200 rounded-full my-2 overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ${isR?'bg-green-500':'bg-site-accent'}`} style={{width:`${getProgress(s)}%`}}/></div>}
                     <div className={`text-2xl font-bold font-mono text-center py-2 rounded-xl mb-3 ${isR?'bg-green-100 text-green-700':'bg-site-bg text-site-ink'}`}>{formatTimer(s.timer)}</div>
