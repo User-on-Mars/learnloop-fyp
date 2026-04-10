@@ -289,7 +289,7 @@ class SkillService {
   /**
    * Create skill map from wizard (START completed, optional content nodes, GOAL locked).
    */
-  async createSkillMap(userId, { title, description, icon, goal, sketchTitles }) {
+  async createSkillMap(userId, { title, description, icon, color, goal, sketchTitles }) {
       if (!userId) {
         throw new ValidationError('userId', userId, { type: 'required' });
       }
@@ -318,6 +318,7 @@ class SkillService {
           nodeCount: contentCount,
           description: description == null ? '' : String(description).trim(),
           icon: icon || 'Map',
+          color: color || '#2e5023',
           goal: goal ? goal.trim() : '',
           status: 'active'
         });
@@ -443,6 +444,7 @@ class SkillService {
       if (updates.description !== undefined) skill.description = updates.description.trim();
       if (updates.goal !== undefined) skill.goal = updates.goal.trim();
       if (updates.icon !== undefined) skill.icon = updates.icon;
+      if (updates.color !== undefined) skill.color = updates.color;
 
       await dbMonitor.monitorWrite(
         () => skill.save(),
