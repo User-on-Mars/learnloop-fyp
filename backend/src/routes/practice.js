@@ -4,6 +4,8 @@ import mongoose from 'mongoose'
 import Practice from '../models/Practice.js'
 import Reflection from '../models/Reflection.js'
 import StreakService from '../services/StreakService.js'
+import XpService from '../services/XpService.js'
+import XpSettings from '../models/XpSettings.js'
 import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
@@ -276,8 +278,43 @@ router.post('/', async (req, res) => {
       // Don't fail the request if streak processing fails
     }
     
+    // Award XP for practice time (XP per minute)
+    let xpAwarded = null;
+    try {
+      const settings = await XpSettings.getSettings();
+      const baseXp = Math.floor(data.minutesPracticed * settings.practiceXpPerMinute);
+      
+      if (baseXp > 0) {
+        const xpTransaction = await XpService.awardXp(
+          req.user.id, 
+          'practice', 
+          baseXp,
+          { 
+            practiceId: practice._id.toString(),
+            minutesPracticed: data.minutesPracticed,
+            skillName: data.skillName
+          }
+        );
+        
+        if (xpTransaction) {
+          xpAwarded = {
+            baseAmount: xpTransaction.baseAmount,
+            multiplier: xpTransaction.multiplier,
+            finalAmount: xpTransaction.finalAmount
+          };
+          console.log(`✅ Awarded ${xpTransaction.finalAmount} XP for ${data.minutesPracticed} minutes practice`);
+        }
+      }
+    } catch (xpError) {
+      console.error('⚠️ Error awarding XP for practice:', xpError.message)
+      // Don't fail the request if XP award fails
+    }
+    
     console.log('✅ Practice created:', practice._id)
-    res.status(201).json(practice)
+    res.status(201).json({ 
+      ...practice.toObject(),
+      xpAwarded 
+    })
   } catch (error) {
     console.error('❌ Error creating practice:', error.message)
     if (error.name === 'ValidationError') {
