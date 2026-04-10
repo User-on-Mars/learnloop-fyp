@@ -1,5 +1,6 @@
 import XpTransaction from '../models/XpTransaction.js';
 import UserXpProfile from '../models/UserXpProfile.js';
+import XpSettings from '../models/XpSettings.js';
 import StreakService from './StreakService.js';
 import ErrorLoggingService from './ErrorLoggingService.js';
 import LeaderboardService from './LeaderboardService.js';
@@ -47,17 +48,17 @@ class XpService {
   }
 
   /**
-   * Award XP to a user. Checks daily caps, applies streak multiplier, persists transaction.
+   * Award XP to a user. Applies streak multiplier, persists transaction.
    * @param {string} userId
-   * @param {string} source - 'session_completion' | 'reflection' | 'streak_bonus' | 'skillmap_completion'
-   * @param {number} baseAmount - positive integer
-   * @param {object} [metadata] - { streakDay?, skillMapId?, nodeId? }
-   * @returns {Promise<XpTransaction|null>} null if daily cap reached or validation fails
+   * @param {string} source - 'practice' | 'reflection' | 'admin_adjustment'
+   * @param {number} baseAmount - non-negative number
+   * @param {object} [metadata] - { practiceId?, reflectionId?, referenceId?, minutesPracticed? }
+   * @returns {Promise<XpTransaction|null>} null if validation fails
    */
   static async awardXp(userId, source, baseAmount, metadata = {}) {
     try {
-      // Validate baseAmount is a positive integer
-      if (!Number.isInteger(baseAmount) || baseAmount < 1) {
+      // Validate baseAmount is non-negative
+      if (typeof baseAmount !== 'number' || baseAmount < 0) {
         await ErrorLoggingService.logError(
           { message: `Invalid baseAmount: ${baseAmount}`, category: 'xp', code: 'INVALID_XP_PARAMS' },
           { userId, source, operation: 'awardXp' }
@@ -65,22 +66,19 @@ class XpService {
         return null;
       }
 
+      // Skip if baseAmount is 0
+      if (baseAmount === 0) {
+        return null;
+      }
+
       const now = new Date();
       const { dayStart, dayEnd } = XpService._getUTCDayBounds(now);
 
-      // For skillmap_completion, check uniqueness by referenceId instead of daily cap
-      if (source === 'skillmap_completion' && metadata.skillMapId) {
-        const existing = await XpTransaction.findOne({
-          userId,
-          source: 'skillmap_completion',
-          referenceId: metadata.skillMapId
-        });
-        if (existing) return null;
-      } else {
-        // Enforce daily cap: one transaction per source per user per UTC day
+      // For reflection, enforce daily cap: one reflection XP per user per UTC day
+      if (source === 'reflection') {
         const existingToday = await XpTransaction.findOne({
           userId,
-          source,
+          source: 'reflection',
           createdAt: { $gte: dayStart, $lt: dayEnd }
         });
         if (existingToday) return null;
@@ -88,18 +86,17 @@ class XpService {
 
       // Get current streak to determine multiplier
       const { currentStreak } = await StreakService.getStreak(userId);
-      const multiplier = currentStreak >= 7 ? 2 : 1;
-
-      // Validate multiplier
-      if (multiplier !== 1 && multiplier !== 2) {
-        await ErrorLoggingService.logError(
-          { message: `Invalid multiplier: ${multiplier}`, category: 'xp', code: 'INVALID_XP_PARAMS' },
-          { userId, source, operation: 'awardXp' }
-        );
-        return null;
+      let multiplier = 1;
+      
+      if (currentStreak >= 7) {
+        const settings = await XpSettings.getSettings();
+        multiplier = settings.streak7DayMultiplier;
+      } else if (currentStreak >= 5) {
+        const settings = await XpSettings.getSettings();
+        multiplier = settings.streak5DayMultiplier;
       }
 
-      const finalAmount = baseAmount * multiplier;
+      const finalAmount = Math.round(baseAmount * multiplier);
 
       const transactionData = {
         userId,
@@ -107,8 +104,11 @@ class XpService {
         baseAmount,
         multiplier,
         finalAmount,
-        referenceId: metadata.skillMapId || metadata.nodeId || metadata.referenceId || null,
-        metadata
+        referenceId: metadata.practiceId || metadata.reflectionId || metadata.referenceId || null,
+        metadata: {
+          ...metadata,
+          streakDays: currentStreak
+        }
       };
 
       // Persist with one retry on failure
@@ -174,6 +174,7 @@ class XpService {
   static async getProfile(userId) {
     const profile = await UserXpProfile.findOne({ userId });
     const { currentStreak } = await StreakService.getStreak(userId);
+    const settings = await XpSettings.getSettings();
 
     const totalXp = profile?.totalXp ?? 0;
     const weeklyXp = profile?.weeklyXp ?? 0;
@@ -221,13 +222,22 @@ class XpService {
       weeklyRank = above + sameXpEarlier + 1;
     }
 
+    // Determine active multiplier
+    let activeMultiplier = 1;
+    if (currentStreak >= 7) {
+      activeMultiplier = settings.streak7DayMultiplier;
+    } else if (currentStreak >= 5) {
+      activeMultiplier = settings.streak5DayMultiplier;
+    }
+
     return {
       totalXp,
       weeklyXp,
       currentStreak,
       leagueTier,
       weeklyRank,
-      streakMultiplierActive: currentStreak >= 7
+      streakMultiplierActive: activeMultiplier > 1,
+      activeMultiplier
     };
   }
 
