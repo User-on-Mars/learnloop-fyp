@@ -166,15 +166,13 @@ export default function Dashboard() {
                 onClick={() => navigate("/log-practice")}
                 className="flex items-center gap-2 px-4 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-all shadow-md text-sm"
               >
-                <Clock className="w-4 h-4" />
                 Log Practice
               </button>
               <button
                 onClick={() => navigate("/skills")}
                 className="flex items-center gap-2 px-4 py-2.5 border border-site-border text-site-ink rounded-lg font-medium hover:bg-site-soft transition-all text-sm"
               >
-                <Plus className="w-4 h-4" />
-                New Skill Map
+                Skill Maps
               </button>
             </div>
           </div>
