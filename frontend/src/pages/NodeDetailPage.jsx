@@ -63,6 +63,12 @@ export default function NodeDetailPage() {
   const fmtTplTimer = (s) => { const m = Math.floor(s / 60); const sec = s % 60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
   const completeTplSession = async (idx) => {
     if (tplCompleting) return;
+    // Require at least 60 seconds
+    if (tplTimer < 60) {
+      setErr('Session must be at least 1 minute long');
+      setTimeout(() => setErr(''), 4000);
+      return;
+    }
     setTplCompleting(true);
     setTplRunning(false);
     try {
@@ -119,7 +125,20 @@ export default function NodeDetailPage() {
     addSession({ skillName: node.title, nodeId, skillId, tags: [currentSkill?.name||''], notes: sessTitle.trim(), timer: cd?t:0, targetTime: t, isCountdown: cd, isRunning: true });
     setShowPractice(false); setSessTitle(''); setOk('Session started!'); setTimeout(()=>setOk(''),3000);
   };
-  const openComp = (s) => { if (s.isRunning) toggleSession(s.id); setCompS(s); setComp({ notes:'', confidence:3, blockers:'', nextStep:'' }); setShowComp(true); };
+  const openComp = (s) => {
+    // Calculate elapsed time
+    const elapsed = s.isCountdown ? Math.max(0, s.targetTime - s.timer) : s.timer;
+    // Require at least 60 seconds
+    if (elapsed < 60) {
+      setErr('Session must be at least 1 minute long');
+      setTimeout(() => setErr(''), 4000);
+      return;
+    }
+    if (s.isRunning) toggleSession(s.id);
+    setCompS(s);
+    setComp({ notes:'', confidence:3, blockers:'', nextStep:'' });
+    setShowComp(true);
+  };
   const submitComp = async () => { if (!compS||!node) return; setSub(true); try { const sec = compS.isCountdown ? Math.max(0, compS.targetTime - compS.timer) : compS.timer; await practiceAPI.createPractice({ skillName: node.title, minutesPracticed: Math.max(1, Math.floor(sec/60)), tags: [currentSkill?.name||''], timerSeconds: sec, notes: comp.notes, confidence: comp.confidence, blockers: comp.blockers, nextStep: comp.nextStep, date: new Date().toISOString() }); if (node.status !== 'Completed' && node.status !== 'In_Progress') { try { await updateNodeStatus(nodeId, 'In_Progress'); } catch {} } removeSession(compS.id); setShowComp(false); setOk('Practice logged!'); setTimeout(()=>setOk(''),3000); fetchD(); fetchH(); } catch { setErr('Failed'); } finally { setSub(false); } };
   const removeActive = () => { if (activeS) { removeSession(activeS.id); setShowRemove(false); } };
   if (loading && !node) return (<div className="min-h-screen bg-site-bg flex items-center justify-center"><div className="animate-spin w-10 h-10 border-4 border-site-accent border-t-transparent rounded-full" /></div>);
@@ -163,7 +182,7 @@ export default function NodeDetailPage() {
                           <button onClick={() => setTplRunning(r => !r)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-medium text-sm ${tplRunning ? 'bg-gray-700 text-white hover:bg-gray-800' : 'bg-site-accent text-white hover:bg-site-accent-hover'}`}>{tplRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{tplRunning ? 'Pause' : 'Start'}</button>
                           <button onClick={() => { setTplTimer(0); setTplRunning(false); }} className="px-3 py-2.5 border border-site-border text-site-muted rounded-lg hover:bg-site-bg"><RotateCcw className="w-4 h-4" /></button>
                         </div>
-                        <button onClick={() => completeTplSession(i)} disabled={tplTimer < 1 || tplCompleting} className="w-full mt-2 py-2.5 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed">{tplCompleting ? 'Completing...' : 'Complete Session'}</button>
+                        <button onClick={() => completeTplSession(i)} disabled={tplTimer < 60 || tplCompleting} className="w-full mt-2 py-2.5 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed">{tplCompleting ? 'Completing...' : tplTimer < 60 ? `${60 - tplTimer}s until 1 min` : 'Complete Session'}</button>
                       </div>
                     )}
                   </div>
@@ -208,7 +227,7 @@ export default function NodeDetailPage() {
                     <button onClick={() => toggleSession(activeS.id)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-medium text-sm ${activeS.isRunning ? 'bg-gray-700 text-white' : 'bg-site-accent text-white hover:bg-site-accent-hover'}`}>{activeS.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{activeS.isRunning ? 'Pause' : 'Resume'}</button>
                     <button onClick={() => resetSession(activeS.id)} className="px-3 py-2.5 border border-site-border text-site-muted rounded-lg hover:bg-site-bg"><RotateCcw className="w-4 h-4" /></button>
                   </div>
-                  <button onClick={() => openComp(activeS)} disabled={activeS.isCountdown ? activeS.timer >= activeS.targetTime : activeS.timer <= 0} className="w-full py-2.5 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed">Complete & Log</button>
+                  <button onClick={() => openComp(activeS)} disabled={(() => { const elapsed = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return elapsed < 60; })()} className="w-full py-2.5 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed">{(() => { const elapsed = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return elapsed < 60 ? `${60 - elapsed}s until 1 min` : 'Complete & Log'; })()}</button>
                 </div>
               ) : !isLocked && !isCompleted ? (
                 <div className="rounded-xl border-2 border-dashed border-site-border p-8 text-center flex-1 flex flex-col items-center justify-center">
