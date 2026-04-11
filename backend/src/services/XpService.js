@@ -48,6 +48,19 @@ class XpService {
   }
 
   /**
+   * Calculate league tier based on weekly XP using configurable thresholds
+   * @param {number} weeklyXp
+   * @param {object} settings - XpSettings document
+   * @returns {'Gold'|'Silver'|'Bronze'|'Newcomer'}
+   */
+  static _calculateLeagueTierWithSettings(weeklyXp, settings) {
+    if (weeklyXp >= settings.goldThreshold) return 'Gold';
+    if (weeklyXp >= settings.silverThreshold) return 'Silver';
+    if (weeklyXp >= settings.bronzeThreshold) return 'Bronze';
+    return 'Newcomer';
+  }
+
+  /**
    * Award XP to a user. Applies streak multiplier, persists transaction.
    * @param {string} userId
    * @param {string} source - 'practice' | 'reflection' | 'admin_adjustment'
@@ -131,6 +144,7 @@ class XpService {
       // Atomically update UserXpProfile and recalculate league tier
       const weekStart = XpService._getWeekStart(now);
       try {
+        const settings = await XpSettings.getSettings();
         const updatedProfile = await UserXpProfile.findOneAndUpdate(
           { userId },
           {
@@ -140,8 +154,8 @@ class XpService {
           { upsert: true, new: true }
         );
 
-        // Update league tier based on new weekly XP
-        const newTier = XpService._calculateLeagueTier(updatedProfile.weeklyXp);
+        // Update league tier based on new weekly XP with configurable thresholds
+        const newTier = XpService._calculateLeagueTierWithSettings(updatedProfile.weeklyXp, settings);
         if (updatedProfile.leagueTier !== newTier) {
           await UserXpProfile.updateOne(
             { userId },
@@ -179,8 +193,8 @@ class XpService {
     const totalXp = profile?.totalXp ?? 0;
     const weeklyXp = profile?.weeklyXp ?? 0;
     
-    // Calculate league tier based on weekly XP (not stored value)
-    const leagueTier = XpService._calculateLeagueTier(weeklyXp);
+    // Calculate league tier based on weekly XP with configurable thresholds
+    const leagueTier = XpService._calculateLeagueTierWithSettings(weeklyXp, settings);
     
     // Update stored tier if it's different
     if (profile && profile.leagueTier !== leagueTier) {
@@ -237,7 +251,12 @@ class XpService {
       leagueTier,
       weeklyRank,
       streakMultiplierActive: activeMultiplier > 1,
-      activeMultiplier
+      activeMultiplier,
+      leagueThresholds: {
+        bronze: settings.bronzeThreshold,
+        silver: settings.silverThreshold,
+        gold: settings.goldThreshold
+      }
     };
   }
 
