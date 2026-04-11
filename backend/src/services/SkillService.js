@@ -628,7 +628,7 @@ class SkillService {
    * @param {Object} template - Template object with title, description, icon, goal, nodes (each with sessions)
    * @returns {Promise<{skill: Object, nodes: Array, activeSessions: Array}>}
    */
-  async createSkillMapFromTemplate(userId, template) {
+  async createSkillMapFromTemplate(userId, template, templateId = null) {
     if (!userId) {
       throw new ValidationError('userId', userId, { type: 'required' });
     }
@@ -684,6 +684,21 @@ class SkillService {
         'SkillService.createSkillMapFromTemplate - insert nodes'
       );
 
+      // 4. Track unique user usage if templateId provided
+      if (templateId) {
+        try {
+          const SkillMapTemplate = mongoose.model('SkillMapTemplate');
+          const templateDoc = await SkillMapTemplate.findById(templateId);
+          if (templateDoc) {
+            await templateDoc.trackUserUsage(userId);
+            console.log(`✅ Tracked user ${userId} usage for template: ${templateId}`);
+          }
+        } catch (templateError) {
+          // Don't fail the whole operation if usage tracking fails
+          console.error('⚠️ Failed to track template usage:', templateError.message);
+        }
+      }
+
       // 5. Commit
       await session.commitTransaction();
 
@@ -692,6 +707,7 @@ class SkillService {
         userId,
         nodeCount: nodes.length,
         templateTitle: template.title,
+        templateId: templateId || 'unknown',
         timestamp: new Date().toISOString()
       });
 
