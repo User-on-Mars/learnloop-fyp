@@ -122,8 +122,8 @@ export const skillMapAPI = {
     client.patch(`/nodes/${nodeId}/content`, data),
   deleteNode: (nodeId: string) => 
     client.delete(`/nodes/${nodeId}`),
-  createSkillMapFromTemplate: (template: any) => 
-    client.post('/skills/maps/from-template', { template }),
+  createSkillMapFromTemplate: (templateData: any) => 
+    client.post('/skills/maps/from-template', templateData),
 }
 
 // ============ XP API ============
