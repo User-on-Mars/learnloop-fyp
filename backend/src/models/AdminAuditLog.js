@@ -26,8 +26,21 @@ const AdminAuditLogSchema = new mongoose.Schema({
       'dismiss_flag',
       'update_xp_settings',
       'update_flag_settings',
-      'export_data'
+      'export_data',
+      'template_created',
+      'template_updated',
+      'template_published',
+      'template_unpublished',
+      'template_deleted'
     ]
+  },
+  targetType: {
+    type: String,
+    default: null
+  },
+  targetId: {
+    type: String,
+    default: null
   },
   targetUserId: {
     type: String,
@@ -40,6 +53,10 @@ const AdminAuditLogSchema = new mongoose.Schema({
   reason: {
     type: String,
     default: null
+  },
+  details: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   },
   metadata: {
     type: mongoose.Schema.Types.Mixed,
