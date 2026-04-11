@@ -18,13 +18,13 @@ const NodeSchema = new mongoose.Schema({
   title: {
     type: String,
     default: '',
-    maxlength: 16,
+    maxlength: 20,
     trim: true
   },
   description: {
     type: String,
     default: '',
-    maxlength: 2000,
+    maxlength: 200,
     trim: true
   },
   status: {
@@ -42,8 +42,8 @@ const NodeSchema = new mongoose.Schema({
   },
   sessionDefinitions: {
     type: [{
-      title: { type: String, maxlength: 100 },
-      description: { type: String, maxlength: 500 }
+      title: { type: String, maxlength: 20 },
+      description: { type: String, maxlength: 200 }
     }],
     default: undefined
   },
