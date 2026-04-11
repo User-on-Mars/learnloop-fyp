@@ -26,21 +26,21 @@ export default function TemplatePreview({ template, onBack, onApply, isApplying,
           <div className="w-12 h-12 rounded-xl bg-site-soft border border-site-border flex items-center justify-center shrink-0">
             <SkillIcon name={template.icon} size={24} className="text-site-accent" />
           </div>
-          <div className="min-w-0">
-            <h3 className="text-lg font-semibold text-site-ink">{template.title}</h3>
-            <p className="text-sm text-site-muted mt-0.5">{template.description}</p>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-semibold text-site-ink break-words">{template.title}</h3>
+            <p className="text-sm text-site-muted mt-0.5 break-words">{template.description}</p>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="flex gap-4 text-sm">
+        <div className="flex flex-wrap gap-4 text-sm">
           <span className="text-site-muted">
             <span className="font-medium text-site-ink">{template.nodes.length}</span> nodes
           </span>
           <span className="text-site-muted">
             <span className="font-medium text-site-ink">{totalSessions}</span> sessions
           </span>
-          <span className="text-site-muted">
+          <span className="text-site-muted break-words">
             Goal: <span className="font-medium text-site-ink">{template.goal}</span>
           </span>
         </div>
@@ -54,20 +54,20 @@ export default function TemplatePreview({ template, onBack, onApply, isApplying,
                 <span className="text-xs font-semibold text-site-accent bg-site-soft rounded-full w-5 h-5 flex items-center justify-center shrink-0">
                   {i + 1}
                 </span>
-                <span className="text-sm font-medium text-site-ink">{node.title}</span>
+                <span className="text-sm font-medium text-site-ink break-words flex-1 min-w-0">{node.title}</span>
               </div>
               {node.description && (
-                <p className="text-xs text-site-muted ml-7 mb-2">{node.description}</p>
+                <p className="text-xs text-site-muted ml-7 mb-2 break-words whitespace-pre-wrap">{node.description}</p>
               )}
               {/* Sessions */}
               <div className="ml-7 space-y-1">
                 {node.sessions.map((sess, j) => (
                   <div key={j} className="flex items-start gap-1.5 text-xs">
                     <span className="text-site-accent mt-0.5 shrink-0">•</span>
-                    <div>
-                      <span className="font-medium text-site-ink">{sess.title}</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-site-ink break-words">{sess.title}</span>
                       {sess.description && (
-                        <span className="text-site-muted"> — {sess.description}</span>
+                        <span className="text-site-muted break-words"> — {sess.description}</span>
                       )}
                     </div>
                   </div>
