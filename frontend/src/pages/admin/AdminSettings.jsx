@@ -12,7 +12,10 @@ export default function AdminSettings() {
     reflectionXp: 20,
     practiceXpPerMinute: 2,
     streak5DayMultiplier: 2,
-    streak7DayMultiplier: 5
+    streak7DayMultiplier: 5,
+    bronzeThreshold: 50,
+    silverThreshold: 100,
+    goldThreshold: 200
   })
   const [xpSettingsLoading, setXpSettingsLoading] = useState(true)
   const [xpSettingsEditing, setXpSettingsEditing] = useState(false)
@@ -257,6 +260,56 @@ export default function AdminSettings() {
                       ) : (
                         <span className="font-semibold text-site-accent">{xpSettings.streak7DayMultiplier}x</span>
                       )}
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-site-border">
+                    <h4 className="text-sm font-semibold text-site-ink mb-3">League Tier Thresholds (Weekly XP)</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                        <span className="text-sm text-orange-900">🥉 Bronze League</span>
+                        {xpSettingsEditing ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="10000"
+                            value={editedXpSettings.bronzeThreshold}
+                            onChange={(e) => setEditedXpSettings({...editedXpSettings, bronzeThreshold: Number(e.target.value)})}
+                            className="w-24 px-2 py-1 border border-site-border rounded text-sm"
+                          />
+                        ) : (
+                          <span className="font-semibold text-orange-700">{xpSettings.bronzeThreshold} XP</span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-900">🥈 Silver League</span>
+                        {xpSettingsEditing ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="10000"
+                            value={editedXpSettings.silverThreshold}
+                            onChange={(e) => setEditedXpSettings({...editedXpSettings, silverThreshold: Number(e.target.value)})}
+                            className="w-24 px-2 py-1 border border-site-border rounded text-sm"
+                          />
+                        ) : (
+                          <span className="font-semibold text-gray-700">{xpSettings.silverThreshold} XP</span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+                        <span className="text-sm text-amber-900">🥇 Gold League</span>
+                        {xpSettingsEditing ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="10000"
+                            value={editedXpSettings.goldThreshold}
+                            onChange={(e) => setEditedXpSettings({...editedXpSettings, goldThreshold: Number(e.target.value)})}
+                            className="w-24 px-2 py-1 border border-site-border rounded text-sm"
+                          />
+                        ) : (
+                          <span className="font-semibold text-amber-700">{xpSettings.goldThreshold} XP</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {xpSettingsEditing ? (
