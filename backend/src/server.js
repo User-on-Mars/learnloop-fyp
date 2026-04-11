@@ -23,6 +23,7 @@ import nodeRoutes from "./routes/nodes.js";
 import adminRoutes from "./routes/admin.js";
 import xpRoutes from "./routes/xp.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
+import templateRoutes from "./routes/templates.js";
 import { requireAuth } from "./middleware/auth.js";
 import { checkAccountStatus } from "./middleware/adminAuth.js";
 import { 
@@ -125,6 +126,7 @@ app.use("/api/skill-maps", skillMapRoutes);
 app.use("/api/nodes", nodeRoutes);
 app.use("/api/xp", xpRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/templates", templateRoutes);
 
 // Error handling middleware with security logging
 app.use((err, req, res, next) => {
