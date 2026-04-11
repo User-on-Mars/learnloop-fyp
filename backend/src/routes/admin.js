@@ -12,6 +12,17 @@ import XpSettings from '../models/XpSettings.js'
 
 const router = Router()
 
+// ─── Public XP Settings (no auth required for read) ───────────
+router.get('/xp-settings', async (req, res) => {
+  try {
+    const settings = await XpSettings.getSettings()
+    res.json(settings)
+  } catch (error) {
+    console.error('Get XP settings error:', error)
+    res.status(500).json({ message: 'Failed to fetch XP settings' })
+  }
+})
+
 // ─── Dashboard Stats (requires admin role) ───────────────
 router.get('/stats', requireAuth, requireAdmin, async (req, res) => {
   try {
@@ -358,21 +369,10 @@ router.delete('/skill-maps/:skillMapId', async (req, res) => {
   }
 })
 
-// ─── Get XP Settings ───────────────────────────────────────────
-router.get('/xp-settings', async (req, res) => {
-  try {
-    const settings = await XpSettings.getSettings()
-    res.json(settings)
-  } catch (error) {
-    console.error('Get XP settings error:', error)
-    res.status(500).json({ message: 'Failed to fetch XP settings' })
-  }
-})
-
 // ─── Update XP Settings ────────────────────────────────────────
 router.put('/xp-settings', async (req, res) => {
   try {
-    const { reflectionXp, practiceXpPerMinute, streak5DayMultiplier, streak7DayMultiplier } = req.body
+    const { reflectionXp, practiceXpPerMinute, streak5DayMultiplier, streak7DayMultiplier, bronzeThreshold, silverThreshold, goldThreshold } = req.body
     const adminId = req.user.id
     const adminEmail = req.user.email
 
@@ -406,9 +406,40 @@ router.put('/xp-settings', async (req, res) => {
       }
       updates.streak7DayMultiplier = val
     }
+    if (bronzeThreshold !== undefined) {
+      const val = Number(bronzeThreshold)
+      if (isNaN(val) || val < 0 || val > 10000) {
+        return res.status(400).json({ message: 'bronzeThreshold must be between 0 and 10000' })
+      }
+      updates.bronzeThreshold = val
+    }
+    if (silverThreshold !== undefined) {
+      const val = Number(silverThreshold)
+      if (isNaN(val) || val < 0 || val > 10000) {
+        return res.status(400).json({ message: 'silverThreshold must be between 0 and 10000' })
+      }
+      updates.silverThreshold = val
+    }
+    if (goldThreshold !== undefined) {
+      const val = Number(goldThreshold)
+      if (isNaN(val) || val < 0 || val > 10000) {
+        return res.status(400).json({ message: 'goldThreshold must be between 0 and 10000' })
+      }
+      updates.goldThreshold = val
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ message: 'No valid updates provided' })
+    }
+
+    // Validate threshold ordering if multiple thresholds are being updated
+    const currentSettings = await XpSettings.getSettings()
+    const finalBronze = updates.bronzeThreshold ?? currentSettings.bronzeThreshold
+    const finalSilver = updates.silverThreshold ?? currentSettings.silverThreshold
+    const finalGold = updates.goldThreshold ?? currentSettings.goldThreshold
+
+    if (finalBronze >= finalSilver || finalSilver >= finalGold) {
+      return res.status(400).json({ message: 'Thresholds must be in ascending order: Bronze < Silver < Gold' })
     }
 
     const settings = await XpSettings.updateSettings(updates)
