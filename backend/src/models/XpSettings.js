@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 /**
- * XpSettings - Admin-configurable XP reward values
+ * XpSettings - Admin-configurable XP reward values and league thresholds
  * Single document collection (singleton pattern)
  */
 const XpSettingsSchema = new mongoose.Schema({
@@ -32,6 +32,28 @@ const XpSettingsSchema = new mongoose.Schema({
     default: 5,
     min: 1,
     max: 10
+  },
+  // League tier thresholds (weekly XP required)
+  bronzeThreshold: {
+    type: Number,
+    required: true,
+    default: 50,
+    min: 0,
+    max: 10000
+  },
+  silverThreshold: {
+    type: Number,
+    required: true,
+    default: 100,
+    min: 0,
+    max: 10000
+  },
+  goldThreshold: {
+    type: Number,
+    required: true,
+    default: 200,
+    min: 0,
+    max: 10000
   }
 }, { timestamps: true });
 
