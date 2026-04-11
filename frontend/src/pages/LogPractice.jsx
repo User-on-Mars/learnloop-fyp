@@ -506,18 +506,18 @@ export default function LogPractice() {
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-site-ink mb-1.5">What did you practice? <span className="text-xs text-site-faint font-normal">({comp.notes.length}/50)</span></label>
-              <textarea value={comp.notes} onChange={e=>setComp(p=>({...p,notes:e.target.value.slice(0,50)}))} placeholder="Describe what you worked on..." rows={2} maxLength={50} className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent bg-site-bg focus:bg-white text-sm resize-none"/>
+              <label className="block text-sm font-medium text-site-ink mb-1.5">What did you practice? <span className="text-xs text-site-faint font-normal">({comp.notes.length}/200)</span></label>
+              <textarea value={comp.notes} onChange={e=>setComp(p=>({...p,notes:e.target.value.slice(0,200)}))} placeholder="Describe what you worked on..." rows={3} maxLength={200} className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent bg-site-bg focus:bg-white text-sm resize-none"/>
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-site-ink mb-1.5 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-500"/>Any blockers? <span className="text-xs text-site-faint font-normal">({comp.blockers.length}/50)</span></label>
-              <textarea value={comp.blockers} onChange={e=>setComp(p=>({...p,blockers:e.target.value.slice(0,50)}))} placeholder="What was difficult?" rows={2} maxLength={50} className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent bg-site-bg focus:bg-white text-sm resize-none"/>
+              <label className="block text-sm font-medium text-site-ink mb-1.5 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-500"/>Any blockers? <span className="text-xs text-site-faint font-normal">({comp.blockers.length}/200)</span></label>
+              <textarea value={comp.blockers} onChange={e=>setComp(p=>({...p,blockers:e.target.value.slice(0,200)}))} placeholder="What was difficult?" rows={3} maxLength={200} className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent bg-site-bg focus:bg-white text-sm resize-none"/>
             </div>
 
             <div className="mb-5">
-              <label className="block text-sm font-medium text-site-ink mb-1.5 flex items-center gap-1.5"><ArrowRight className="w-4 h-4 text-site-accent"/>Next step? <span className="text-xs text-site-faint font-normal">({comp.nextStep.length}/50)</span></label>
-              <textarea value={comp.nextStep} onChange={e=>setComp(p=>({...p,nextStep:e.target.value.slice(0,50)}))} placeholder="What will you focus on next?" rows={2} maxLength={50} className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent bg-site-bg focus:bg-white text-sm resize-none"/>
+              <label className="block text-sm font-medium text-site-ink mb-1.5 flex items-center gap-1.5"><ArrowRight className="w-4 h-4 text-site-accent"/>Next step? <span className="text-xs text-site-faint font-normal">({comp.nextStep.length}/200)</span></label>
+              <textarea value={comp.nextStep} onChange={e=>setComp(p=>({...p,nextStep:e.target.value.slice(0,200)}))} placeholder="What will you focus on next?" rows={3} maxLength={200} className="w-full px-4 py-2.5 border-2 border-transparent rounded-lg outline-none focus:border-site-accent bg-site-bg focus:bg-white text-sm resize-none"/>
             </div>
 
             <button onClick={submitComp} disabled={submitting} className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50">{submitting?'Saving...':'Save Practice Log'}</button>
