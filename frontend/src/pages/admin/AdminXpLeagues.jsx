@@ -7,9 +7,12 @@ import LeagueInfo from '../../components/admin/LeagueInfo'
 export default function AdminXpLeagues() {
   const [leaderboard, setLeaderboard] = useState([])
   const [loading, setLoading] = useState(true)
+  const [xpSettings, setXpSettings] = useState(null)
+  const [settingsLoading, setSettingsLoading] = useState(true)
 
   useEffect(() => {
     loadLeaderboard()
+    loadXpSettings()
   }, [])
 
   const loadLeaderboard = async () => {
@@ -21,6 +24,21 @@ export default function AdminXpLeagues() {
       console.error('Failed to load leaderboard:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadXpSettings = async () => {
+    try {
+      setSettingsLoading(true)
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/admin/xp-settings`)
+      if (response.ok) {
+        const data = await response.json()
+        setXpSettings(data)
+      }
+    } catch (error) {
+      console.error('Failed to load XP settings:', error)
+    } finally {
+      setSettingsLoading(false)
     }
   }
 
@@ -71,7 +89,7 @@ export default function AdminXpLeagues() {
       </div>
 
       {/* League Info */}
-      <LeagueInfo />
+      <LeagueInfo showProgress={false} />
 
       {/* Next Reset */}
       <div className="bg-site-surface rounded-xl border border-site-border p-5 mb-8">
@@ -128,30 +146,53 @@ export default function AdminXpLeagues() {
         {/* XP System Settings */}
         <div className="bg-site-surface rounded-xl border border-site-border p-6">
           <h3 className="font-semibold text-site-ink mb-4">XP system settings</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
-              <span className="text-sm text-site-ink">Session completion XP</span>
-              <span className="font-semibold text-site-accent">10 XP</span>
+          {settingsLoading ? (
+            <div className="text-center py-8 text-site-faint">Loading settings...</div>
+          ) : xpSettings ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
+                <span className="text-sm text-site-ink">Practice XP per minute</span>
+                <span className="font-semibold text-site-accent">{xpSettings.practiceXpPerMinute} XP/min</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
+                <span className="text-sm text-site-ink">Daily Reflection XP</span>
+                <span className="font-semibold text-site-accent">{xpSettings.reflectionXp} XP</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
+                <span className="text-sm text-site-ink">5-Day Streak Multiplier</span>
+                <span className="font-semibold text-site-accent">{xpSettings.streak5DayMultiplier}x</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
+                <span className="text-sm text-site-ink">7+ Day Streak Multiplier</span>
+                <span className="font-semibold text-site-accent">{xpSettings.streak7DayMultiplier}x</span>
+              </div>
+              <div className="mt-4 pt-4 border-t border-site-border">
+                <p className="text-xs font-semibold text-site-ink mb-2">League Thresholds (Weekly XP)</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-2 bg-orange-50 rounded-lg">
+                    <span className="text-xs text-orange-900">🥉 Bronze</span>
+                    <span className="text-xs font-semibold text-orange-700">{xpSettings.bronzeThreshold} XP</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <span className="text-xs text-gray-900">🥈 Silver</span>
+                    <span className="text-xs font-semibold text-gray-700">{xpSettings.silverThreshold} XP</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg">
+                    <span className="text-xs text-amber-900">🥇 Gold</span>
+                    <span className="text-xs font-semibold text-amber-700">{xpSettings.goldThreshold} XP</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => window.location.href = '/admin/settings'}
+                className="w-full px-4 py-2 border border-site-border rounded-lg text-site-ink hover:bg-site-bg transition-colors text-sm font-medium mt-2"
+              >
+                Edit XP settings
+              </button>
             </div>
-            <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
-              <span className="text-sm text-site-ink">Node completion XP</span>
-              <span className="font-semibold text-site-accent">50 XP</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
-              <span className="text-sm text-site-ink">Reflection XP</span>
-              <span className="font-semibold text-site-accent">20 XP</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-site-bg rounded-lg">
-              <span className="text-sm text-site-ink">Streak multiplier threshold</span>
-              <span className="font-semibold text-site-accent">7 days</span>
-            </div>
-            <button 
-              disabled 
-              className="w-full px-4 py-2 border border-site-border rounded-lg text-site-faint bg-site-bg cursor-not-allowed text-sm font-medium mt-2 opacity-50"
-            >
-              Edit XP settings
-            </button>
-          </div>
+          ) : (
+            <div className="text-center py-8 text-site-faint">Failed to load settings</div>
+          )}
         </div>
       </div>
 
