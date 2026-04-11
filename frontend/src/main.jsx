@@ -53,6 +53,7 @@ import AdminActivity from "./pages/admin/AdminActivity";
 import AdminAlerts from "./pages/admin/AdminAlerts";
 import AdminXpLeagues from "./pages/admin/AdminXpLeagues";
 import AdminSkillMaps from "./pages/admin/AdminSkillMaps";
+import AdminTemplates from "./pages/admin/AdminTemplates";
 import AdminReflections from "./pages/admin/AdminReflections";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -157,6 +158,7 @@ const router = createBrowserRouter([
           { path: "activity", element: <AdminActivity /> },
           { path: "xp-leagues", element: <AdminXpLeagues /> },
           { path: "skill-maps", element: <AdminSkillMaps /> },
+          { path: "templates", element: <AdminTemplates /> },
           { path: "reflections", element: <AdminReflections /> },
           { path: "audit-log", element: <AdminAuditLog /> },
           { path: "settings", element: <AdminSettings /> },
