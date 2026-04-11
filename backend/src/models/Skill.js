@@ -21,7 +21,7 @@ const SkillSchema = new mongoose.Schema({
   description: {
     type: String,
     default: '',
-    maxlength: 120,
+    maxlength: 150,
     trim: true
   },
   icon: {
@@ -39,7 +39,7 @@ const SkillSchema = new mongoose.Schema({
   goal: {
     type: String,
     default: '',
-    maxlength: 16,
+    maxlength: 30,
     trim: true
   },
   status: {
