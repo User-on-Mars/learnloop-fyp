@@ -99,10 +99,6 @@ export default function AdminSkillMaps() {
       <div className="bg-site-surface rounded-xl border border-site-border p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-site-ink">Skill maps — most active</h3>
-          <button disabled className="px-3 py-1.5 text-sm border border-site-border rounded-lg text-site-muted opacity-50 cursor-not-allowed flex items-center gap-1">
-            <Plus className="w-4 h-4" />
-            Create template
-          </button>
         </div>
 
         <div className="overflow-x-auto">
@@ -114,21 +110,20 @@ export default function AdminSkillMaps() {
                 <th className="text-center px-4 py-3 font-semibold text-site-muted text-xs">Type</th>
                 <th className="text-center px-4 py-3 font-semibold text-site-muted text-xs">Nodes</th>
                 <th className="text-center px-4 py-3 font-semibold text-site-muted text-xs">Completion</th>
-                <th className="text-right px-4 py-3 font-semibold text-site-muted text-xs">Actions</th>
               </tr>
             </thead>
             <tbody>
               {displaySkillMaps.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-site-faint">
+                  <td colSpan="5" className="px-4 py-8 text-center text-site-faint">
                     No skill maps found
                   </td>
                 </tr>
               ) : (
                 displaySkillMaps.map((map, idx) => (
                   <tr key={map._id || idx} className="border-b border-site-border/50 hover:bg-site-bg/50">
-                    <td className="px-4 py-3 font-medium text-site-ink">{map.title || 'Untitled'}</td>
-                    <td className="px-4 py-3 text-site-muted">{map.owner}</td>
+                    <td className="px-4 py-3 font-medium text-site-ink break-words min-w-0">{map.title || 'Untitled'}</td>
+                    <td className="px-4 py-3 text-site-muted break-words min-w-0">{map.owner}</td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
                         map.type === 'Template' 
@@ -140,17 +135,6 @@ export default function AdminSkillMaps() {
                     </td>
                     <td className="px-4 py-3 text-center text-site-muted">{map.nodes}</td>
                     <td className="px-4 py-3 text-center text-site-muted">{map.completion}</td>
-                    <td className="px-4 py-3 text-right">
-                      {map.type === 'Custom' && (
-                        <button
-                          onClick={() => setDeleteModal({ id: map._id, title: map.title })}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete skill map"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </td>
                   </tr>
                 ))
               )}
