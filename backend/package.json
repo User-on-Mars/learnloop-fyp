@@ -15,7 +15,8 @@
     "migrate:status": "node scripts/migrate.js status",
     "migrate:validate": "node scripts/migrate.js validate",
     "migrate:reset": "FORCE_RESET=y node scripts/migrate.js reset",
-    "init:xp-settings": "node scripts/initializeXpSettings.js"
+    "init:xp-settings": "node scripts/initializeXpSettings.js",
+    "seed:templates": "node scripts/seedTemplates.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
