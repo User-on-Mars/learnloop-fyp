@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Activity, AlertCircle, TrendingUp, BookOpen, MessageSquare, FileText, Settings, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, Users, Activity, AlertCircle, TrendingUp, BookOpen, MessageSquare, FileText, Settings, ArrowLeft, Layers } from 'lucide-react'
 import LogoMark from '../components/LogoMark'
 
 const adminNav = [
@@ -9,6 +9,7 @@ const adminNav = [
   { id: 'activity', label: 'Activity', icon: Activity, path: '/admin/activity' },
   { id: 'xp-leagues', label: 'XP Leaderboard', icon: TrendingUp, path: '/admin/xp-leagues' },
   { id: 'skill-maps', label: 'Skill Maps', icon: BookOpen, path: '/admin/skill-maps' },
+  { id: 'templates', label: 'Templates', icon: Layers, path: '/admin/templates' },
   { id: 'reflections', label: 'Reflections', icon: MessageSquare, path: '/admin/reflections' },
   { id: 'audit-log', label: 'Audit Log', icon: FileText, path: '/admin/audit-log' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
