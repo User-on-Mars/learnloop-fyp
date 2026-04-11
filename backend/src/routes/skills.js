@@ -52,23 +52,24 @@ const validateRequest = (schema) => {
 
 // Validation schema for template application
 const templateSessionSchema = z.object({
-  title: z.string().trim().min(1).max(100),
-  description: z.string().trim().max(500).default('')
+  title: z.string().trim().min(1).max(20),
+  description: z.string().trim().max(200).default('')
 });
 
 const templateNodeSchema = z.object({
-  title: z.string().trim().min(1).max(16),
-  description: z.string().trim().max(2000).default(''),
-  sessions: z.array(templateSessionSchema).min(1)
+  title: z.string().trim().min(1).max(20),
+  description: z.string().trim().max(200).default(''),
+  sessions: z.array(templateSessionSchema).min(1).max(5)
 });
 
 const createFromTemplateSchema = z.object({
+  templateId: z.string().optional(), // Optional template ID to track usage
   template: z.object({
-    title: z.string().trim().min(1, 'Title is required').max(30, 'Title must be 30 characters or less'),
-    description: z.string().trim().max(120, 'Description must be 120 characters or less').default(''),
+    title: z.string().trim().min(1, 'Title is required').max(20, 'Title must be 20 characters or less'),
+    description: z.string().trim().max(150, 'Description must be 150 characters or less').default(''),
     icon: z.string().trim().min(1).max(30),
     color: z.string().trim().max(20).optional(),
-    goal: z.string().trim().min(1, 'Goal is required').max(16, 'Goal must be 16 characters or less'),
+    goal: z.string().trim().min(1, 'Goal is required').max(30, 'Goal must be 30 characters or less'),
     nodes: z.array(templateNodeSchema).min(2, 'At least 2 nodes required').max(15, 'At most 15 nodes allowed')
   })
 });
@@ -76,8 +77,8 @@ const createFromTemplateSchema = z.object({
 // POST /api/skills/maps/from-template - Create skill map from template
 router.post('/maps/from-template', validateRequest(createFromTemplateSchema), async (req, res) => {
   try {
-    const { template } = req.body;
-    const result = await SkillService.createSkillMapFromTemplate(req.user.id, template);
+    const { template, templateId } = req.body;
+    const result = await SkillService.createSkillMapFromTemplate(req.user.id, template, templateId);
     res.status(201).json(result);
   } catch (error) {
     console.error('❌ Error creating skill map from template:', error.message);
