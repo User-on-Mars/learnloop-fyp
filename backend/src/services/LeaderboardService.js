@@ -1,6 +1,7 @@
 import UserXpProfile from '../models/UserXpProfile.js';
 import UserStreak from '../models/UserStreak.js';
 import XpTransaction from '../models/XpTransaction.js';
+import XpSettings from '../models/XpSettings.js';
 import User from '../models/User.js';
 import WeeklyResetHistory from '../models/WeeklyResetHistory.js';
 import cacheService from './CacheService.js';
@@ -74,6 +75,19 @@ class LeaderboardService {
   }
 
   /**
+   * Calculate league tier based on weekly XP using configurable thresholds
+   * @param {number} weeklyXp
+   * @param {object} settings - XpSettings document
+   * @returns {'Gold'|'Silver'|'Bronze'|'Newcomer'}
+   */
+  static _calculateLeagueTier(weeklyXp, settings) {
+    if (weeklyXp >= settings.goldThreshold) return 'Gold';
+    if (weeklyXp >= settings.silverThreshold) return 'Silver';
+    if (weeklyXp >= settings.bronzeThreshold) return 'Bronze';
+    return 'Newcomer';
+  }
+
+  /**
    * Get weekly XP leaderboard (paginated, cached).
    * Tiebreaker: earlier first XP transaction timestamp in the week wins.
    * @param {number} page - 1-indexed
@@ -128,6 +142,7 @@ class LeaderboardService {
 
     const [result] = await UserXpProfile.aggregate(pipeline);
     const total = result.total[0]?.count || 0;
+    const settings = await XpSettings.getSettings();
 
     // Enrich with display names and rank - try multiple sources
     const entries = await Promise.all(
@@ -147,12 +162,15 @@ class LeaderboardService {
           console.log(`❌ No user found for firebaseUid: ${entry.userId}`);
         }
         
+        // Calculate tier based on configurable thresholds
+        const leagueTier = LeaderboardService._calculateLeagueTier(entry.weeklyXp, settings);
+        
         return {
           userId: entry.userId,
           displayName,
           weeklyXp: entry.weeklyXp,
           rank: skip + idx + 1,
-          leagueTier: LeaderboardService.getTierForRank(skip + idx + 1)
+          leagueTier
         };
       })
     );
