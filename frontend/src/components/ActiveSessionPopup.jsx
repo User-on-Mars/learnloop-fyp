@@ -107,6 +107,9 @@ export default function ActiveSessionPopup() {
     const hiddenPages = ['/login', '/signup', '/forgot', '/'];
     if (hiddenPages.includes(location.pathname)) return null;
 
+    // Hide on admin panel pages
+    if (location.pathname.startsWith('/admin')) return null;
+
     // Hide if on the node detail page that owns this session
     const nodeMatch = location.pathname.match(/\/skills\/[^/]+\/nodes\/([^/]+)/);
     const currentNodeId = nodeMatch ? nodeMatch[1] : null;
