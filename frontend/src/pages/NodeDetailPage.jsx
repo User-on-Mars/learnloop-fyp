@@ -122,7 +122,9 @@ export default function NodeDetailPage() {
     const running = activeSessions.find(s => s.isRunning);
     if (running) { setErr(`"${running.skillName}" is running. Pause it first.`); setTimeout(()=>setErr(''),5000); return; }
     const t = cd ? tgtM*60 : 0;
-    addSession({ skillName: node.title, nodeId, skillId, tags: [currentSkill?.name||''], notes: sessTitle.trim(), timer: cd?t:0, targetTime: t, isCountdown: cd, isRunning: true });
+    // Truncate node title to 20 chars to match practice API validation
+    const truncatedTitle = node.title.slice(0, 20);
+    addSession({ skillName: truncatedTitle, nodeId, skillId, tags: [currentSkill?.name||''], notes: sessTitle.trim(), timer: cd?t:0, targetTime: t, isCountdown: cd, isRunning: true });
     setShowPractice(false); setSessTitle(''); setOk('Session started!'); setTimeout(()=>setOk(''),3000);
   };
   const openComp = (s) => {
@@ -139,7 +141,39 @@ export default function NodeDetailPage() {
     setComp({ notes:'', confidence:3, blockers:'', nextStep:'' });
     setShowComp(true);
   };
-  const submitComp = async () => { if (!compS||!node) return; setSub(true); try { const sec = compS.isCountdown ? Math.max(0, compS.targetTime - compS.timer) : compS.timer; await practiceAPI.createPractice({ skillName: node.title, minutesPracticed: Math.max(1, Math.floor(sec/60)), tags: [currentSkill?.name||''], timerSeconds: sec, notes: comp.notes, confidence: comp.confidence, blockers: comp.blockers, nextStep: comp.nextStep, date: new Date().toISOString() }); if (node.status !== 'Completed' && node.status !== 'In_Progress') { try { await updateNodeStatus(nodeId, 'In_Progress'); } catch {} } removeSession(compS.id); setShowComp(false); setOk('Practice logged!'); setTimeout(()=>setOk(''),3000); fetchD(); fetchH(); } catch { setErr('Failed'); } finally { setSub(false); } };
+  const submitComp = async () => { 
+    if (!compS||!node) return; 
+    setSub(true); 
+    try { 
+      const sec = compS.isCountdown ? Math.max(0, compS.targetTime - compS.timer) : compS.timer; 
+      // Truncate node title to 20 chars to match practice API validation
+      const truncatedTitle = node.title.slice(0, 20);
+      await practiceAPI.createPractice({ 
+        skillName: truncatedTitle, 
+        minutesPracticed: Math.max(1, Math.floor(sec/60)), 
+        tags: [currentSkill?.name||''], 
+        timerSeconds: sec, 
+        notes: comp.notes, 
+        confidence: comp.confidence, 
+        blockers: comp.blockers, 
+        nextStep: comp.nextStep, 
+        date: new Date().toISOString() 
+      }); 
+      if (node.status !== 'Completed' && node.status !== 'In_Progress') { 
+        try { await updateNodeStatus(nodeId, 'In_Progress'); } catch {} 
+      } 
+      removeSession(compS.id); 
+      setShowComp(false); 
+      setOk('Practice logged!'); 
+      setTimeout(()=>setOk(''),3000); 
+      fetchD(); 
+      fetchH(); 
+    } catch { 
+      setErr('Failed'); 
+    } finally { 
+      setSub(false); 
+    } 
+  };
   const removeActive = () => { if (activeS) { removeSession(activeS.id); setShowRemove(false); } };
   if (loading && !node) return (<div className="min-h-screen bg-site-bg flex items-center justify-center"><div className="animate-spin w-10 h-10 border-4 border-site-accent border-t-transparent rounded-full" /></div>);
   return (
