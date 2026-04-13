@@ -83,9 +83,10 @@ export default function Sidebar() {
   const user = auth.currentUser;
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showAdminConfirm, setShowAdminConfirm] = useState(false);
   const menuRef = useRef(null);
   
-  const { activeSessions, clearAllSessions } = useActiveSessions();
+  const { activeSessions, clearAllSessions, toggleSession } = useActiveSessions();
   const { isAdmin } = useAdmin();
   const hasActiveSessions = activeSessions.length > 0;
   const runningSessions = activeSessions.filter(s => s.isRunning);
@@ -126,6 +127,20 @@ export default function Sidebar() {
     } catch (error) {
       console.error("Logout error:", error);
     }
+  };
+
+  const handleAdminClick = () => {
+    // Always show confirmation dialog
+    setShowAdminConfirm(true);
+  };
+
+  const performAdminSwitch = () => {
+    // Pause all running sessions
+    runningSessions.forEach(session => {
+      toggleSession(session.id);
+    });
+    setShowAdminConfirm(false);
+    navigate('/admin');
   };
 
   const getInitials = () => {
@@ -185,7 +200,7 @@ export default function Sidebar() {
             <>
               <div className="border-t border-site-border my-3"></div>
               <button
-                onClick={() => navigate('/admin')}
+                onClick={handleAdminClick}
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors
                   ${location.pathname.startsWith('/admin')
@@ -264,6 +279,72 @@ export default function Sidebar() {
           )}
         </div>
       </aside>
+
+      {/* Admin Panel Confirmation Modal */}
+      {showAdminConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-sm p-6 border border-site-border">
+            <div className="flex flex-col items-center text-center">
+              {hasActiveSessions ? (
+                <>
+                  <AlertIcon />
+                  <h3 className="text-lg font-bold text-site-ink mt-4 mb-2">
+                    Switch to Admin Panel?
+                  </h3>
+                  <p className="text-site-muted text-sm mb-4">
+                    You have {activeSessions.length} active session{activeSessions.length > 1 ? 's' : ''}
+                    {runningSessions.length > 0 && (
+                      <span className="text-amber-600 font-medium">
+                        {' '}({runningSessions.length} currently running)
+                      </span>
+                    )}. 
+                    All running sessions will be paused.
+                  </p>
+                  
+                  {/* Session Preview */}
+                  <div className="w-full bg-site-bg rounded-lg p-3 mb-4 max-h-32 overflow-y-auto border border-site-border">
+                    {activeSessions.slice(0, 3).map(session => (
+                      <div key={session.id} className="flex items-center justify-between py-1 text-sm">
+                        <span className="text-site-ink truncate">{session.skillName}</span>
+                        <span className={`font-mono ${session.isRunning ? 'text-green-600' : 'text-gray-500'}`}>
+                          {Math.floor(session.timer / 60)}m
+                        </span>
+                      </div>
+                    ))}
+                    {activeSessions.length > 3 && (
+                      <p className="text-xs text-site-faint mt-1">+{activeSessions.length - 3} more</p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <svg className="w-12 h-12 text-site-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  <h3 className="text-lg font-bold text-site-ink mt-4 mb-2">
+                    Switch to Admin Panel?
+                  </h3>
+                </>
+              )}
+
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowAdminConfirm(false)}
+                  className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg transition-colors"
+                >
+                  No
+                </button>
+                <button
+                  onClick={performAdminSwitch}
+                  className="flex-1 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors"
+                >
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
