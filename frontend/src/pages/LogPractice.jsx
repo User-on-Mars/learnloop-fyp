@@ -267,7 +267,10 @@ export default function LogPractice() {
                   </>) : (<>
                     {s.isCountdown&&<div className="w-full h-1.5 bg-gray-200 rounded-full my-2 overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ${isR?'bg-green-500':'bg-site-accent'}`} style={{width:`${getProgress(s)}%`}}/></div>}
                     <div className={`text-2xl font-bold font-mono text-center py-2 rounded-xl mb-3 ${isR?'bg-green-100 text-green-700':'bg-site-bg text-site-ink'}`}>{formatTimer(s.timer)}</div>
-                    <button onClick={()=>navigate(`/skills/${s.skillId}/nodes/${s.nodeId}`)} className="w-full flex items-center justify-center gap-2 py-2.5 bg-site-accent text-white rounded-lg font-medium text-sm hover:bg-site-accent-hover"><ExternalLink className="w-4 h-4"/>Go to Node</button>
+                    <div className="flex gap-2">
+                      <button onClick={()=>navigate(`/skills/${s.skillId}/nodes/${s.nodeId}`)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-site-accent text-white rounded-lg font-medium text-sm hover:bg-site-accent-hover"><ExternalLink className="w-4 h-4"/>Go to Node</button>
+                      {canComp(s) && <button onClick={()=>navigate(`/skills/${s.skillId}/nodes/${s.nodeId}`)} className="px-3 py-2.5 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700" title="Complete & Log"><CheckCircle className="w-4 h-4"/></button>}
+                    </div>
                   </>)}
 
                   {s.tags?.length>0&&<div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-site-border">{s.tags.map(t=><span key={t} className="px-2 py-0.5 bg-site-soft text-site-accent text-[10px] rounded-full">{t}</span>)}</div>}
