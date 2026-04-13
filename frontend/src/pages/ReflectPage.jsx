@@ -41,8 +41,6 @@ export default function ReflectPage() {
   const [datePreset, setDatePreset] = useState('');
   const [showAll, setShowAll] = useState(false);
 
-  useEffect(() => { if (user === null) navigate('/login'); }, [user, navigate]);
-
   const fetchHistory = useCallback(async () => {
     try { setHistLoading(true); const r = await client.get('/reflections'); setReflections(r.data || []); }
     catch { /* silent */ }
@@ -88,7 +86,7 @@ export default function ReflectPage() {
     finally { setExporting(null); }
   };
 
-  if (user === undefined) return (<div className="flex min-h-screen items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-site-accent border-t-transparent rounded-full" /></div>);
+
 
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   const fmtTime = (d) => new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
