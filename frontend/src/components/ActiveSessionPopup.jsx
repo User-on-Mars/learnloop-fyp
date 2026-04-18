@@ -95,6 +95,11 @@ export default function ActiveSessionPopup() {
         if (!primarySession) return;
         const sid = primarySession.skillId;
         const nid = primarySession.nodeId;
+        // Room session — navigate to room node detail
+        if (primarySession.roomId && primarySession.roomSkillMapId) {
+            navigate(`/roomspace/${primarySession.roomId}/skill-maps/${primarySession.roomSkillMapId}/nodes/${nid}`);
+            return;
+        }
         if (sid && nid) {
             navigate(`/skills/${sid}/nodes/${nid}`);
         } else {
@@ -112,7 +117,8 @@ export default function ActiveSessionPopup() {
 
     // Hide if on the node detail page that owns this session
     const nodeMatch = location.pathname.match(/\/skills\/[^/]+\/nodes\/([^/]+)/);
-    const currentNodeId = nodeMatch ? nodeMatch[1] : null;
+    const roomNodeMatch = location.pathname.match(/\/roomspace\/[^/]+\/skill-maps\/[^/]+\/nodes\/([^/]+)/);
+    const currentNodeId = nodeMatch ? nodeMatch[1] : roomNodeMatch ? roomNodeMatch[1] : null;
     const isOnOwnNode = primarySession && currentNodeId && primarySession.nodeId === currentNodeId;
 
     if (!primarySession || isOnOwnNode) {

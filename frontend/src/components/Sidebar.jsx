@@ -6,6 +6,7 @@ import { useActiveSessions } from "../context/ActiveSessionContext";
 import { useAdmin } from "../hooks/useAdmin";
 import LogoMark from "./LogoMark";
 import { Avatar } from "./Avatar";
+import NotificationBell from "./NotificationBell";
 
 // Icons
 const HomeIcon = () => (
@@ -68,11 +69,18 @@ const TrophyIcon = () => (
   </svg>
 );
 
+const UsersIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+  </svg>
+);
+
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: HomeIcon, path: '/dashboard' },
   { id: 'log-practice', label: 'Log Practice', icon: ClockIcon, path: '/log-practice' },
   { id: 'reflect', label: 'Reflect', icon: ReflectIcon, path: '/reflect' },
   { id: 'skills', label: 'Skill Maps', icon: SkillMapIcon, path: '/skills' },
+  { id: 'roomspace', label: 'RoomSpace', icon: UsersIcon, path: '/roomspace' },
   { id: 'leaderboard', label: 'Leaderboard', icon: TrophyIcon, path: '/leaderboard' },
   { id: 'summary', label: 'Weekly Summary', icon: SummaryIcon, path: '/weekly-summary' },
 ];
@@ -99,6 +107,9 @@ export default function Sidebar() {
         location.pathname.startsWith('/skills/') ||
         location.pathname.startsWith('/maps')
       );
+    }
+    if (path === '/roomspace') {
+      return location.pathname === '/roomspace' || location.pathname.startsWith('/roomspace/');
     }
     return location.pathname === path;
   };
@@ -159,16 +170,17 @@ export default function Sidebar() {
   return (
     <>
       <aside className="w-60 bg-site-surface border-r border-site-border sticky top-0 h-screen overflow-y-auto flex-col hidden md:flex">
-        {/* Logo */}
-        <div className="p-4 sm:p-6">
+        {/* Logo & Notifications */}
+        <div className="p-4 sm:p-6 flex items-center justify-between">
           <button
             type="button"
             onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-2 text-left w-full rounded-lg hover:bg-site-soft transition-colors p-1 -m-1"
+            className="flex items-center gap-2 text-left rounded-lg hover:bg-site-soft transition-colors p-1 -m-1"
           >
             <LogoMark size={36} className="w-9 h-9 rounded-lg" />
             <span className="text-lg sm:text-xl font-bold text-site-ink tracking-tight">LearnLoop</span>
           </button>
+          <NotificationBell />
         </div>
         
         {/* Navigation */}

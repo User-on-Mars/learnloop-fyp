@@ -1,21 +1,25 @@
-import { useState, useEffect } from 'react';
-import { CheckCircle, AlertCircle, X, Info, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, AlertCircle, X, RefreshCw } from 'lucide-react';
 
-const Toast = ({ id, type = 'info', title, message, duration = 5000, onClose }) => {
-  const [isVisible, setIsVisible] = useState(false);
+const Toast = ({ 
+  id,
+  type = 'error', 
+  title, 
+  message, 
+  duration = 5000,
+  showRetry = false,
+  onRetry,
+  onClose 
+}) => {
+  const [isVisible, setIsVisible] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
-
-  useEffect(() => {
-    // Animate in
-    const timer = setTimeout(() => setIsVisible(true), 10);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     if (duration > 0) {
       const timer = setTimeout(() => {
         handleClose();
       }, duration);
+
       return () => clearTimeout(timer);
     }
   }, [duration]);
@@ -23,69 +27,93 @@ const Toast = ({ id, type = 'info', title, message, duration = 5000, onClose }) 
   const handleClose = () => {
     setIsExiting(true);
     setTimeout(() => {
-      onClose(id);
-    }, 300); // Match animation duration
+      setIsVisible(false);
+      onClose?.(id);
+    }, 300);
   };
 
-  const getToastStyles = () => {
-    const baseStyles = "flex items-start gap-3 p-4 rounded-lg shadow-lg border max-w-sm w-full transition-all duration-300 transform";
-    
-    const typeStyles = {
-      success: "bg-green-50 border-green-200 text-green-800",
-      error: "bg-red-50 border-red-200 text-red-800",
-      warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
-      info: "bg-blue-50 border-blue-200 text-blue-800"
-    };
-
-    const animationStyles = isExiting 
-      ? "translate-x-full opacity-0" 
-      : isVisible 
-        ? "translate-x-0 opacity-100" 
-        : "translate-x-full opacity-0";
-
-    return `${baseStyles} ${typeStyles[type]} ${animationStyles}`;
+  const handleRetry = () => {
+    onRetry?.();
+    handleClose();
   };
 
-  const getIcon = () => {
-    const iconProps = { className: "w-5 h-5 flex-shrink-0 mt-0.5" };
-    
-    switch (type) {
-      case 'success':
-        return <CheckCircle {...iconProps} className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-600" />;
-      case 'error':
-        return <AlertCircle {...iconProps} className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-600" />;
-      case 'warning':
-        return <AlertTriangle {...iconProps} className="w-5 h-5 flex-shrink-0 mt-0.5 text-yellow-600" />;
-      case 'info':
-      default:
-        return <Info {...iconProps} className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-600" />;
+  if (!isVisible) return null;
+
+  const typeStyles = {
+    success: {
+      bg: 'bg-green-50',
+      border: 'border-green-200',
+      text: 'text-green-800',
+      icon: CheckCircle,
+      iconColor: 'text-green-600'
+    },
+    error: {
+      bg: 'bg-red-50',
+      border: 'border-red-200', 
+      text: 'text-red-800',
+      icon: AlertCircle,
+      iconColor: 'text-red-600'
+    },
+    warning: {
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+      text: 'text-amber-800', 
+      icon: AlertCircle,
+      iconColor: 'text-amber-600'
     }
   };
 
+  const style = typeStyles[type] || typeStyles.error;
+  const Icon = style.icon;
+
   return (
-    <div className={getToastStyles()}>
-      {getIcon()}
-      
-      <div className="flex-1 min-w-0">
-        {title && (
-          <h4 className="font-semibold text-sm mb-1">
-            {title}
-          </h4>
-        )}
-        {message && (
-          <p className="text-sm">
-            {message}
-          </p>
-        )}
+    <div 
+      className={`
+        fixed top-4 right-4 z-50 max-w-md w-full
+        ${style.bg} ${style.border} ${style.text}
+        border rounded-lg shadow-lg p-4
+        transform transition-all duration-300 ease-in-out
+        ${isExiting ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'}
+      `}
+      role="alert"
+    >
+      <div className="flex items-start gap-3">
+        <Icon className={`w-5 h-5 ${style.iconColor} flex-shrink-0 mt-0.5`} />
+        
+        <div className="flex-1 min-w-0">
+          {title && (
+            <p className="font-semibold text-sm mb-1">{title}</p>
+          )}
+          {message && (
+            <p className="text-sm">{message}</p>
+          )}
+          
+          {showRetry && onRetry && (
+            <button
+              onClick={handleRetry}
+              className={`
+                mt-2 inline-flex items-center gap-1 text-xs font-medium
+                hover:underline focus:outline-none focus:underline
+                ${style.text}
+              `}
+            >
+              <RefreshCw className="w-3 h-3" />
+              Try Again
+            </button>
+          )}
+        </div>
+
+        <button
+          onClick={handleClose}
+          className={`
+            flex-shrink-0 p-1 rounded-md hover:bg-black/5 
+            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent
+            ${style.text}
+          `}
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
-      
-      <button
-        onClick={handleClose}
-        className="flex-shrink-0 p-1 hover:bg-black hover:bg-opacity-10 rounded transition-colors"
-        aria-label="Close notification"
-      >
-        <X className="w-4 h-4" />
-      </button>
     </div>
   );
 };
