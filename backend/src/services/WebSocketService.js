@@ -77,6 +77,14 @@ class WebSocketService {
         this.handleLeaveSkillRoom(socket, data);
       });
       
+      socket.on('join_room_leaderboard', (data) => {
+        this.handleJoinRoomLeaderboard(socket, data);
+      });
+      
+      socket.on('leave_room_leaderboard', (data) => {
+        this.handleLeaveRoomLeaderboard(socket, data);
+      });
+      
       socket.on('ping', () => {
         socket.emit('pong', { timestamp: Date.now() });
       });
@@ -174,6 +182,64 @@ class WebSocketService {
     
     socket.emit('room_joined', {
       skillId,
+      roomName,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Handle joining a room leaderboard
+   * @param {Socket} socket - Socket.io socket instance
+   * @param {Object} data - Room leaderboard join data
+   */
+  handleJoinRoomLeaderboard(socket, data) {
+    const { roomId } = data;
+    const userId = socket.userId;
+    
+    if (!roomId) {
+      socket.emit('error', { message: 'Room ID required to join leaderboard' });
+      return;
+    }
+    
+    const roomName = `room_leaderboard_${roomId}`;
+    socket.join(roomName);
+    
+    // Track room subscription
+    this.roomSubscriptions.get(userId).add(roomName);
+    
+    console.log(`🏆 User ${userId} joined room leaderboard: ${roomName}`);
+    
+    socket.emit('room_leaderboard_joined', {
+      roomId,
+      roomName,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Handle leaving a room leaderboard
+   * @param {Socket} socket - Socket.io socket instance
+   * @param {Object} data - Room leaderboard leave data
+   */
+  handleLeaveRoomLeaderboard(socket, data) {
+    const { roomId } = data;
+    const userId = socket.userId;
+    
+    if (!roomId) {
+      socket.emit('error', { message: 'Room ID required to leave leaderboard' });
+      return;
+    }
+    
+    const roomName = `room_leaderboard_${roomId}`;
+    socket.leave(roomName);
+    
+    // Remove room subscription
+    this.roomSubscriptions.get(userId)?.delete(roomName);
+    
+    console.log(`🏆 User ${userId} left room leaderboard: ${roomName}`);
+    
+    socket.emit('room_leaderboard_left', {
+      roomId,
       roomName,
       timestamp: Date.now()
     });
@@ -323,6 +389,75 @@ class WebSocketService {
   }
 
   /**
+   * Broadcast room leaderboard update
+   * @param {string} roomId - Room ID
+   * @param {Array} leaderboard - Updated leaderboard data
+   */
+  broadcastRoomLeaderboardUpdate(roomId, leaderboard) {
+    const notification = {
+      type: 'room_leaderboard_update',
+      roomId,
+      leaderboard,
+      timestamp: Date.now()
+    };
+    
+    // Send to room leaderboard subscribers
+    this.sendToRoomLeaderboard(roomId, 'room_leaderboard_update', notification);
+    
+    console.log(`🏆 Broadcasted leaderboard update for room ${roomId}`);
+  }
+
+  /**
+   * Broadcast room XP earned event
+   * @param {string} roomId - Room ID
+   * @param {string} userId - User who earned XP
+   * @param {Object} xpData - XP earning data
+   */
+  broadcastRoomXpEarned(roomId, userId, xpData) {
+    const { xpAmount, newTotal, skillMapId } = xpData;
+    
+    const notification = {
+      type: 'room_xp_earned',
+      roomId,
+      userId,
+      xpAmount,
+      newTotal,
+      skillMapId,
+      timestamp: Date.now()
+    };
+    
+    // Send to room leaderboard subscribers
+    this.sendToRoomLeaderboard(roomId, 'room_xp_earned', notification);
+    
+    console.log(`💰 Broadcasted XP earned: ${xpAmount} XP for user ${userId} in room ${roomId}`);
+  }
+
+  /**
+   * Broadcast room streak update
+   * @param {string} roomId - Room ID
+   * @param {string} userId - User whose streak updated
+   * @param {Object} streakData - Streak update data
+   */
+  broadcastRoomStreakUpdated(roomId, userId, streakData) {
+    const { currentStreak, longestStreak, isNewRecord } = streakData;
+    
+    const notification = {
+      type: 'room_streak_updated',
+      roomId,
+      userId,
+      currentStreak,
+      longestStreak,
+      isNewRecord,
+      timestamp: Date.now()
+    };
+    
+    // Send to room leaderboard subscribers
+    this.sendToRoomLeaderboard(roomId, 'room_streak_updated', notification);
+    
+    console.log(`🔥 Broadcasted streak update: ${currentStreak} days for user ${userId} in room ${roomId}`);
+  }
+
+  /**
    * Send session timeout warning
    * @param {string} userId - User ID
    * @param {Object} timeoutData - Timeout warning data
@@ -387,6 +522,33 @@ class WebSocketService {
       }
     } else {
       // Send to entire room
+      this.io.to(roomName).emit(event, data);
+    }
+  }
+
+  /**
+   * Send message to room leaderboard subscribers
+   * @param {string} roomId - Room ID
+   * @param {string} event - Event name
+   * @param {Object} data - Event data
+   * @param {string} excludeUserId - User ID to exclude from broadcast
+   */
+  sendToRoomLeaderboard(roomId, event, data, excludeUserId = null) {
+    const roomName = `room_leaderboard_${roomId}`;
+    
+    if (excludeUserId) {
+      // Send to room but exclude the originating user
+      const userSockets = this.connectedUsers.get(excludeUserId);
+      if (userSockets) {
+        userSockets.forEach(socketId => {
+          const socket = this.io.sockets.sockets.get(socketId);
+          if (socket) {
+            socket.to(roomName).emit(event, { ...data, isOwnEvent: false });
+          }
+        });
+      }
+    } else {
+      // Send to entire room leaderboard
       this.io.to(roomName).emit(event, data);
     }
   }

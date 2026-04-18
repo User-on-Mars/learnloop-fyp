@@ -140,6 +140,22 @@ class WebSocketClient {
       this.emit('room_left', data);
     });
 
+    // Room leaderboard events
+    this.socket.on('room_leaderboard_update', (data) => {
+      console.log('🏆 Room leaderboard updated:', data);
+      this.emit('room_leaderboard_update', data);
+    });
+
+    this.socket.on('room_xp_earned', (data) => {
+      console.log('💎 Room XP earned:', data);
+      this.emit('room_xp_earned', data);
+    });
+
+    this.socket.on('room_streak_updated', (data) => {
+      console.log('🔥 Room streak updated:', data);
+      this.emit('room_streak_updated', data);
+    });
+
     // Error events
     this.socket.on('error', (error) => {
       console.error('❌ WebSocket error:', error);
@@ -210,6 +226,31 @@ class WebSocketClient {
     }
 
     this.socket.emit('leave_skill_room', { skillId });
+  }
+
+  /**
+   * Join a room leaderboard for real-time updates
+   * @param {string} roomId - Room ID to join leaderboard for
+   */
+  joinRoomLeaderboard(roomId) {
+    if (!this.isConnected || !roomId) {
+      this.queueEvent('join_room_leaderboard', { roomId });
+      return;
+    }
+
+    this.socket.emit('join_room_leaderboard', { roomId });
+  }
+
+  /**
+   * Leave a room leaderboard
+   * @param {string} roomId - Room ID to leave leaderboard for
+   */
+  leaveRoomLeaderboard(roomId) {
+    if (!this.isConnected || !roomId) {
+      return;
+    }
+
+    this.socket.emit('leave_room_leaderboard', { roomId });
   }
 
   /**
