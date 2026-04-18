@@ -101,6 +101,16 @@ export default function NodeDetailPage() {
   useEffect(() => { fetchD(); }, [fetchD]);
   useEffect(() => { fetchH(); }, [fetchH]);
   const activeS = activeSessions.find(s => s.nodeId === nodeId);
+
+  // Auto-open completion modal when countdown reaches 0
+  const prevTimerRef = useRef(null);
+  useEffect(() => {
+    if (activeS && activeS.isCountdown && activeS.timer === 0 && !activeS.isRunning && prevTimerRef.current > 0 && !showComp) {
+      openComp(activeS);
+    }
+    prevTimerRef.current = activeS?.timer ?? null;
+  }, [activeS?.timer, activeS?.isRunning]);
+
   const isLocked = node?.status === 'Locked' && !isFirst;
   const isUnlocked = !isLocked && node?.status !== 'Completed';
   const isCompleted = node?.status === 'Completed';
@@ -146,11 +156,13 @@ export default function NodeDetailPage() {
     setSub(true); 
     try { 
       const sec = compS.isCountdown ? Math.max(0, compS.targetTime - compS.timer) : compS.timer; 
+      const mins = Math.max(1, Math.floor(sec/60));
+      const xpEarned = mins * 2;
       // Truncate node title to 20 chars to match practice API validation
       const truncatedTitle = node.title.slice(0, 20);
       await practiceAPI.createPractice({ 
         skillName: truncatedTitle, 
-        minutesPracticed: Math.max(1, Math.floor(sec/60)), 
+        minutesPracticed: mins, 
         tags: [currentSkill?.name||''], 
         timerSeconds: sec, 
         notes: comp.notes, 
@@ -164,8 +176,9 @@ export default function NodeDetailPage() {
       } 
       removeSession(compS.id); 
       setShowComp(false); 
-      setOk('Practice logged!'); 
-      setTimeout(()=>setOk(''),3000); 
+      showSuccess('Practice Logged!', `+${xpEarned} XP earned (${mins} min × 2 XP)`);
+      setOk(`+${xpEarned} XP earned!`); 
+      setTimeout(()=>setOk(''),5000); 
       fetchD(); 
       fetchH(); 
     } catch { 
@@ -234,7 +247,7 @@ export default function NodeDetailPage() {
                 <button onClick={() => { if (activeS) { setErr('Complete or end the ongoing session to start a new one'); setTimeout(()=>setErr(''),4000); } else { setShowPractice(true); } }} className={`w-full py-3.5 rounded-xl font-semibold shadow-md text-sm flex items-center justify-center gap-2 ${activeS ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-site-accent text-white hover:bg-site-accent-hover'}`}><Play className="w-5 h-5" />Start Practice Session</button>
               )}
               {isUnlocked && !isCompleted && (
-                <button onClick={() => { if (activeS) { setErr('Complete or end the ongoing session first'); setTimeout(()=>setErr(''),4000); } else { setShowMark(true); } }} className={`w-full py-3 border-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 ${activeS ? 'border-gray-300 text-gray-400 cursor-not-allowed' : 'border-green-500 text-green-700 hover:bg-green-50'}`}><CheckCircle className="w-4 h-4" />Mark as Complete</button>
+                <button onClick={() => { if (activeS) { setErr('Complete or end the ongoing session first'); setTimeout(()=>setErr(''),4000); } else if (hist.length === 0) { setErr('Complete at least one practice session before marking as complete'); setTimeout(()=>setErr(''),4000); } else { setShowMark(true); } }} className={`w-full py-3 border-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 ${activeS || hist.length === 0 ? 'border-gray-300 text-gray-400 cursor-not-allowed' : 'border-green-500 text-green-700 hover:bg-green-50'}`}><CheckCircle className="w-4 h-4" />Mark as Complete</button>
               )}
               {isCompleted && <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-sm text-center font-medium">✓ This node is completed</div>}
               {/* Quick stats inline */}
@@ -368,7 +381,7 @@ export default function NodeDetailPage() {
       {/* Start practice */}
       {showPractice && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
         <h2 className="text-lg font-bold text-site-ink mb-1">Start Practice</h2><p className="text-xs text-site-muted mb-4">Node: <span className="font-semibold text-site-ink">{node?.title}</span></p>
-        <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1">Session Title *</label><input type="text" value={sessTitle} onChange={e => setSessTitle(e.target.value)} placeholder="e.g. 1st session" maxLength={50} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none" /></div>
+        <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1">Session Title *</label><input type="text" value={sessTitle} onChange={e => { if (e.target.value.length <= 20) setSessTitle(e.target.value); }} placeholder="e.g. 1st session" maxLength={20} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none" /><div className="text-right text-[10px] text-site-faint mt-0.5">{sessTitle.length}/20</div></div>
         <div className="flex gap-2 mb-3"><button onClick={() => setCd(true)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${cd ? 'bg-site-accent text-white' : 'bg-site-bg text-site-muted border border-site-border'}`}>Countdown</button><button onClick={() => setCd(false)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${!cd ? 'bg-site-accent text-white' : 'bg-site-bg text-site-muted border border-site-border'}`}>Stopwatch</button></div>
         {cd && <div className="mb-4"><label className="block text-xs text-site-faint mb-1">Minutes</label><input type="number" min={1} max={120} value={tgtM} onChange={e => setTgtM(Math.max(1,Math.min(120,parseInt(e.target.value)||25)))} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm text-center focus:border-site-accent outline-none" /></div>}
         <div className="flex gap-3"><button onClick={startPractice} disabled={!sessTitle.trim()} className="flex-1 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover disabled:opacity-40 disabled:cursor-not-allowed">Start</button><button onClick={() => { setShowPractice(false); setSessTitle(''); }} className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg">Cancel</button></div>
@@ -378,9 +391,9 @@ export default function NodeDetailPage() {
         <div className="flex items-center justify-between mb-4"><h2 className="text-xl font-bold text-site-ink">Complete Session</h2><button onClick={() => { setShowComp(false); setCompS(null); }} className="text-site-faint hover:text-site-ink"><X className="w-5 h-5" /></button></div>
         <div className="bg-site-bg rounded-lg p-3 mb-4"><p className="font-semibold text-site-ink">{node?.title}</p>{compS.notes && <p className="text-xs text-site-muted">{compS.notes}</p>}</div>
         <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-2">Confidence *</label><div className="flex gap-1.5">{[1,2,3,4,5].map(n => (<button key={n} onClick={() => setComp(p => ({...p, confidence: n}))} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${comp.confidence === n ? 'bg-site-accent text-white shadow-md scale-105' : 'bg-site-bg text-site-muted border border-site-border hover:border-site-accent'}`}><Star className={`w-4 h-4 mx-auto mb-0.5 ${comp.confidence === n ? 'fill-white' : ''}`} />{n}</button>))}</div><p className="text-xs text-site-faint mt-1 text-center">{CONF[comp.confidence]}</p></div>
-        <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1">Notes</label><textarea value={comp.notes} onChange={e => setComp(p => ({...p, notes: e.target.value}))} rows={2} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="What did you practice?" /></div>
-        <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5 text-amber-500" />Blockers</label><textarea value={comp.blockers} onChange={e => setComp(p => ({...p, blockers: e.target.value}))} rows={2} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="Any challenges?" /></div>
-        <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1"><ArrowRight className="w-3.5 h-3.5 text-site-accent" />Next step</label><textarea value={comp.nextStep} onChange={e => setComp(p => ({...p, nextStep: e.target.value}))} rows={2} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="What's next?" /></div>
+        <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1">Notes</label><textarea value={comp.notes} onChange={e => { if (e.target.value.length <= 50) setComp(p => ({...p, notes: e.target.value})); }} rows={2} maxLength={50} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="What did you practice?" /><div className="text-right text-[10px] text-site-faint">{comp.notes.length}/50</div></div>
+        <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5 text-amber-500" />Blockers</label><textarea value={comp.blockers} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({...p, blockers: e.target.value})); }} rows={2} maxLength={200} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="Any challenges?" /><div className="text-right text-[10px] text-site-faint">{comp.blockers.length}/200</div></div>
+        <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1"><ArrowRight className="w-3.5 h-3.5 text-site-accent" />Next step</label><textarea value={comp.nextStep} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({...p, nextStep: e.target.value})); }} rows={2} maxLength={200} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="What's next?" /><div className="text-right text-[10px] text-site-faint">{comp.nextStep.length}/200</div></div>
         <button onClick={submitComp} disabled={sub} className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50">{sub ? 'Saving...' : 'Save Practice Log'}</button>
       </div></div>)}
     </div>

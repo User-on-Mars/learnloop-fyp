@@ -43,6 +43,10 @@ import NodeCompleteScreen from "./screens/NodeCompleteScreen";
 import WeeklySummary from "./pages/WeeklySummary";
 import NodeDetailPage from "./pages/NodeDetailPage";
 import Leaderboard from "./pages/Leaderboard";
+import RoomSpace from "./pages/RoomSpace";
+import RoomDetail from "./pages/RoomDetail";
+import RoomSkillMapDetail from "./pages/RoomSkillMapDetail";
+import RoomNodeDetail from "./pages/RoomNodeDetail";
 
 import ActiveSessionPopup from "./components/ActiveSessionPopup";
 import AdminLayout from "./layout/AdminLayout";
@@ -130,6 +134,10 @@ const router = createBrowserRouter([
       { path: "/reflections", element: <Protected><ReflectionHistory /></Protected> },
       { path: "/weekly-summary", element: <Protected><WeeklySummary /></Protected> },
       { path: "/leaderboard", element: <Protected><Leaderboard /></Protected> },
+      { path: "/roomspace", element: <Protected><RoomSpace /></Protected> },
+      { path: "/roomspace/:roomId", element: <Protected><RoomDetail /></Protected> },
+      { path: "/roomspace/:roomId/skill-maps/:roomSkillMapId", element: <Protected><RoomSkillMapDetail /></Protected> },
+      { path: "/roomspace/:roomId/skill-maps/:roomSkillMapId/nodes/:nodeId", element: <Protected><RoomNodeDetail /></Protected> },
       { path: "/skills", element: <Protected><SkillMapPage /></Protected> },
       { path: "/skills/:skillId", element: <Protected><SkillMapPage /></Protected> },
       { path: "/skills/:skillId/nodes/:nodeId", element: <Protected><NodeDetailPage /></Protected> },

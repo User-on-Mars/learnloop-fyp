@@ -140,4 +140,60 @@ export const leaderboardAPI = {
   getMyRanks: () => client.get('/leaderboard/my-ranks'),
 }
 
+// ============ ROOMSPACE API ============
+export const roomsAPI = {
+  // Room operations
+  getRooms: () => client.get('/rooms'),
+  getRoom: (roomId: string) => client.get(`/rooms/${roomId}`),
+  createRoom: (data: any) => client.post('/rooms', data),
+  updateRoom: (roomId: string, data: any) => client.patch(`/rooms/${roomId}`, data),
+  deleteRoom: (roomId: string) => client.delete(`/rooms/${roomId}`),
+  
+  // Member operations
+  getMembers: (roomId: string) => client.get(`/rooms/${roomId}/members`),
+  kickMember: (roomId: string, userId: string) => client.delete(`/rooms/${roomId}/members/${userId}`),
+  leaveRoom: (roomId: string) => client.post(`/rooms/${roomId}/leave`),
+  
+  // Skill map operations
+  getSkillMaps: (roomId: string) => client.get(`/rooms/${roomId}/skill-maps`),
+  addSkillMap: (roomId: string, skillMapId: string) => client.post(`/rooms/${roomId}/skill-maps`, { skillMapId }),
+  addSkillMapFromTemplate: (roomId: string, data: any) => client.post(`/rooms/${roomId}/skill-maps/from-template`, data),
+  getRoomSkillMapDetail: (roomId: string, roomSkillMapId: string) => client.get(`/rooms/${roomId}/skill-maps/${roomSkillMapId}`),
+  updateNodeStatus: (roomId: string, roomSkillMapId: string, nodeId: string, status: string) => 
+    client.patch(`/rooms/${roomId}/skill-maps/${roomSkillMapId}/nodes/${nodeId}/status`, { status }),
+  logPractice: (roomId: string, roomSkillMapId: string, nodeId: string, data: any) =>
+    client.post(`/rooms/${roomId}/skill-maps/${roomSkillMapId}/nodes/${nodeId}/practice`, data),
+  getNodePractice: (roomId: string, roomSkillMapId: string, nodeId: string) =>
+    client.get(`/rooms/${roomId}/skill-maps/${roomSkillMapId}/nodes/${nodeId}/practice`),
+  getRoomLeaderboard: (roomId: string) => client.get(`/rooms/${roomId}/leaderboard`),
+  removeSkillMap: (roomId: string, roomSkillMapId: string) => client.delete(`/rooms/${roomId}/skill-maps/${roomSkillMapId}`),
+  
+  // Leaderboard operations (placeholder for Phase 3)
+  getLeaderboard: (roomId: string) => client.get(`/rooms/${roomId}/leaderboard`),
+}
+
+// ============ INVITATIONS API ============
+export const invitationsAPI = {
+  // Get user's pending invitations
+  getMyInvitations: () => client.get('/invitations'),
+  
+  // Get recent notifications (last 10, all statuses)
+  getNotifications: () => client.get('/notifications'),
+  
+  // Get room's invitations (owner only)
+  getRoomInvitations: (roomId: string) => client.get(`/rooms/${roomId}/invitations`),
+  
+  // Create invitation (owner only)
+  createInvitation: (roomId: string, email: string) => 
+    client.post(`/rooms/${roomId}/invitations`, { invitedEmail: email }),
+  
+  // Accept invitation
+  acceptInvitation: (invitationId: string) => 
+    client.patch(`/invitations/${invitationId}/accept`),
+  
+  // Decline invitation
+  declineInvitation: (invitationId: string) => 
+    client.patch(`/invitations/${invitationId}/decline`),
+}
+
 export default client

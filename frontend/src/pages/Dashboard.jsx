@@ -10,7 +10,7 @@ import {
   Plus,
   MapPin,
 } from "lucide-react";
-import { practiceAPI, skillsAPI, xpAPI } from "../api/client";
+import { practiceAPI, skillsAPI, xpAPI } from "../api/client.ts";
 import Sidebar from "../components/Sidebar";
 import DashboardGreeting from "../components/DashboardGreeting";
 import XpProfileCard from "../components/XpProfileCard";

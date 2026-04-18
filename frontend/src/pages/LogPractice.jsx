@@ -269,7 +269,6 @@ export default function LogPractice() {
                     <div className={`text-2xl font-bold font-mono text-center py-2 rounded-xl mb-3 ${isR?'bg-green-100 text-green-700':'bg-site-bg text-site-ink'}`}>{formatTimer(s.timer)}</div>
                     <div className="flex gap-2">
                       <button onClick={()=>navigate(`/skills/${s.skillId}/nodes/${s.nodeId}`)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-site-accent text-white rounded-lg font-medium text-sm hover:bg-site-accent-hover"><ExternalLink className="w-4 h-4"/>Go to Node</button>
-                      {canComp(s) && <button onClick={()=>navigate(`/skills/${s.skillId}/nodes/${s.nodeId}`)} className="px-3 py-2.5 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700" title="Complete & Log"><CheckCircle className="w-4 h-4"/></button>}
                     </div>
                   </>)}
 
