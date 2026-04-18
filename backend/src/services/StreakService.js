@@ -83,6 +83,7 @@ class StreakService {
 
   /**
    * Get current streak info for a user.
+   * Automatically resets streak to 0 if more than 1 day has passed since last practice.
    * @param {string} userId
    * @returns {Promise<{ currentStreak: number, lastPracticeDate: Date|null }>}
    */
@@ -91,10 +92,48 @@ class StreakService {
     if (!streak) {
       return { currentStreak: 0, lastPracticeDate: null };
     }
+
+    // Check if streak should be reset due to inactivity
+    if (streak.lastPracticeDate) {
+      const daysSinceLastPractice = StreakService._dayDiff(new Date(), streak.lastPracticeDate);
+      
+      // If more than 1 day has passed, reset streak to 0
+      if (daysSinceLastPractice > 1) {
+        streak.currentStreak = 0;
+        await streak.save();
+        return { currentStreak: 0, lastPracticeDate: streak.lastPracticeDate };
+      }
+    }
+
     return {
       currentStreak: streak.currentStreak,
       lastPracticeDate: streak.lastPracticeDate
     };
+  }
+
+  /**
+   * Reset all expired streaks (where last practice was more than 1 day ago).
+   * This can be run as a scheduled job to keep streak data accurate.
+   * @returns {Promise<{ resetCount: number }>}
+   */
+  static async resetExpiredStreaks() {
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    yesterday.setUTCHours(0, 0, 0, 0);
+
+    // Find all streaks where lastPracticeDate is before yesterday
+    const result = await UserStreak.updateMany(
+      {
+        currentStreak: { $gt: 0 },
+        lastPracticeDate: { $lt: yesterday }
+      },
+      {
+        $set: { currentStreak: 0 }
+      }
+    );
+
+    return { resetCount: result.modifiedCount };
   }
 }
 
