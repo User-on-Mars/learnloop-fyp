@@ -2,12 +2,11 @@ import PDFDocument from 'pdfkit';
 
 // Brand colors
 const GREEN = '#2e5023';
-const GREEN_LIGHT = '#4f7942';
 const GRAY = '#475569';
 const GRAY_LIGHT = '#94a3b8';
 const BLACK = '#0f172a';
 
-// Mood labels (no emojis — PDFKit can't render them)
+// Mood labels
 const MOOD_LABELS = {
   Happy: 'Feeling Happy',
   Neutral: 'Feeling Neutral',
@@ -21,7 +20,7 @@ export async function generateReflectionPDF(reflection) {
     try {
       const doc = new PDFDocument({
         size: 'A4',
-        margins: { top: 60, bottom: 60, left: 60, right: 60 },
+        margin: 72,
       });
 
       const chunks = [];
@@ -29,86 +28,131 @@ export async function generateReflectionPDF(reflection) {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', (err) => reject(err));
 
-      const pageWidth = 595.28; // A4
-      const contentWidth = pageWidth - 120; // margins
+      const pageWidth = 595.28;
+      const pageHeight = 841.89;
+      const margin = 72;
+      const contentWidth = pageWidth - (margin * 2);
 
-      // ── Header bar ──
-      doc.rect(0, 0, pageWidth, 100).fill(GREEN);
-      doc.fontSize(28).font('Helvetica-Bold').fillColor('#ffffff')
-         .text('LearnLoop', 60, 30, { width: contentWidth });
-      doc.fontSize(11).font('Helvetica').fillColor('#ffffff')
-         .text('Reflection Journal', 60, 65, { width: contentWidth, opacity: 0.85 });
+      // ── Top Right: Copyright ──
+      doc.fontSize(9).font('Helvetica').fillColor(GRAY)
+         .text('© LearnLoop - Reflective Skill Development Tracker', 
+               margin, 
+               margin - 20, 
+               { 
+                 width: contentWidth, 
+                 align: 'right' 
+               });
+      
+      let y = margin;
 
-      doc.fillColor(BLACK);
-      let y = 120;
-
-      // ── Title ──
-      const title = reflection.title || 'Untitled Reflection';
-      doc.fontSize(20).font('Helvetica-Bold').fillColor(BLACK)
-         .text(title, 60, y, { width: contentWidth });
-      y = doc.y + 10;
-
-      // ── Date ──
-      const date = new Date(reflection.createdAt).toLocaleString('en-US', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
+      // ── Top Left: Date, Mood, Tags ──
+      // Date
+      const date = new Date(reflection.createdAt).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       });
-      doc.fontSize(10).font('Helvetica').fillColor(GRAY)
-         .text(date, 60, y, { width: contentWidth });
-      y = doc.y + 15;
+      
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(BLACK)
+         .text('Date: ', margin, y, { continued: true })
+         .font('Helvetica').fillColor(GRAY)
+         .text(date);
+      
+      y = doc.y + 8;
 
-      // ── Mood ──
+      // Mood
       if (reflection.mood) {
-        doc.fontSize(10).font('Helvetica-Bold').fillColor(GREEN)
-           .text(MOOD_LABELS[reflection.mood] || reflection.mood, 60, y);
+        const moodText = MOOD_LABELS[reflection.mood] || reflection.mood;
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(BLACK)
+           .text('Mood: ', margin, y, { continued: true })
+           .font('Helvetica').fillColor(GREEN)
+           .text(moodText);
+        y = doc.y + 8;
+      }
+
+      // Tags
+      if (reflection.tags && reflection.tags.length > 0) {
+        const tagsText = reflection.tags.join(', ');
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(BLACK)
+           .text('Tags: ', margin, y, { continued: true })
+           .font('Helvetica').fillColor(GRAY_LIGHT)
+           .text(tagsText);
+        y = doc.y + 8;
+      }
+
+      y += 30;
+
+      // ── Title (Centered, Bold) ──
+      let title = 'Untitled Reflection';
+      if (reflection.title && typeof reflection.title === 'string') {
+        const trimmedTitle = reflection.title.trim();
+        if (trimmedTitle.length > 0) {
+          title = trimmedTitle;
+        }
+      }
+      
+      doc.fontSize(20).font('Helvetica-Bold').fillColor(BLACK)
+         .text(title, margin, y, { 
+           width: contentWidth, 
+           align: 'center' 
+         });
+      
+      y = doc.y + 30;
+
+      // Horizontal line before content
+      doc.moveTo(margin, y).lineTo(pageWidth - margin, y)
+         .lineWidth(0.5).strokeColor(GRAY_LIGHT).stroke();
+      
+      y += 25;
+
+      // ── Content (Justified, Proper Paragraphs) ──
+      doc.fontSize(11).font('Helvetica').fillColor(BLACK);
+      
+      // Split content into paragraphs
+      const paragraphs = reflection.content.split('\n');
+      
+      for (let i = 0; i < paragraphs.length; i++) {
+        const paragraph = paragraphs[i].trim();
+        
+        // Skip empty paragraphs
+        if (!paragraph) {
+          y += 6;
+          continue;
+        }
+        
+        // Check if we need a new page
+        if (y > pageHeight - margin - 50) {
+          doc.addPage({ margin: 72 });
+          
+          // Add header on new page
+          doc.fontSize(9).font('Helvetica').fillColor(GRAY)
+             .text('© LearnLoop - Reflective Skill Development Tracker', 
+                   margin, 
+                   margin - 20, 
+                   { 
+                     width: contentWidth, 
+                     align: 'right' 
+                   });
+          
+          y = margin + 20;
+        }
+        
+        // Add paragraph
+        doc.text(paragraph, margin, y, {
+          width: contentWidth,
+          align: 'justify',
+          lineGap: 3,
+        });
+        
         y = doc.y + 12;
       }
 
-      // ── Tags ──
-      if (reflection.tags && reflection.tags.length > 0) {
-        doc.fontSize(10).font('Helvetica').fillColor(GRAY_LIGHT)
-           .text('Tags:', 60, y, { continued: false });
-        y = doc.y + 4;
-
-        // Draw tag pills
-        let tagX = 60;
-        for (const tag of reflection.tags) {
-          const tagWidth = doc.widthOfString(tag) + 16;
-          if (tagX + tagWidth > pageWidth - 60) {
-            tagX = 60;
-            y += 22;
-          }
-          // pill background
-          doc.roundedRect(tagX, y, tagWidth, 18, 9).fill('#ecfdf3');
-          doc.fontSize(9).font('Helvetica').fillColor(GREEN)
-             .text(tag, tagX + 8, y + 4, { width: tagWidth - 16 });
-          tagX += tagWidth + 6;
-        }
-        y += 30;
-      }
-
-      // ── Divider ──
-      doc.moveTo(60, y).lineTo(pageWidth - 60, y).lineWidth(0.5).strokeColor('#e2e8f0').stroke();
-      y += 20;
-
-      // ── Content ──
-      doc.fontSize(11).font('Helvetica').fillColor(BLACK)
-         .text(reflection.content, 60, y, {
-           width: contentWidth,
-           lineGap: 6,
-           paragraphGap: 8,
-         });
-
-      // ── Footer ──
-      const footerY = doc.page.height - 40;
-      doc.fontSize(8).font('Helvetica').fillColor(GRAY_LIGHT)
-         .text('Generated by LearnLoop — Reflective Skill Development Tracker', 60, footerY, {
-           width: contentWidth,
-           align: 'center',
-         });
+      // No footer - removed entirely as requested
 
       doc.end();
     } catch (error) {
+      console.error('PDF Generation Error:', error);
       reject(error);
     }
   });
