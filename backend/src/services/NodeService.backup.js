@@ -49,12 +49,11 @@ class NodeService {
   /**
    * Update node status with transition validation and auto-unlock
    * @param {string} nodeId - Node ID
-   * @param {string} newStatus - New status (Locked, Unlocked, In_Progress, Completed)
+   * @param {string} newStatus - New status
    * @param {string} userId - User ID
-   * @param {string} roomId - Optional room ID for room skill map progress
    * @returns {Promise<{node: Object, nextNode: Object|null}>}
    */
-  async updateNodeStatus(nodeId, newStatus, userId, roomId = null) {
+  async updateNodeStatus(nodeId, newStatus, userId) {
     // Validation - Requirements 1.9, 1.10
     if (!nodeId) {
       throw new ValidationError('nodeId', nodeId, { type: 'required' });
@@ -76,152 +75,6 @@ class NodeService {
       });
     }
 
-    // Check if this is a room skill map
-    const node = await Node.findOne({ _id: nodeId, userId });
-    if (!node) {
-      // Check if node exists but belongs to another user
-      const nodeExists = await Node.findById(nodeId);
-      if (nodeExists) {
-        throw new PermissionError('Node', 'update', userId, { nodeId });
-      }
-      throw new NotFoundError('Node', nodeId, { userId });
-    }
-
-    const roomInfo = await RoomSkillMapDetector.getRoomForSkillMap(node.skillId.toString());
-    
-    // Requirements 18.1-18.4: Route to appropriate progress tracking
-    if (roomInfo && roomId && roomInfo.roomId === roomId) {
-      // This is a room skill map - use room-specific progress tracking
-      return await this.updateRoomNodeStatus(roomId, userId, nodeId, newStatus);
-    } else {
-      // This is a personal skill map - use personal progress tracking
-      return await this.updatePersonalNodeStatus(nodeId, newStatus, userId);
-    }
-  }
-
-  /**
-   * Update room node status using isolated room progress tracking
-   * Requirements: 18.1-18.4 - Room Skill Map Progress Isolation
-   */
-  async updateRoomNodeStatus(roomId, userId, nodeId, newStatus) {
-    try {
-      // Update room-specific progress
-      const { progress, nextNodeProgress } = await RoomNodeProgressService.updateRoomNodeStatus(
-        roomId, userId, nodeId, newStatus
-      );
-
-      // Get node details for response
-      const node = await Node.findById(nodeId);
-      if (!node) {
-        throw new NotFoundError('Node', nodeId, { userId });
-      }
-
-      let nextNode = null;
-      if (nextNodeProgress) {
-        nextNode = await Node.findById(nextNodeProgress.nodeId);
-      }
-
-      // Award XP for room node completion
-      let nodeCompletionXpAwarded = null;
-      let skillMapXpAwarded = null;
-      
-      if (newStatus === 'Completed') {
-        try {
-          const nodeCompletionXp = 10;
-          
-          // Award room XP
-          const ledgerEntry = await RoomXpService.awardXp(
-            roomId,
-            userId,
-            node.skillId.toString(),
-            nodeCompletionXp
-          );
-          
-          if (ledgerEntry) {
-            nodeCompletionXpAwarded = {
-              type: 'room_node_completion',
-              amount: nodeCompletionXp,
-              roomId: roomId,
-              nodeTitle: node.title
-            };
-            
-            // Update room streak
-            const streakUpdate = await RoomXpService.updateStreak(roomId, userId);
-            
-            if (streakUpdate.isNewDay) {
-              await ErrorLoggingService.logSystemEvent('room_streak_updated', {
-                roomId: roomId,
-                userId,
-                currentStreak: streakUpdate.currentStreak,
-                longestStreak: streakUpdate.longestStreak,
-                timestamp: new Date().toISOString()
-              });
-            }
-          }
-          
-          // Check if all nodes in room skill map are completed
-          const roomProgress = await RoomNodeProgressService.getRoomSkillMapProgress(
-            roomId, userId, node.skillId.toString()
-          );
-          const allCompleted = roomProgress.every(p => p.status === 'Completed');
-          
-          if (allCompleted) {
-            const skill = await Skill.findById(node.skillId);
-            if (skill) {
-              const skillMapCompletionXp = 50;
-              const skillMapLedgerEntry = await RoomXpService.awardXp(
-                roomId,
-                userId,
-                node.skillId.toString(),
-                skillMapCompletionXp
-              );
-              
-              if (skillMapLedgerEntry) {
-                skillMapXpAwarded = {
-                  type: 'room_skillmap_completion',
-                  amount: skillMapCompletionXp,
-                  roomId: roomId,
-                  skillMapName: skill.name
-                };
-              }
-            }
-          }
-        } catch (xpError) {
-          await ErrorLoggingService.logError(xpError, {
-            userId,
-            nodeId,
-            roomId,
-            skillId: node.skillId?.toString(),
-            operation: 'room_node_completion_xp_award'
-          });
-        }
-      }
-
-      return {
-        node: node.toObject(),
-        nextNode: nextNode?.toObject() || null,
-        nodeCompletionXpAwarded,
-        skillMapXpAwarded
-      };
-    } catch (error) {
-      await ErrorLoggingService.logError(error, {
-        userId,
-        nodeId,
-        roomId,
-        newStatus,
-        operation: 'updateRoomNodeStatus',
-        timestamp: new Date().toISOString()
-      });
-      
-      throw error;
-    }
-  }
-
-  /**
-   * Update personal node status using personal progress tracking
-   * Requirements: 18.1-18.4 - Room Skill Map Progress Isolation
-   */
-  async updatePersonalNodeStatus(nodeId, newStatus, userId) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -252,7 +105,7 @@ class NodeService {
       node.status = newStatus;
       await dbMonitor.monitorWrite(
         () => node.save({ session }),
-        'NodeService.updatePersonalNodeStatus - save node'
+        'NodeService.updateNodeStatus - save node'
       );
 
       let nextNode = null;
@@ -277,7 +130,7 @@ class NodeService {
               nextNodeDoc.status = 'Unlocked';
               await dbMonitor.monitorWrite(
                 () => nextNodeDoc.save({ session }),
-                'NodeService.updatePersonalNodeStatus - unlock GOAL node'
+                'NodeService.updateNodeStatus - unlock GOAL node'
               );
               nextNode = nextNodeDoc.toObject();
             }
@@ -286,7 +139,7 @@ class NodeService {
             nextNodeDoc.status = 'Unlocked';
             await dbMonitor.monitorWrite(
               () => nextNodeDoc.save({ session }),
-              'NodeService.updatePersonalNodeStatus - unlock next node'
+              'NodeService.updateNodeStatus - unlock next node'
             );
             nextNode = nextNodeDoc.toObject();
           }
@@ -298,15 +151,17 @@ class NodeService {
       // Invalidate cache
       if (cacheService.isAvailable()) {
         await cacheService.invalidateSkillMapCache(node.skillId.toString(), userId);
+        // Also invalidate the specific node cache
         await cacheService.invalidateNodeCache(nodeId, userId);
         if (nextNode) {
           await cacheService.invalidateNodeCache(nextNode._id.toString(), userId);
         }
-        await cacheService.invalidateNodeCache('all_skills', userId);
+        // Invalidate the all_skills progress cache
+        await cacheService.invalidateNodeCache('all_skills', userId); // For skill list progress
       }
 
       // Log successful status update
-      await ErrorLoggingService.logSystemEvent('personal_node_status_updated', {
+      await ErrorLoggingService.logSystemEvent('node_status_updated', {
         nodeId,
         userId,
         oldStatus: node.status,
@@ -315,54 +170,121 @@ class NodeService {
         timestamp: new Date().toISOString()
       });
 
-      // Award XP for personal node completion
+      // Award XP for node completion (never blocks response)
+      // Requirements: 15.1-15.5, 19.1-19.5, 20.1-20.5
       let nodeCompletionXpAwarded = null;
       let skillMapXpAwarded = null;
       
       if (newStatus === 'Completed') {
         try {
+          // Check if this node belongs to a room skill map
+          const roomInfo = await RoomSkillMapDetector.getRoomForSkillMap(node.skillId.toString());
+          
+          // Node completion XP amount (consistent with design)
           const nodeCompletionXp = 10;
           
-          // Award personal XP
-          const xp = await XpService.awardXp(
-            userId,
-            'node_completion',
-            nodeCompletionXp,
-            {
-              nodeId: nodeId,
-              skillMapId: node.skillId.toString(),
-              nodeTitle: node.title
-            }
-          );
-          
-          if (xp) {
-            nodeCompletionXpAwarded = {
-              type: 'node_completion',
-              amount: xp.finalAmount,
-              nodeTitle: node.title
-            };
-          }
-          
-          // Check if all nodes are completed for skill map completion XP
-          const allNodes = await Node.find({ skillId: node.skillId });
-          const allCompleted = allNodes.every(n => n.status === 'Completed');
-          
-          if (allCompleted) {
-            const skill = await Skill.findById(node.skillId);
-            if (skill && skill.fromTemplate === true) {
-              const skillMapXp = await XpService.awardXp(
-                userId,
-                'skillmap_completion',
-                50,
-                { skillMapId: node.skillId.toString() }
-              );
+          if (roomInfo) {
+            // Requirement 15.3: Award room XP for room skill map node completion
+            // Requirement 20.1: Award XP based on existing XP calculation rules
+            const ledgerEntry = await RoomXpService.awardXp(
+              roomInfo.roomId,
+              userId,
+              node.skillId.toString(),
+              nodeCompletionXp
+            );
+            
+            if (ledgerEntry) {
+              nodeCompletionXpAwarded = {
+                type: 'room_node_completion',
+                amount: nodeCompletionXp,
+                roomId: roomInfo.roomId,
+                nodeTitle: node.title
+              };
               
-              if (skillMapXp) {
-                skillMapXpAwarded = {
-                  type: 'skillmap_completion',
-                  amount: skillMapXp.finalAmount,
-                  skillMapName: skill.name
-                };
+              // Requirement 15.5: Update room streak if new day
+              // Requirement 23.1-23.7: Track consecutive days with practice activity
+              const streakUpdate = await RoomXpService.updateStreak(roomInfo.roomId, userId);
+              
+              if (streakUpdate.isNewDay) {
+                await ErrorLoggingService.logSystemEvent('room_streak_updated', {
+                  roomId: roomInfo.roomId,
+                  userId,
+                  currentStreak: streakUpdate.currentStreak,
+                  longestStreak: streakUpdate.longestStreak,
+                  timestamp: new Date().toISOString()
+                });
+              }
+            }
+            
+            // Check if all nodes in room skill map are completed for skill map completion XP
+            const allNodes = await Node.find({ skillId: node.skillId });
+            const allCompleted = allNodes.every(n => n.status === 'Completed');
+            
+            if (allCompleted) {
+              const skill = await Skill.findById(node.skillId);
+              if (skill) {
+                // Award room skill map completion XP
+                const skillMapCompletionXp = 50; // Consistent with global system
+                const skillMapLedgerEntry = await RoomXpService.awardXp(
+                  roomInfo.roomId,
+                  userId,
+                  node.skillId.toString(),
+                  skillMapCompletionXp
+                );
+                
+                if (skillMapLedgerEntry) {
+                  skillMapXpAwarded = {
+                    type: 'room_skillmap_completion',
+                    amount: skillMapCompletionXp,
+                    roomId: roomInfo.roomId,
+                    skillMapName: skill.name
+                  };
+                }
+              }
+            }
+          } else {
+            // Not a room skill map - award global XP as before
+            // Award node completion XP
+            const xp = await XpService.awardXp(
+              userId,
+              'node_completion',
+              nodeCompletionXp,
+              {
+                nodeId: nodeId,
+                skillMapId: node.skillId.toString(),
+                nodeTitle: node.title
+              }
+            );
+            
+            if (xp) {
+              nodeCompletionXpAwarded = {
+                type: 'node_completion',
+                amount: xp.finalAmount,
+                nodeTitle: node.title
+              };
+            }
+            
+            // Check if all nodes are completed for skill map completion XP
+            const allNodes = await Node.find({ skillId: node.skillId });
+            const allCompleted = allNodes.every(n => n.status === 'Completed');
+            
+            if (allCompleted) {
+              const skill = await Skill.findById(node.skillId);
+              if (skill && skill.fromTemplate === true) {
+                const skillMapXp = await XpService.awardXp(
+                  userId,
+                  'skillmap_completion',
+                  50,
+                  { skillMapId: node.skillId.toString() }
+                );
+                
+                if (skillMapXp) {
+                  skillMapXpAwarded = {
+                    type: 'skillmap_completion',
+                    amount: skillMapXp.finalAmount,
+                    skillMapName: skill.name
+                  };
+                }
               }
             }
           }
@@ -371,7 +293,7 @@ class NodeService {
             userId,
             nodeId,
             skillId: node.skillId?.toString(),
-            operation: 'personal_node_completion_xp_award'
+            operation: 'node_completion_xp_award'
           });
         }
       }
@@ -390,7 +312,7 @@ class NodeService {
         userId,
         nodeId,
         newStatus,
-        operation: 'updatePersonalNodeStatus',
+        operation: 'updateNodeStatus',
         timestamp: new Date().toISOString()
       });
       
@@ -404,7 +326,7 @@ class NodeService {
       }
       
       if (error.name === 'MongoError' || error.name === 'MongoServerError') {
-        throw new DatabaseError('updatePersonalNodeStatus', error, { userId, nodeId, newStatus });
+        throw new DatabaseError('updateNodeStatus', error, { userId, nodeId, newStatus });
       }
       
       throw error;
@@ -412,9 +334,6 @@ class NodeService {
       session.endSession();
     }
   }
-
-  // ... rest of the methods remain the same as the original NodeService
-  // I'll add them in the next step to keep this manageable
 
   /**
    * Get node details with linked content

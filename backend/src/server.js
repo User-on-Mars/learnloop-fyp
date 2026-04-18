@@ -24,6 +24,10 @@ import adminRoutes from "./routes/admin.js";
 import xpRoutes from "./routes/xp.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
 import templateRoutes from "./routes/templates.js";
+import roomRoutes from "./routes/rooms.js";
+import invitationRoutes from "./routes/invitations.js";
+import roomXpRoutes from "./routes/roomXp.js";
+import roomProgressRoutes from "./routes/roomProgress.js";
 import { requireAuth } from "./middleware/auth.js";
 import { checkAccountStatus } from "./middleware/adminAuth.js";
 import { 
@@ -44,6 +48,9 @@ import {
 import ErrorLoggingService from "./services/ErrorLoggingService.js";
 import SystemMonitoringService from "./services/SystemMonitoringService.js";
 import WeeklyResetScheduler from "./services/WeeklyResetScheduler.js";
+import DailyStreakResetScheduler from "./services/DailyStreakResetScheduler.js";
+import InvitationExpiryScheduler from "./services/InvitationExpiryScheduler.js";
+import RoomWeeklyStreakResetScheduler from "./services/RoomWeeklyStreakResetScheduler.js";
 
 dotenv.config();
 const app = express();
@@ -127,6 +134,10 @@ app.use("/api/nodes", nodeRoutes);
 app.use("/api/xp", xpRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/templates", templateRoutes);
+app.use("/api/rooms", roomRoutes);
+app.use("/api/rooms", auditLogger(SECURITY_EVENTS.NODE_UPDATE), roomXpRoutes);
+app.use("/api/rooms", auditLogger(SECURITY_EVENTS.NODE_UPDATE), roomProgressRoutes);
+app.use("/api", auditLogger(SECURITY_EVENTS.UNAUTHORIZED_ACCESS), invitationRoutes);
 
 // Error handling middleware with security logging
 app.use((err, req, res, next) => {
@@ -190,6 +201,18 @@ async function startServer() {
     WeeklyResetScheduler.start();
     console.log('✅ Weekly reset scheduler started');
     
+    // Start daily streak reset scheduler
+    DailyStreakResetScheduler.start();
+    console.log('✅ Daily streak reset scheduler started');
+    
+    // Start invitation expiry scheduler
+    InvitationExpiryScheduler.start();
+    console.log('✅ Invitation expiry scheduler started');
+    
+    // Start room weekly streak reset scheduler
+    RoomWeeklyStreakResetScheduler.start();
+    console.log('✅ Room weekly streak reset scheduler started');
+    
     // Start the server
     const serverInstance = server.listen(PORT, () => {
       console.log(`🚀 API running on http://localhost:${PORT}`);
@@ -217,6 +240,18 @@ process.on('SIGINT', async () => {
     // Stop weekly reset scheduler
     WeeklyResetScheduler.stop();
     console.log('✅ Weekly reset scheduler stopped');
+    
+    // Stop daily streak reset scheduler
+    DailyStreakResetScheduler.stop();
+    console.log('✅ Daily streak reset scheduler stopped');
+    
+    // Stop invitation expiry scheduler
+    InvitationExpiryScheduler.stop();
+    console.log('✅ Invitation expiry scheduler stopped');
+    
+    // Stop room weekly streak reset scheduler
+    RoomWeeklyStreakResetScheduler.stop();
+    console.log('✅ Room weekly streak reset scheduler stopped');
     
     // Stop system monitoring
     SystemMonitoringService.stop();
@@ -247,6 +282,18 @@ process.on('SIGTERM', async () => {
     // Stop weekly reset scheduler
     WeeklyResetScheduler.stop();
     console.log('✅ Weekly reset scheduler stopped');
+    
+    // Stop daily streak reset scheduler
+    DailyStreakResetScheduler.stop();
+    console.log('✅ Daily streak reset scheduler stopped');
+    
+    // Stop invitation expiry scheduler
+    InvitationExpiryScheduler.stop();
+    console.log('✅ Invitation expiry scheduler stopped');
+    
+    // Stop room weekly streak reset scheduler
+    RoomWeeklyStreakResetScheduler.stop();
+    console.log('✅ Room weekly streak reset scheduler stopped');
     
     // Stop system monitoring
     SystemMonitoringService.stop();

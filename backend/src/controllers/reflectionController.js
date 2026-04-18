@@ -7,7 +7,17 @@ import Reflection from '../models/Reflection.js'
  * @returns {Promise<object>} Created reflection document
  */
 export async function createReflection(userId, reflectionData) {
-  const { content, mood, tags } = reflectionData
+  const { title, content, mood, tags } = reflectionData
+
+  // Validate title if provided
+  if (title !== undefined && title !== null) {
+    if (typeof title !== 'string') {
+      throw new Error('Title must be a string')
+    }
+    if (title.length > 200) {
+      throw new Error('Title must not exceed 200 characters')
+    }
+  }
 
   // Validate required fields
   if (!content || typeof content !== 'string') {
@@ -35,6 +45,7 @@ export async function createReflection(userId, reflectionData) {
 
   const reflection = await Reflection.create({
     userId,
+    title: title || '',
     content,
     mood: mood || null,
     tags: tags || []
