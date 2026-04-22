@@ -196,9 +196,46 @@ router.post('/sync-profile', async (req, res) => {
     console.log(`✅ Leaderboard cache cleared`)
     
     console.log(`✅ Profile sync complete for ${email}`)
-    return res.json({ ok: true, user: { email: user.email, name: user.name, firebaseUid: user.firebaseUid } })
+    const freshUser = await User.findOne({ email })
+    return res.json({ ok: true, user: { email: freshUser.email, name: freshUser.name, firebaseUid: freshUser.firebaseUid, avatar: freshUser.avatar } })
   } catch (e) {
     console.error(`❌ Profile sync failed: ${e.message}`)
+    return res.status(400).json({ message: e.message })
+  }
+})
+
+// Update user avatar
+router.post('/update-avatar', async (req, res) => {
+  try {
+    const { email, avatar } = req.body
+    if (!email) return res.status(400).json({ message: 'Email is required' })
+    if (!avatar && avatar !== null) return res.status(400).json({ message: 'Avatar is required' })
+
+    const user = await User.findOne({ email })
+    if (!user) return res.status(404).json({ message: 'User not found' })
+
+    if (user.accountStatus === 'banned') {
+      return res.status(403).json({ message: 'This account has been banned.' })
+    }
+
+    await User.updateOne({ email }, { avatar })
+    return res.json({ ok: true, avatar })
+  } catch (e) {
+    return res.status(400).json({ message: e.message })
+  }
+})
+
+// Get user avatar by email
+router.get('/avatar', async (req, res) => {
+  try {
+    const { email } = req.query
+    if (!email) return res.status(400).json({ message: 'Email is required' })
+
+    const user = await User.findOne({ email }).select('avatar')
+    if (!user) return res.status(404).json({ message: 'User not found' })
+
+    return res.json({ avatar: user.avatar })
+  } catch (e) {
     return res.status(400).json({ message: e.message })
   }
 })

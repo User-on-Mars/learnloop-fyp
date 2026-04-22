@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import mongoose from 'mongoose'
 import Practice from '../models/Practice.js'
+import RoomPractice from '../models/RoomPractice.js'
 import Reflection from '../models/Reflection.js'
 import StreakService from '../services/StreakService.js'
 import XpService from '../services/XpService.js'
@@ -56,18 +57,31 @@ router.get('/stats/summary', async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const startOfYear = new Date(now.getFullYear(), 0, 1)
     
+    // Query both Practice and RoomPractice in parallel
     const [
-      totalSessions,
-      totalMinutes,
-      weeklyMinutes,
-      monthlyMinutes,
-      yearlyMinutes,
-      topSkills,
-      recentSessions
+      personalTotalSessions,
+      roomTotalSessions,
+      personalTotalMinutes,
+      roomTotalMinutes,
+      personalWeeklyMinutes,
+      roomWeeklyMinutes,
+      personalMonthlyMinutes,
+      roomMonthlyMinutes,
+      personalYearlyMinutes,
+      roomYearlyMinutes,
+      personalTopSkills,
+      roomTopSkills,
+      personalRecent,
+      roomRecent
     ] = await Promise.all([
       Practice.countDocuments({ userId }),
+      RoomPractice.countDocuments({ userId }),
       
       Practice.aggregate([
+        { $match: { userId } },
+        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
+      ]).then(result => result[0]?.total || 0),
+      RoomPractice.aggregate([
         { $match: { userId } },
         { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
       ]).then(result => result[0]?.total || 0),
@@ -76,13 +90,25 @@ router.get('/stats/summary', async (req, res) => {
         { $match: { userId, date: { $gte: startOfWeek } } },
         { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
       ]).then(result => result[0]?.total || 0),
+      RoomPractice.aggregate([
+        { $match: { userId, date: { $gte: startOfWeek } } },
+        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
+      ]).then(result => result[0]?.total || 0),
       
       Practice.aggregate([
         { $match: { userId, date: { $gte: startOfMonth } } },
         { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
       ]).then(result => result[0]?.total || 0),
+      RoomPractice.aggregate([
+        { $match: { userId, date: { $gte: startOfMonth } } },
+        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
+      ]).then(result => result[0]?.total || 0),
       
       Practice.aggregate([
+        { $match: { userId, date: { $gte: startOfYear } } },
+        { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
+      ]).then(result => result[0]?.total || 0),
+      RoomPractice.aggregate([
         { $match: { userId, date: { $gte: startOfYear } } },
         { $group: { _id: null, total: { $sum: '$minutesPracticed' } } }
       ]).then(result => result[0]?.total || 0),
@@ -97,30 +123,66 @@ router.get('/stats/summary', async (req, res) => {
         { $sort: { totalMinutes: -1 } },
         { $limit: 5 }
       ]),
+      RoomPractice.aggregate([
+        { $match: { userId } },
+        { $group: { 
+          _id: '$nodeTitle', 
+          totalMinutes: { $sum: '$minutesPracticed' },
+          sessionCount: { $sum: 1 }
+        }},
+        { $sort: { totalMinutes: -1 } },
+        { $limit: 5 }
+      ]),
       
       Practice.find({ userId })
         .sort({ date: -1 })
         .limit(5)
         .select('skillName minutesPracticed date tags')
+        .lean(),
+      RoomPractice.find({ userId })
+        .sort({ date: -1 })
+        .limit(5)
+        .select('nodeTitle minutesPracticed date')
         .lean()
     ])
+    
+    // Merge top skills from both sources
+    const skillMap = new Map();
+    personalTopSkills.forEach(s => {
+      skillMap.set(s._id, { totalMinutes: s.totalMinutes, sessionCount: s.sessionCount });
+    });
+    roomTopSkills.forEach(s => {
+      const existing = skillMap.get(s._id);
+      if (existing) {
+        existing.totalMinutes += s.totalMinutes;
+        existing.sessionCount += s.sessionCount;
+      } else {
+        skillMap.set(s._id, { totalMinutes: s.totalMinutes, sessionCount: s.sessionCount });
+      }
+    });
+    const mergedTopSkills = Array.from(skillMap.entries())
+      .map(([name, data]) => ({ skillName: name, ...data }))
+      .sort((a, b) => b.totalMinutes - a.totalMinutes)
+      .slice(0, 5);
+    
+    // Merge recent sessions from both sources
+    const mergedRecent = [
+      ...personalRecent.map(p => ({ ...p, skillName: p.skillName })),
+      ...roomRecent.map(p => ({ ...p, skillName: p.nodeTitle, tags: [] }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
     
     console.log('✅ Stats summary retrieved')
     
     res.json({
       summary: {
-        totalSessions,
-        totalMinutes,
-        weeklyMinutes,
-        monthlyMinutes,
-        yearlyMinutes
+        totalSessions: personalTotalSessions + roomTotalSessions,
+        totalMinutes: personalTotalMinutes + roomTotalMinutes,
+        weeklyMinutes: personalWeeklyMinutes + roomWeeklyMinutes,
+        monthlyMinutes: personalMonthlyMinutes + roomMonthlyMinutes,
+        yearlyMinutes: personalYearlyMinutes + roomYearlyMinutes
       },
-      topSkills: topSkills.map(skill => ({
-        skillName: skill._id,
-        totalMinutes: skill.totalMinutes,
-        sessionCount: skill.sessionCount
-      })),
-      recentSessions
+      topSkills: mergedTopSkills,
+      recentSessions: mergedRecent
     })
   } catch (error) {
     console.error('❌ Error getting stats:', error.message)

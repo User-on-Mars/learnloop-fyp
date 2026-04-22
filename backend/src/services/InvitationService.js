@@ -13,6 +13,7 @@ import {
 import ErrorLoggingService from './ErrorLoggingService.js';
 import RoomNodeProgressService from './RoomNodeProgressService.js';
 import NotificationService from './NotificationService.js';
+import SubscriptionService from './SubscriptionService.js';
 
 /**
  * InvitationService - Manages room invitations and acceptance/decline logic
@@ -108,10 +109,12 @@ class InvitationService {
         throw new ConflictError('RoomInvitation', 'Invitation already sent to this user');
       }
 
-      // Check room capacity (5 members max)
+      // Check room capacity based on owner's subscription tier
       const memberCount = await RoomMember.countDocuments({ roomId });
-      if (memberCount >= 5) {
-        throw new ConflictError('Room', 'Room is full (5/5 members)');
+      const memberCheck = await SubscriptionService.canAddRoomMember(room.ownerId, memberCount);
+      if (!memberCheck.allowed) {
+        const maxLabel = memberCheck.max === -1 ? 'unlimited' : memberCheck.max;
+        throw new ConflictError('Room', `Room is full (${memberCount}/${maxLabel} members). ${memberCheck.tier === 'free' ? 'Upgrade to Pro for more members.' : ''}`);
       }
 
       // Requirement 7.1, 7.2: Create invitation with pending status and 7-day expiration
@@ -228,13 +231,14 @@ class InvitationService {
         throw new NotFoundError('Room', invitation.roomId, { userId });
       }
 
-      // Requirement 8.4, 8.8: Verify room has fewer than 5 members
+      // Verify room has capacity based on owner's subscription tier
       const memberCount = await RoomMember.countDocuments({ 
         roomId: invitation.roomId 
       }).session(session);
 
-      if (memberCount >= 5) {
-        // Keep invitation pending as per requirement 8.8
+      const memberCheck = await SubscriptionService.canAddRoomMember(room.ownerId, memberCount);
+      if (!memberCheck.allowed) {
+        // Keep invitation pending
         await session.abortTransaction();
         throw new ConflictError('Room', 'Room is full');
       }

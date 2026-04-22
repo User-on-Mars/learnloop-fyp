@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { checkRoomLimit } from '../middleware/subscription.js';
 import { z } from 'zod';
 import RoomService from '../services/RoomService.js';
 import RoomNodeProgress from '../models/RoomNodeProgress.js';
@@ -7,6 +8,7 @@ import RoomMember from '../models/RoomMember.js';
 import RoomSkillMap from '../models/RoomSkillMap.js';
 import RoomPractice from '../models/RoomPractice.js';
 import User from '../models/User.js';
+import StreakService from '../services/StreakService.js';
 
 const router = Router();
 
@@ -80,7 +82,7 @@ const validateRequest = (schema) => {
 };
 
 // POST /api/rooms - Create a new room
-router.post('/', validateRequest(createRoomSchema), async (req, res) => {
+router.post('/', checkRoomLimit, validateRequest(createRoomSchema), async (req, res) => {
   try {
     console.log('🏠 Creating room for user:', req.user.id);
     const { name, description, color, icon } = req.body;
@@ -107,9 +109,12 @@ router.post('/', validateRequest(createRoomSchema), async (req, res) => {
     if (error.message.includes('must be') || error.message.includes('required')) {
       statusCode = 400;
       errorType = 'VALIDATION_ERROR';
-    } else if (error.message.includes('can only own up to 3 rooms')) {
-      statusCode = 409;
-      errorType = 'CONFLICT_ERROR';
+    } else if (error.message.includes('room') && error.message.includes('maximum')) {
+      statusCode = 403;
+      errorType = 'LIMIT_REACHED';
+    } else if (error.message.includes('can only own')) {
+      statusCode = 403;
+      errorType = 'LIMIT_REACHED';
     } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
       statusCode = 503;
       errorType = 'DATABASE_ERROR';
@@ -778,6 +783,13 @@ router.post('/:roomId/skill-maps/:roomSkillMapId/nodes/:nodeId/practice', async 
     });
     await practice.save();
 
+    // Process personal streak for room practice
+    try {
+      await StreakService.processSession(userId, new Date());
+    } catch (streakError) {
+      console.error('⚠️ Error processing streak for room practice:', streakError.message);
+    }
+
     // Update node status to In_Progress if not already
     const progress = await RoomNodeProgress.findOneAndUpdate(
       { roomId, userId, skillMapId: roomSkillMapId, nodeId },
@@ -815,26 +827,73 @@ router.get('/:roomId/skill-maps/:roomSkillMapId/nodes/:nodeId/practice', async (
   }
 });
 
-// GET /api/rooms/:roomId/leaderboard - Room leaderboard based on total practice minutes
+// GET /api/rooms/:roomId/leaderboard - Room leaderboard (weekly XP + streaks)
 router.get('/:roomId/leaderboard', async (req, res) => {
   try {
     const { roomId } = req.params;
     const userId = req.user.id;
+    const mongoose = (await import('mongoose')).default;
+    const roomObjId = new mongoose.Types.ObjectId(roomId);
 
     const membership = await RoomMember.findOne({ roomId, userId });
     if (!membership) return res.status(403).json({ message: 'Not a member' });
 
-    // Aggregate total minutes per user
-    const stats = await RoomPractice.aggregate([
-      { $match: { roomId: new (await import('mongoose')).default.Types.ObjectId(roomId) } },
+    // Calculate start of current week (Sunday 00:00 UTC)
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon...
+    const weekStart = new Date(now);
+    weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+    weekStart.setUTCHours(0, 0, 0, 0);
+
+    // Weekly XP: only count practice from current week
+    const weeklyStats = await RoomPractice.aggregate([
+      { $match: { roomId: roomObjId, date: { $gte: weekStart } } },
       { $group: {
         _id: '$userId',
         totalMinutes: { $sum: '$minutesPracticed' },
-        totalSessions: { $sum: 1 },
-        totalSeconds: { $sum: '$timerSeconds' }
+        totalSessions: { $sum: 1 }
       }},
       { $sort: { totalMinutes: -1 } }
     ]);
+
+    // Get all practice dates per user for streak calculation
+    const allPractice = await RoomPractice.aggregate([
+      { $match: { roomId: roomObjId } },
+      { $group: {
+        _id: { userId: '$userId', date: { $dateToString: { format: '%Y-%m-%d', date: '$date' } } }
+      }},
+      { $group: {
+        _id: '$_id.userId',
+        practiceDates: { $push: '$_id.date' }
+      }}
+    ]);
+
+    // Calculate streak for each user (consecutive days ending today or yesterday)
+    const calculateStreak = (dates) => {
+      if (!dates || dates.length === 0) return 0;
+      const sorted = [...new Set(dates)].sort().reverse(); // newest first
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      
+      // Streak must include today or yesterday
+      if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
+      
+      let streak = 1;
+      for (let i = 1; i < sorted.length; i++) {
+        const curr = new Date(sorted[i - 1]);
+        const prev = new Date(sorted[i]);
+        const diffDays = Math.round((curr - prev) / 86400000);
+        if (diffDays === 1) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      return streak;
+    };
+
+    const streakMap = {};
+    allPractice.forEach(p => { streakMap[p._id] = calculateStreak(p.practiceDates); });
 
     // Get all members
     const members = await RoomMember.find({ roomId }).lean();
@@ -842,11 +901,10 @@ router.get('/:roomId/leaderboard', async (req, res) => {
     const users = await User.find({ firebaseUid: { $in: userIds } }).select('firebaseUid name email').lean();
     const userMap = users.reduce((acc, u) => { acc[u.firebaseUid] = u; return acc; }, {});
 
-    // Build leaderboard with all members (even those with 0 practice)
-    const statsMap = stats.reduce((acc, s) => { acc[s._id] = s; return acc; }, {});
+    const weeklyMap = weeklyStats.reduce((acc, s) => { acc[s._id] = s; return acc; }, {});
 
-    const leaderboard = members.map((m, index) => {
-      const s = statsMap[m.userId] || { totalMinutes: 0, totalSessions: 0, totalSeconds: 0 };
+    const leaderboard = members.map(m => {
+      const s = weeklyMap[m.userId] || { totalMinutes: 0, totalSessions: 0 };
       const user = userMap[m.userId];
       const totalXp = s.totalMinutes * 2; // 2 XP per minute
       return {
@@ -857,12 +915,11 @@ router.get('/:roomId/leaderboard', async (req, res) => {
         totalMinutes: s.totalMinutes,
         totalSessions: s.totalSessions,
         totalXp,
-        currentStreak: 0,
-        rank: 0 // will be set after sorting
+        currentStreak: streakMap[m.userId] || 0,
+        rank: 0
       };
     }).sort((a, b) => b.totalXp - a.totalXp);
 
-    // Assign ranks
     leaderboard.forEach((entry, i) => { entry.rank = i + 1; });
 
     res.json({ leaderboard, count: leaderboard.length });

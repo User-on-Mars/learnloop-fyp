@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { checkNodeLimit } from '../middleware/subscription.js';
 import { z } from 'zod';
 import NodeService from '../services/NodeService.js';
 import SessionLinkingService from '../services/SessionLinkingService.js';
@@ -10,6 +11,21 @@ const router = Router();
 
 // All node routes require authentication
 router.use(requireAuth);
+
+// Helper to extract proper status code and error type from custom errors
+function resolveErrorStatus(error) {
+  // Custom SkillMapError subclasses set statusCode and code
+  if (error.statusCode && error.statusCode !== 500) {
+    return { statusCode: error.statusCode, errorType: error.code || 'ERROR' };
+  }
+  if (error.name === 'CastError') {
+    return { statusCode: 400, errorType: 'INVALID_ID' };
+  }
+  if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+    return { statusCode: 503, errorType: 'DATABASE_ERROR' };
+  }
+  return { statusCode: 500, errorType: 'SERVER_ERROR' };
+}
 
 // Validation schemas
 const updateStatusSchema = z.object({
@@ -92,16 +108,7 @@ router.get('/skills/:skillId/nodes', async (req, res) => {
     console.error('Error context:', errorContext);
     
     // Determine error type
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
-    
-    if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
-    }
+    const { statusCode, errorType } = resolveErrorStatus(error);
     
     res.status(statusCode).json({
       type: errorType,
@@ -113,7 +120,7 @@ router.get('/skills/:skillId/nodes', async (req, res) => {
 });
 
 // POST /api/skills/:skillId/nodes - Create a new node
-router.post('/skills/:skillId/nodes', validateRequest(createNodeSchema), async (req, res) => {
+router.post('/skills/:skillId/nodes', checkNodeLimit, validateRequest(createNodeSchema), async (req, res) => {
   try {
     console.log('➕ Creating node for skill:', req.params.skillId, 'user:', req.user.id);
     
@@ -143,25 +150,7 @@ router.post('/skills/:skillId/nodes', validateRequest(createNodeSchema), async (
     console.error('Error context:', errorContext);
     
     // Determine error type
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
-    
-    if (error.message === 'Skill not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (error.message.includes('Cannot add more than')) {
-      statusCode = 400;
-      errorType = 'LIMIT_EXCEEDED';
-    } else if (error.message.includes('Permission denied')) {
-      statusCode = 403;
-      errorType = 'PERMISSION_DENIED';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
-    }
+    const { statusCode, errorType } = resolveErrorStatus(error);
     
     res.status(statusCode).json({
       type: errorType,
@@ -200,25 +189,7 @@ router.patch('/:id/status', validateRequest(updateStatusSchema), async (req, res
     console.error('Error context:', errorContext);
     
     // Determine error type
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
-    
-    if (error.message === 'Node not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (error.message.includes('Cannot transition')) {
-      statusCode = 400;
-      errorType = 'INVALID_TRANSITION';
-    } else if (error.message.includes('Invalid status')) {
-      statusCode = 400;
-      errorType = 'VALIDATION_ERROR';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
-    }
+    const { statusCode, errorType } = resolveErrorStatus(error);
     
     res.status(statusCode).json({
       type: errorType,
@@ -257,24 +228,7 @@ router.patch('/:id/content', validateRequest(updateContentSchema), async (req, r
     console.error('Error context:', errorContext);
     
     // Determine error type
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
-    
-    if (error.message === 'Node not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (error.message.includes('Cannot edit locked nodes') || 
-               error.message.includes('must not exceed') ||
-               error.message.includes('must be a string')) {
-      statusCode = 400;
-      errorType = 'VALIDATION_ERROR';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
-    }
+    const { statusCode, errorType } = resolveErrorStatus(error);
     
     res.status(statusCode).json({
       type: errorType,
@@ -311,26 +265,7 @@ router.delete('/:id', async (req, res) => {
     console.error('Error context:', errorContext);
     
     // Determine error type
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
-    
-    if (error.message === 'Node not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (
-      error.message.includes('Cannot delete') ||
-      error.message.includes('must have at least') ||
-      error.message.includes('linked sessions')
-    ) {
-      statusCode = 400;
-      errorType = 'VALIDATION_ERROR';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
-    }
+    const { statusCode, errorType } = resolveErrorStatus(error);
     
     res.status(statusCode).json({
       type: errorType,
@@ -363,20 +298,8 @@ router.get('/:id/details', async (req, res) => {
     
     console.error('Error context:', errorContext);
     
-    // Determine error type
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
-    
-    if (error.message === 'Node not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
-    }
+    // Determine error type using statusCode from custom errors, then fallback to message checks
+    const { statusCode, errorType } = resolveErrorStatus(error);
     
     res.status(statusCode).json({
       type: errorType,
@@ -419,23 +342,7 @@ router.post('/:id/sessions', async (req, res) => {
     console.error('Error context:', errorContext);
     
     // Determine error type
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
-    
-    if (error.message === 'Node not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (error.message.includes('Cannot start session for locked node') ||
-               error.message.includes('already has an active session')) {
-      statusCode = 400;
-      errorType = 'VALIDATION_ERROR';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
-    }
+    const { statusCode, errorType } = resolveErrorStatus(error);
     
     res.status(statusCode).json({
       type: errorType,

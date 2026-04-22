@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
+import { checkPdfExport } from '../middleware/subscription.js'
 import { 
   validateReflectionInput, 
   handleValidationErrors,
@@ -149,7 +150,7 @@ router.delete('/:id', async (req, res) => {
 })
 
 // GET /api/reflections/:id/pdf - Export reflection as PDF
-router.get('/:id/pdf', async (req, res) => {
+router.get('/:id/pdf', checkPdfExport, async (req, res) => {
   try {
     console.log('📄 Exporting reflection to PDF:', req.params.id, 'for user:', req.user.id)
     

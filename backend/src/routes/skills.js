@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { checkNodeLimit } from '../middleware/subscription.js';
+import SubscriptionService from '../services/SubscriptionService.js';
 import { z } from 'zod';
 import SkillService from '../services/SkillService.js';
 import NodeService from '../services/NodeService.js';
@@ -158,8 +160,16 @@ router.get('/', async (req, res) => {
     
     const skills = await SkillService.getUserSkills(req.user.id);
     
-    console.log(`✅ Found ${skills.length} skills`);
-    res.json({ skills });
+    // Add locked flag for skills beyond the free tier limit
+    const { tier, limits } = await SubscriptionService.getLimits(req.user.id);
+    const maxSkillMaps = limits.maxSkillMaps;
+    const skillsWithAccess = skills.map((skill, index) => ({
+      ...skill,
+      locked: index >= maxSkillMaps
+    }));
+    
+    console.log(`✅ Found ${skills.length} skills (tier: ${tier}, limit: ${maxSkillMaps})`);
+    res.json({ skills: skillsWithAccess });
   } catch (error) {
     console.error('❌ Error getting skills:', error.message);
     
@@ -211,18 +221,17 @@ router.get('/:id/nodes', async (req, res) => {
     
     console.error('Error context:', errorContext);
     
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
+    let statusCode = error.statusCode || 500;
+    let errorType = error.code || 'SERVER_ERROR';
     
-    if (error.message === 'Skill not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
+    if (!error.statusCode || error.statusCode === 500) {
+      if (error.name === 'CastError') {
+        statusCode = 400;
+        errorType = 'INVALID_ID';
+      } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+        statusCode = 503;
+        errorType = 'DATABASE_ERROR';
+      }
     }
     
     res.status(statusCode).json({
@@ -235,7 +244,7 @@ router.get('/:id/nodes', async (req, res) => {
 });
 
 // POST /api/skills/:id/nodes - Create a new node for a skill
-router.post('/:id/nodes', async (req, res) => {
+router.post('/:id/nodes', checkNodeLimit, async (req, res) => {
   try {
     const { title, description } = req.body;
     if (!title || !title.trim()) return res.status(400).json({ type: 'VALIDATION_ERROR', message: 'Node title is required' });
@@ -254,6 +263,19 @@ router.post('/:id/nodes', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     console.log('📖 Getting skill:', req.params.id, 'for user:', req.user.id);
+    
+    // Check if this skill map is beyond the user's tier limit
+    const allSkills = await SkillService.getUserSkills(req.user.id);
+    const { limits } = await SubscriptionService.getLimits(req.user.id);
+    const skillIndex = allSkills.findIndex(s => s._id.toString() === req.params.id);
+    
+    if (skillIndex >= 0 && skillIndex >= limits.maxSkillMaps) {
+      return res.status(403).json({
+        type: 'SUBSCRIPTION_REQUIRED',
+        message: 'This skill map is locked. Upgrade to Pro to access all your skill maps.',
+        locked: true
+      });
+    }
     
     // Single optimized query - fetch skill and nodes together
     const [skill, nodes] = await Promise.all([
@@ -289,18 +311,17 @@ router.get('/:id', async (req, res) => {
     console.error('Error context:', errorContext);
     
     // Determine error type
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
+    let statusCode = error.statusCode || 500;
+    let errorType = error.code || 'SERVER_ERROR';
     
-    if (error.message === 'Skill not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
+    if (!error.statusCode || error.statusCode === 500) {
+      if (error.name === 'CastError') {
+        statusCode = 400;
+        errorType = 'INVALID_ID';
+      } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+        statusCode = 503;
+        errorType = 'DATABASE_ERROR';
+      }
     }
     
     res.status(statusCode).json({
@@ -349,18 +370,17 @@ router.patch('/:id', validateRequest(updateSkillSchema), async (req, res) => {
     
     console.error('Error context:', errorContext);
     
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
+    let statusCode = error.statusCode || 500;
+    let errorType = error.code || 'SERVER_ERROR';
     
-    if (error.message === 'Skill not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
+    if (!error.statusCode || error.statusCode === 500) {
+      if (error.name === 'CastError') {
+        statusCode = 400;
+        errorType = 'INVALID_ID';
+      } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+        statusCode = 503;
+        errorType = 'DATABASE_ERROR';
+      }
     }
     
     res.status(statusCode).json({
@@ -398,18 +418,17 @@ router.delete('/:id', async (req, res) => {
     console.error('Error context:', errorContext);
     
     // Determine error type
-    let statusCode = 500;
-    let errorType = 'SERVER_ERROR';
+    let statusCode = error.statusCode || 500;
+    let errorType = error.code || 'SERVER_ERROR';
     
-    if (error.message === 'Skill not found') {
-      statusCode = 404;
-      errorType = 'NOT_FOUND';
-    } else if (error.name === 'CastError') {
-      statusCode = 400;
-      errorType = 'INVALID_ID';
-    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
-      statusCode = 503;
-      errorType = 'DATABASE_ERROR';
+    if (!error.statusCode || error.statusCode === 500) {
+      if (error.name === 'CastError') {
+        statusCode = 400;
+        errorType = 'INVALID_ID';
+      } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+        statusCode = 503;
+        errorType = 'DATABASE_ERROR';
+      }
     }
     
     res.status(statusCode).json({

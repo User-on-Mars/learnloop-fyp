@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireAuth, verifySessionOwnership } from '../middleware/auth.js';
+import { checkSessionLimit } from '../middleware/subscription.js';
 import { 
   sessionRateLimit, 
   validateReflectionInput, 
@@ -22,6 +23,7 @@ router.use(sessionRateLimit);
 router.post('/start', 
   auditLogger(SECURITY_EVENTS.SESSION_START),
   validateRequest(sessionDataSchema),
+  checkSessionLimit,
   SessionController.startSession
 );
 

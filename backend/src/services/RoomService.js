@@ -13,6 +13,7 @@ import {
   ConflictError,
   DatabaseError
 } from '../utils/errors.js';
+import SubscriptionService from './SubscriptionService.js';
 import ErrorLoggingService from './ErrorLoggingService.js';
 import RoomNodeProgressService from './RoomNodeProgressService.js';
 import NotificationService from './NotificationService.js';
@@ -49,14 +50,10 @@ class RoomService {
     session.startTransaction();
 
     try {
-      // Requirement 3.1: Enforce 3-room ownership limit
-      const ownedRoomsCount = await Room.countDocuments({
-        ownerId: userId,
-        deletedAt: null
-      }).session(session);
-
-      if (ownedRoomsCount >= 3) {
-        throw new ConflictError('Room', 'You can only own up to 3 rooms');
+      // Enforce room ownership limit based on subscription tier
+      const roomCheck = await SubscriptionService.canCreateRoom(userId);
+      if (!roomCheck.allowed) {
+        throw new ConflictError('Room', `You've reached the maximum of ${roomCheck.max} room${roomCheck.max === 1 ? '' : 's'} on your current plan. Upgrade to Pro for unlimited rooms.`);
       }
 
       // Create room
