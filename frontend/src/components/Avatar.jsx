@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { useCustomAvatar } from "../context/AvatarContext";
 
 /**
- * Avatar component that displays user photo or initials fallback
- * Handles image loading errors gracefully
+ * Avatar component that displays custom avatar, user photo, or initials fallback.
+ * Priority: customAvatar > photoURL > initials
  */
 export function Avatar({ 
   photoURL, 
@@ -12,13 +13,14 @@ export function Avatar({
   className = "" 
 }) {
   const [imageError, setImageError] = useState(false);
-  const [isLoading, setIsLoading] = useState(!!photoURL);
+  const [isLoading, setIsLoading] = useState(false);
+  const { avatarUrl } = useCustomAvatar();
 
   // Reset error state when photoURL changes
   useEffect(() => {
     setImageError(false);
-    setIsLoading(!!photoURL);
-  }, [photoURL]);
+    setIsLoading(!!photoURL && !avatarUrl);
+  }, [photoURL, avatarUrl]);
 
   const getInitials = () => {
     if (displayName) {
@@ -42,6 +44,17 @@ export function Avatar({
   };
 
   const sizeClass = sizeClasses[size] || sizeClasses.md;
+
+  // Show custom avatar if set
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={displayName || "User avatar"}
+        className={`${sizeClass} rounded-full flex-shrink-0 ${className}`}
+      />
+    );
+  }
 
   // Show photo if available and no error
   if (photoURL && !imageError) {
