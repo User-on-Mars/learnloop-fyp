@@ -31,6 +31,8 @@ export const authAPI = {
   resetPassword: (token: string, password: string) => 
     client.post('/auth/reset', { token, password }),
   syncProfile: (data: any) => client.post('/auth/sync-profile', data),
+  updateAvatar: (email: string, avatar: string | null) => client.post('/auth/update-avatar', { email, avatar }),
+  getAvatar: (email: string) => client.get('/auth/avatar', { params: { email } }),
 }
 
 // ============ PRACTICE API ============
@@ -138,6 +140,27 @@ export const leaderboardAPI = {
   getStreaks: (page = 1) => client.get('/leaderboard/streaks', { params: { page } }),
   getAllTime: (page = 1) => client.get('/leaderboard/all-time', { params: { page } }),
   getMyRanks: () => client.get('/leaderboard/my-ranks'),
+}
+
+// ============ SUBSCRIPTION API ============
+export const subscriptionAPI = {
+  getInfo: () => client.get('/subscription'),
+  getLimits: () => client.get('/subscription/limits'),
+  getPlan: () => client.get('/subscription/plan'),
+  getPayments: () => client.get('/subscription/payments'),
+  getRewards: () => client.get('/subscription/rewards'),
+  getLatestRewards: () => client.get('/subscription/rewards/latest'),
+  cancel: () => client.post('/subscription/cancel'),
+  // eSewa payment
+  esewaInitiate: (planId: string) => client.post('/subscription/esewa/initiate', { planId }),
+  esewaVerify: (data: string) => client.post('/subscription/esewa/verify', { data }),
+}
+
+// ============ CONTACT API (public, no auth) ============
+export const contactAPI = {
+  send: (data: { name: string; email: string; subject?: string; message: string }) =>
+    axios.post(`${baseURL}/contact`, data),
+  getEmail: () => axios.get(`${baseURL}/contact/email`),
 }
 
 // ============ ROOMSPACE API ============

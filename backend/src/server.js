@@ -28,8 +28,10 @@ import roomRoutes from "./routes/rooms.js";
 import invitationRoutes from "./routes/invitations.js";
 import roomXpRoutes from "./routes/roomXp.js";
 import roomProgressRoutes from "./routes/roomProgress.js";
+import subscriptionRoutes from "./routes/subscription.js";
+import contactRoutes from "./routes/contact.js";
 import { requireAuth } from "./middleware/auth.js";
-import { checkAccountStatus } from "./middleware/adminAuth.js";
+import { checkSkillMapLimit } from "./middleware/subscription.js";
 import { 
   securityHeaders, 
   generalRateLimit, 
@@ -124,6 +126,7 @@ app.use("/api/sessions", auditLogger(SECURITY_EVENTS.SESSION_START), sessionRout
 app.post(
   "/api/skills/maps",
   requireAuth,
+  checkSkillMapLimit,
   validateCreateSkillMapBody(createSkillMapSchema),
   postCreateSkillMap
 );
@@ -137,7 +140,9 @@ app.use("/api/templates", templateRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/rooms", auditLogger(SECURITY_EVENTS.NODE_UPDATE), roomXpRoutes);
 app.use("/api/rooms", auditLogger(SECURITY_EVENTS.NODE_UPDATE), roomProgressRoutes);
+app.use("/api/contact", contactRoutes);
 app.use("/api", auditLogger(SECURITY_EVENTS.UNAUTHORIZED_ACCESS), invitationRoutes);
+app.use("/api/subscription", subscriptionRoutes);
 
 // Error handling middleware with security logging
 app.use((err, req, res, next) => {

@@ -31,6 +31,8 @@ import { ActiveSessionProvider } from "./context/ActiveSessionContext";
 import { SkillMapProvider } from "./context/SkillMapContext";
 import { store } from "./store";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { AvatarProvider } from "./context/AvatarContext";
+import { SubscriptionProvider } from "./context/SubscriptionContext";
 import SkillMapPage from "./pages/SkillMapPage";
 import Sidebar from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
@@ -47,6 +49,9 @@ import RoomSpace from "./pages/RoomSpace";
 import RoomDetail from "./pages/RoomDetail";
 import RoomSkillMapDetail from "./pages/RoomSkillMapDetail";
 import RoomNodeDetail from "./pages/RoomNodeDetail";
+import Subscription from "./pages/Subscription";
+import EsewaSuccess from "./pages/EsewaSuccess";
+import EsewaFailure from "./pages/EsewaFailure";
 
 import ActiveSessionPopup from "./components/ActiveSessionPopup";
 import AdminLayout from "./layout/AdminLayout";
@@ -61,6 +66,7 @@ import AdminTemplates from "./pages/admin/AdminTemplates";
 import AdminReflections from "./pages/admin/AdminReflections";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 
 // Protect routes that require auth
 function Protected({ children }) {
@@ -83,13 +89,17 @@ function AppLayout() {
     <Provider store={store}>
       <ErrorBoundary>
         <ToastProvider>
-          <ActiveSessionProvider>
-            <SkillMapProvider>
-              <Outlet />
-              <ActiveSessionPopup />
-              <MobileNav />
-            </SkillMapProvider>
-          </ActiveSessionProvider>
+          <AvatarProvider>
+            <SubscriptionProvider>
+            <ActiveSessionProvider>
+              <SkillMapProvider>
+                <Outlet />
+                <ActiveSessionPopup />
+                <MobileNav />
+              </SkillMapProvider>
+            </ActiveSessionProvider>
+            </SubscriptionProvider>
+          </AvatarProvider>
         </ToastProvider>
       </ErrorBoundary>
     </Provider>
@@ -129,6 +139,9 @@ const router = createBrowserRouter([
       { path: "/forgot", element: <ForgotPassword /> },
       { path: "/dashboard", element: <Protected><Dashboard /></Protected> },
       { path: "/profile", element: <Protected><Profile /></Protected> },
+      { path: "/subscription", element: <Protected><Subscription /></Protected> },
+      { path: "/subscription/esewa/success", element: <Protected><EsewaSuccess /></Protected> },
+      { path: "/subscription/esewa/failure", element: <Protected><EsewaFailure /></Protected> },
       { path: "/log-practice", element: <Protected><LogPractice /></Protected> },
       { path: "/reflect", element: <Protected><ReflectPage /></Protected> },
       { path: "/reflections", element: <Protected><ReflectionHistory /></Protected> },
@@ -169,6 +182,7 @@ const router = createBrowserRouter([
           { path: "templates", element: <AdminTemplates /> },
           { path: "reflections", element: <AdminReflections /> },
           { path: "audit-log", element: <AdminAuditLog /> },
+          { path: "subscriptions", element: <AdminSubscriptions /> },
           { path: "settings", element: <AdminSettings /> },
         ],
       },

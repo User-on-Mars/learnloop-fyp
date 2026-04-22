@@ -30,6 +30,7 @@ export const adminApi = {
   getToken,
   // Dashboard
   getStats: () => request('/admin/stats'),
+  getLearningHealth: () => request('/admin/learning-health'),
   
   // Users
   getUsers: (params = {}) => {
@@ -39,6 +40,7 @@ export const adminApi = {
   getUserDetail: (userId) => request(`/admin/users/${userId}`),
   banUser: (userId, reason) => request(`/admin/users/${userId}/ban`, { method: 'POST', body: JSON.stringify({ reason }) }),
   unbanUser: (userId) => request(`/admin/users/${userId}/unban`, { method: 'POST' }),
+  nudgeUser: (userId) => request(`/admin/users/${userId}/nudge`, { method: 'POST' }),
   promoteToAdmin: (userId) => request(`/admin/users/${userId}/promote`, { method: 'POST' }),
   demoteFromAdmin: (userId) => request(`/admin/users/${userId}/demote`, { method: 'POST' }),
   adjustXp: (userId, amount, reason) => request(`/admin/users/${userId}/adjust-xp`, { method: 'POST', body: JSON.stringify({ amount, reason }) }),
@@ -74,5 +76,16 @@ export const adminApi = {
   exportUserData: () => request('/admin/export-users', { method: 'POST' }),
   
   // Content
-  deleteContent: (type, id) => request(`/admin/content/${type}/${id}`, { method: 'DELETE' })
+  deleteContent: (type, id) => request(`/admin/content/${type}/${id}`, { method: 'DELETE' }),
+
+  // Subscriptions
+  getSubscriptions: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/admin/subscriptions${qs ? `?${qs}` : ''}`);
+  },
+  getRewards: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/admin/rewards${qs ? `?${qs}` : ''}`);
+  },
+  getLatestRewards: () => request('/admin/rewards/latest'),
 }
