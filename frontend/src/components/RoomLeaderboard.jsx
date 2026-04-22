@@ -456,7 +456,7 @@ export default function RoomLeaderboard({ roomId, currentUserId }) {
         <div className="mt-4 pt-3 border-t border-site-border">
           <div className="flex items-center justify-between">
             <p className="text-xs text-site-faint">
-              Rankings update in real-time • Streaks reset weekly on Monday
+              Rankings update in real-time • Streaks reset weekly on Sunday
             </p>
             <div className="flex items-center gap-2">
               {isWebSocketConnected ? (

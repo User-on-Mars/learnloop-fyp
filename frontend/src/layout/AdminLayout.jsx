@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { LayoutDashboard, Users, Activity, AlertCircle, TrendingUp, BookOpen, MessageSquare, FileText, Settings, ArrowLeft, Layers } from 'lucide-react'
+import { LayoutDashboard, Users, Activity, AlertCircle, TrendingUp, BookOpen, MessageSquare, FileText, Settings, ArrowLeft, Layers, Crown } from 'lucide-react'
 import LogoMark from '../components/LogoMark'
 import { useActiveSessions } from '../context/ActiveSessionContext'
 
@@ -10,6 +10,7 @@ const adminNav = [
   { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
   { id: 'activity', label: 'Activity', icon: Activity, path: '/admin/activity' },
   { id: 'xp-leagues', label: 'XP Leaderboard', icon: TrendingUp, path: '/admin/xp-leagues' },
+  { id: 'subscriptions', label: 'Subscriptions', icon: Crown, path: '/admin/subscriptions' },
   { id: 'skill-maps', label: 'Skill Maps', icon: BookOpen, path: '/admin/skill-maps' },
   { id: 'templates', label: 'Templates', icon: Layers, path: '/admin/templates' },
   { id: 'reflections', label: 'Reflections', icon: MessageSquare, path: '/admin/reflections' },

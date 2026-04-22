@@ -7,11 +7,18 @@ import { useAuth } from "../useAuth";
 import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider, linkWithCredential } from "firebase/auth";
 import { auth } from "../firebase";
 import { authAPI } from "../api/client";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Camera } from "lucide-react";
+import AvatarPicker from "../components/AvatarPicker";
+import { useCustomAvatar } from "../context/AvatarContext";
 
 export default function Profile() {
     const user = useAuth();
     const navigate = useNavigate();
+    const { customAvatar, setCustomAvatar } = useCustomAvatar();
+    
+    // Avatar Picker State
+    const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+    const [avatarMessage, setAvatarMessage] = useState(null);
     
     // Display Name State
     const [displayName, setDisplayName] = useState("");
@@ -251,6 +258,24 @@ export default function Profile() {
         }
     };
     
+    // Handle avatar selection
+    const handleAvatarSelect = async ({ id, svg }) => {
+        try {
+            await setCustomAvatar(id);
+            setShowAvatarPicker(false);
+            setAvatarMessage({
+                variant: "success",
+                text: id ? "Avatar updated!" : "Avatar removed."
+            });
+            setTimeout(() => setAvatarMessage(null), 3000);
+        } catch (error) {
+            setAvatarMessage({
+                variant: "error",
+                text: "Failed to update avatar. Please try again."
+            });
+        }
+    };
+    
     // Get user initials for avatar
     const getInitials = () => {
         if (!user) return "";
@@ -327,18 +352,41 @@ export default function Profile() {
                             
                             {/* Avatar Section - Styled with Indigo theme */}
                             <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-                                <Avatar
-                                  photoURL={user?.photoURL}
-                                  displayName={user?.displayName}
-                                  email={user?.email}
-                                  size="lg"
-                                  className="shadow-lg"
-                                />
+                                <div className="relative group w-16 h-16 flex-shrink-0">
+                                    <Avatar
+                                      photoURL={user?.photoURL}
+                                      displayName={user?.displayName}
+                                      email={user?.email}
+                                      size="lg"
+                                    />
+                                    <button
+                                        onClick={() => setShowAvatarPicker(true)}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                        aria-label="Change avatar"
+                                    >
+                                        <Camera className="w-5 h-5 text-white" />
+                                    </button>
+                                </div>
                                 <div className="min-w-0">
                                     <p className="text-sm text-gray-600 font-medium">Account Profile</p>
-                                    <p className="text-xs text-gray-500">Avatar based on your initials</p>
+                                    <button
+                                        onClick={() => setShowAvatarPicker(true)}
+                                        className="text-xs text-site-accent hover:text-site-accent-hover font-medium transition-colors"
+                                    >
+                                        Change avatar
+                                    </button>
                                 </div>
                             </div>
+                            
+                            {/* Avatar Status Message */}
+                            {avatarMessage && (
+                                <div className="mb-4">
+                                    <Alert
+                                        variant={avatarMessage.variant}
+                                        description={avatarMessage.text}
+                                    />
+                                </div>
+                            )}
                             
                             {/* Email Field (Read-only) */}
                             <div className="mb-4">
@@ -582,6 +630,14 @@ export default function Profile() {
                     </div>
                 </div>
             </main>
+            
+            {/* Avatar Picker Modal */}
+            <AvatarPicker
+                isOpen={showAvatarPicker}
+                onClose={() => setShowAvatarPicker(false)}
+                onSelect={handleAvatarSelect}
+                currentAvatar={customAvatar}
+            />
         </div>
     );
 }

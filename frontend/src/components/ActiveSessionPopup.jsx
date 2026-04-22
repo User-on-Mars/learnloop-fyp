@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useActiveSessions } from '../context/ActiveSessionContext';
 import { auth } from '../firebase';
 import { X, Clock } from 'lucide-react';
-import SessionCompletionPrompt from './SessionCompletionPrompt';
 
 const MINI_SESSION_KEY = 'miniPopupSessionId';
 
@@ -16,10 +15,6 @@ export default function ActiveSessionPopup() {
     // Track the single session shown in mini popup (persisted in localStorage)
     const [miniSessionId, setMiniSessionId] = useState(() => localStorage.getItem(MINI_SESSION_KEY) || null);
     const prevCountRef = useRef(activeSessions.length);
-
-    const [showCompletionPrompt, setShowCompletionPrompt] = useState(false);
-    const [completedSession, setCompletedSession] = useState(null);
-    const completedSessionsRef = useRef(new Set());
 
     // When a NEW session is added (count increases), auto-set it as the mini popup session
     useEffect(() => {
@@ -59,31 +54,6 @@ export default function ActiveSessionPopup() {
         return runningAny || null;
     })();
 
-    // Detect countdown completion
-    useEffect(() => {
-        activeSessions.forEach(session => {
-            if (session.isCountdown && session.timer <= 0 && !session.isRunning) {
-                const sessionKey = `${session.id || session._id}_${session.startedAt}`;
-                if (!completedSessionsRef.current.has(sessionKey)) {
-                    completedSessionsRef.current.add(sessionKey);
-                    setCompletedSession(session);
-                    setShowCompletionPrompt(true);
-                }
-            }
-        });
-    }, [activeSessions]);
-
-    const handleAddReflection = async (session) => {
-        navigate('/log-practice', { state: { completedSession: session, nodeId: session.nodeId, skillId: session.skillId, showReflectionForm: true } });
-        setShowCompletionPrompt(false);
-    };
-    const handleReportBlocker = async (session) => {
-        navigate('/log-practice', { state: { completedSession: session, nodeId: session.nodeId, skillId: session.skillId, showBlockerForm: true } });
-        setShowCompletionPrompt(false);
-    };
-    const handleCloseCompletionPrompt = () => { setShowCompletionPrompt(false); setCompletedSession(null); };
-
-    // Dismiss: pause if running, clear from mini popup permanently
     const handleDismiss = useCallback((e) => {
         e.stopPropagation();
         if (primarySession?.isRunning) toggleSession(primarySession.id);
@@ -122,9 +92,7 @@ export default function ActiveSessionPopup() {
     const isOnOwnNode = primarySession && currentNodeId && primarySession.nodeId === currentNodeId;
 
     if (!primarySession || isOnOwnNode) {
-        return showCompletionPrompt ? (
-            <SessionCompletionPrompt isOpen={showCompletionPrompt} onClose={handleCloseCompletionPrompt} session={completedSession} onAddReflection={handleAddReflection} onReportBlocker={handleReportBlocker} />
-        ) : null;
+        return null;
     }
 
     const isRunning = primarySession.isRunning;
@@ -132,8 +100,6 @@ export default function ActiveSessionPopup() {
 
     return (
         <>
-            <SessionCompletionPrompt isOpen={showCompletionPrompt} onClose={handleCloseCompletionPrompt} session={completedSession} onAddReflection={handleAddReflection} onReportBlocker={handleReportBlocker} />
-            
             <div className="fixed bottom-6 right-6 z-50">
                 <div 
                     onClick={handleNavigate}

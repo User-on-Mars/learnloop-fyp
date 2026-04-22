@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useSkillMap } from '../context/SkillMapContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import IconPicker, { SkillIcon } from './IconPicker';
 import ColorPicker, { COLOR_THEMES } from './ColorPicker';
 import { DEFAULT_ICONS } from '../utils/iconLibrary';
@@ -19,6 +20,8 @@ function truncate(s, n) {
 
 export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwitchToTemplates }) {
   const { skills, createSkillMap } = useSkillMap();
+  const { limits } = useSubscription();
+  const maxNodes = limits?.maxNodesPerSkillMap === -1 ? 15 : (limits?.maxNodesPerSkillMap ?? 5);
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -79,23 +82,22 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
   const goNextFrom3 = () => {
     markAttempt(3);
     if (sketchTitlesNonUnique()) return;
+    // Require at least 1 node with a name
+    const filled = nodeInputs.map(x => x.trim()).filter(Boolean);
+    if (filled.length === 0) return;
     setStep(4);
   };
 
   const skipStep3 = () => {
-    // Check for duplicates even when skipping
-    if (sketchTitlesNonUnique()) {
-      markAttempt(3);
-      return;
-    }
-    setStep(4);
+    // No longer allow skipping — require at least 1 node
+    goNextFrom3();
   };
 
   const filledSketchTitles = nodeInputs.map((x) => x.trim()).filter(Boolean);
   const contentCount = filledSketchTitles.length;
 
   const addNodeRow = () => {
-    if (nodeInputs.length >= 15) return;
+    if (nodeInputs.length >= maxNodes) return;
     setNodeInputs((prev) => [...prev, '']);
   };
 
@@ -279,7 +281,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
           {step === 3 && (
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                Add up to 15 node titles for your learning path. Node 1 is your starting point. Empty rows are ignored.
+                Add up to {maxNodes} node titles for your learning path. Node 1 is your starting point. Empty rows are ignored.
               </p>
               <div className="space-y-2">
                 {nodeInputs.map((val, i) => (
@@ -311,13 +313,16 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
               <button
                 type="button"
                 onClick={addNodeRow}
-                disabled={nodeInputs.length >= 15}
+                disabled={nodeInputs.length >= maxNodes}
                 className="text-sm font-medium text-site-accent hover:text-site-accent-hover disabled:text-gray-400 disabled:cursor-not-allowed"
               >
-                ＋ Add node ({nodeInputs.length}/15)
+                ＋ Add node ({nodeInputs.length}/{maxNodes})
               </button>
               {attemptedNext[3] && sketchTitlesNonUnique() && (
                 <p className="text-sm text-red-600">Node titles must be unique</p>
+              )}
+              {attemptedNext[3] && nodeInputs.map(x => x.trim()).filter(Boolean).length === 0 && (
+                <p className="text-sm text-red-600">Add at least 1 node with a title</p>
               )}
 
               <div className="rounded-lg border border-site-border bg-site-bg/80 p-3 sm:p-4 overflow-x-auto">
@@ -426,13 +431,6 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
             )}
             {step === 3 && (
               <>
-                <button
-                  type="button"
-                  onClick={skipStep3}
-                  className="wizard-foot-skip px-4 py-2 text-sm font-medium rounded-lg transition-colors"
-                >
-                  Skip
-                </button>
                 <button
                   type="button"
                   onClick={goNextFrom3}

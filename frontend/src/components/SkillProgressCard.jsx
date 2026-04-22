@@ -21,7 +21,7 @@ export default function SkillProgressCard({
     const skillsMastered = completedSkills;
     
     const primaryColor = '#2e5023';
-
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
     if (isLoading) {
         return (
             // Consistent Card Styling

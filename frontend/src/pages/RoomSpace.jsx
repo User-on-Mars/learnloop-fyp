@@ -8,6 +8,7 @@ import { useToast } from "../context/ToastContext";
 import { useApiError } from "../hooks/useApiError";
 import { getIconComponent } from "../utils/iconLibrary";
 import { COLOR_THEMES } from "../components/ColorPicker";
+import { useSubscription } from "../context/SubscriptionContext";
 
 export default function RoomSpace() {
   const navigate = useNavigate();
@@ -27,7 +28,10 @@ export default function RoomSpace() {
 
   // Calculate owned rooms count
   const ownedRoomsCount = rooms.filter(room => room.isOwner).length;
-  const hasReachedLimit = ownedRoomsCount >= 3;
+  const { limits, isFree, refresh: refreshSubscription } = useSubscription();
+  // -1 means unlimited (pro tier)
+  const maxRooms = limits?.maxRooms === -1 ? Infinity : (limits?.maxRooms ?? 1);
+  const hasReachedLimit = ownedRoomsCount >= maxRooms;
 
   const fetchRooms = useCallback(async () => {
     try {
@@ -187,7 +191,7 @@ export default function RoomSpace() {
               </p>
               {ownedRoomsCount > 0 && (
                 <p className="text-sm text-site-faint mt-1">
-                  You own {ownedRoomsCount}/3 rooms
+                  You own {ownedRoomsCount}/{maxRooms === Infinity ? '∞' : maxRooms} rooms
                 </p>
               )}
             </div>
@@ -200,7 +204,7 @@ export default function RoomSpace() {
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-site-accent text-white hover:bg-site-accent-hover'
                 }`}
-                title={hasReachedLimit ? 'You have reached the maximum of 3 rooms' : 'Create a new room'}
+                title={hasReachedLimit ? `You have reached the maximum of ${maxRooms === Infinity ? 'unlimited' : maxRooms} room${maxRooms === 1 ? '' : 's'}` : 'Create a new room'}
               >
                   Create Room
               </button>
@@ -208,7 +212,9 @@ export default function RoomSpace() {
                 <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg max-w-sm">
                   <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
                   <p className="text-xs text-amber-700 font-medium">
-                    You've reached the maximum of 3 rooms. Delete a room to create a new one.
+                    {isFree
+                      ? `Free plan allows ${limits?.maxRooms ?? 1} room. Upgrade to Pro for unlimited rooms.`
+                      : `You've reached the maximum number of rooms.`}
                   </p>
                 </div>
               )}
@@ -237,6 +243,7 @@ export default function RoomSpace() {
                   room={room}
                   onClick={() => handleRoomClick(room._id)}
                   onDelete={(e) => handleDeleteRoom(room, e)}
+                  maxMembers={limits?.maxRoomMembers === -1 ? Infinity : (limits?.maxRoomMembers ?? 3)}
                 />
               ))}
             </div>
@@ -279,11 +286,12 @@ const ROOM_ICONS = [
 ];
 
 /* Room Card Component */
-function RoomCard({ room, onClick, onDelete }) {
+function RoomCard({ room, onClick, onDelete, maxMembers }) {
   const isOwner = room.isOwner;
   const memberCount = room.memberCount || 0;
   const themeColor = room.color || '#0d9488';
   const RoomIcon = getIconComponent(room.icon) || Users;
+  const isFull = maxMembers !== Infinity && memberCount >= maxMembers;
 
   // Helper to lighten a hex color for backgrounds
   const getLightColor = (hex) => {
@@ -352,8 +360,11 @@ function RoomCard({ room, onClick, onDelete }) {
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5" style={{ color: themeColor }} />
             <span className="text-sm font-semibold" style={{ color: `${themeColor}cc` }}>
-              {memberCount} {memberCount === 1 ? "member" : "members"}
+              {memberCount}{maxMembers !== Infinity ? `/${maxMembers}` : ''} {memberCount === 1 ? "member" : "members"}
             </span>
+            {isFull && (
+              <span className="text-xs font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Full</span>
+            )}
           </div>
           {!isOwner && (
             <div className="flex items-center gap-1.5">
@@ -440,10 +451,12 @@ function CreateRoomModal({ onClose, onSuccess }) {
       onSuccess();
     } catch (err) {
       // Handle specific error cases
-      if (err?.response?.status === 409 && err?.response?.data?.message?.includes("3 rooms")) {
-        setError("You can only own up to 3 rooms. Delete an existing room to create a new one.");
-      } else if (err?.response?.status === 403 && err?.response?.data?.message?.includes("3 rooms")) {
-        setError("You can only own up to 3 rooms. Delete an existing room to create a new one.");
+      if (err?.response?.status === 403 && err?.response?.data?.type === 'LIMIT_REACHED') {
+        setError(err.response.data.message);
+      } else if (err?.response?.status === 409) {
+        setError(err.response?.data?.message || "You've reached your room limit. Upgrade to Pro for unlimited rooms.");
+      } else if (err?.response?.status === 403) {
+        setError(err.response?.data?.message || "You've reached your room limit. Upgrade to Pro for unlimited rooms.");
       } else if (err?.response?.status === 400) {
         setError(err.response?.data?.message || "Failed to create room");
       } else {

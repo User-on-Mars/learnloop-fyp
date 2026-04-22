@@ -23,6 +23,7 @@ import ConfirmationDialog from "../components/ConfirmationDialog";
 import { SkillIcon } from "../components/IconPicker";
 import { useToast } from "../context/ToastContext";
 import { useApiError } from "../hooks/useApiError";
+import { useSubscription } from "../context/SubscriptionContext";
 
 export default function RoomDetail() {
   const { roomId } = useParams();
@@ -53,6 +54,9 @@ export default function RoomDetail() {
 
   const { showSuccess, showError } = useToast();
   const { handleApiError } = useApiError();
+  const { limits } = useSubscription();
+  const maxMembers = limits?.maxRoomMembers === -1 ? Infinity : (limits?.maxRoomMembers ?? 3);
+  const isRoomFull = members.length >= maxMembers;
 
   const isOwner = members.some(m => m.userId === currentUserId && m.role === 'owner');
 
@@ -493,10 +497,16 @@ export default function RoomDetail() {
                     </button>
                     <button
                       onClick={() => setShowInviteModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors text-sm"
+                      disabled={isRoomFull}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                        isRoomFull
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-site-accent text-white hover:bg-site-accent-hover'
+                      }`}
+                      title={isRoomFull ? `Room is full (${members.length}/${maxMembers === Infinity ? '∞' : maxMembers} members)` : 'Invite a member'}
                     >
                       <UserPlus className="w-4 h-4" />
-                      Invite
+                      {isRoomFull ? 'Room Full' : 'Invite'}
                     </button>
                     <button
                       onClick={showDeleteRoomConfirm}
@@ -597,7 +607,12 @@ export default function RoomDetail() {
 
           {/* Members Section */}
           <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6">
-            <h2 className="text-lg font-semibold text-site-ink mb-4">Members</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-site-ink">Members</h2>
+              <span className="text-sm text-site-muted">
+                {members.length}{maxMembers !== Infinity ? `/${maxMembers}` : ''} members
+              </span>
+            </div>
             <div className="space-y-2">
               {members.map((member) => (
                 <MemberCard

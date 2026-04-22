@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, ChevronRight, ChevronLeft, Target, Palette, Check, X } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, ChevronLeft, Target, Palette, Check, X, Crown, Sparkles } from 'lucide-react';
 import { useSkillMap } from '../context/SkillMapContext';
 import { useToast } from '../context/ToastContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import CreateSkillMapWizard from './CreateSkillMapWizard';
 import TemplateGallery from './TemplateGallery';
 import { SkillIcon } from './IconPicker';
@@ -21,6 +22,17 @@ export default function SkillList() {
   const [page, setPage] = useState(1);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const [colorPickerOpen, setColorPickerOpen] = useState(null); // Track which card's color picker is open
+  const { limits, isFree, usage, refresh: refreshSubscription } = useSubscription();
+  const maxSkillMaps = limits?.maxSkillMaps === -1 ? Infinity : (limits?.maxSkillMaps ?? 3);
+  const hasReachedSkillMapLimit = skills.length >= maxSkillMaps;
+
+  const handleCreateClick = () => {
+    if (hasReachedSkillMapLimit && isFree) {
+      // Don't open gallery, show upgrade prompt handled in JSX
+      return;
+    }
+    setIsGalleryOpen(true);
+  };
 
   // Close color picker when clicking outside
   useEffect(() => {
@@ -90,12 +102,44 @@ export default function SkillList() {
           <p className="text-gray-600 mt-1.5">Track your learning journey with visual progression paths</p>
         </div>
         <button
-          onClick={() => setIsGalleryOpen(true)}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+          onClick={handleCreateClick}
+          disabled={hasReachedSkillMapLimit && isFree}
+          className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all shadow-md active:scale-[0.98] ${
+            hasReachedSkillMapLimit && isFree
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
+              : 'bg-site-accent text-white hover:bg-site-accent-hover hover:shadow-lg'
+          }`}
+          title={hasReachedSkillMapLimit && isFree ? `Limit reached (${maxSkillMaps} skill maps). Upgrade to Pro or delete one.` : 'Create a new skill map'}
         >
           <span>Create Skill Map</span>
         </button>
       </div>
+
+      {/* Upgrade Banner when limit reached */}
+      {hasReachedSkillMapLimit && isFree && (
+        <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
+              <Sparkles className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-amber-900 text-sm">
+                You've reached the limit of {limits.maxSkillMaps} skill maps
+              </p>
+              <p className="text-amber-700 text-xs mt-1">
+                Delete a skill map to create a new one, or upgrade to Pro for unlimited skill maps.
+              </p>
+              <a
+                href="/subscription"
+                className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <Crown className="w-4 h-4" />
+                Upgrade to Pro
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Skills Grid */}
       {skills.length === 0 ? (
@@ -112,7 +156,7 @@ export default function SkillList() {
           </p>
           
           <button
-            onClick={() => setIsGalleryOpen(true)}
+            onClick={handleCreateClick}
             className="inline-flex items-center gap-2 px-6 py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
           >
             <span>Create Your First Skill Map</span>
@@ -126,6 +170,7 @@ export default function SkillList() {
             const isCompleted = progress >= 100;
             const isInProgress = progress > 0 && progress < 100;
             const themeColor = skill.color || '#2e5023';
+            const isLocked = skill.locked === true;
             
             // Helper function to lighten color for backgrounds
             const getLightColor = (hex) => {
@@ -140,13 +185,35 @@ export default function SkillList() {
             return (
               <div
                 key={skill._id}
-                onClick={() => handleSkillClick(skill._id)}
-                className="group relative bg-white rounded-xl p-5 cursor-pointer transition-all duration-200 hover:shadow-xl border border-gray-200"
+                onClick={() => {
+                  if (isLocked) return;
+                  handleSkillClick(skill._id);
+                }}
+                className={`group relative bg-white rounded-xl p-5 transition-all duration-200 border border-gray-200 ${
+                  isLocked
+                    ? 'opacity-60 cursor-not-allowed'
+                    : 'cursor-pointer hover:shadow-xl'
+                }`}
                 style={{
-                  borderColor: isCompleted || isInProgress ? themeColor : undefined,
-                  borderWidth: isCompleted || isInProgress ? '2px' : '1px'
+                  borderColor: !isLocked && (isCompleted || isInProgress) ? themeColor : undefined,
+                  borderWidth: !isLocked && (isCompleted || isInProgress) ? '2px' : '1px'
                 }}
               >
+                {/* Locked overlay */}
+                {isLocked && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-xl">
+                    <Crown className="w-8 h-8 text-amber-500 mb-2" />
+                    <p className="text-sm font-semibold text-gray-800">Pro Required</p>
+                    <a
+                      href="/subscription"
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition-colors"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Upgrade
+                    </a>
+                  </div>
+                )}
                 {/* Header with icon, title, and actions */}
                 <div className="flex items-start gap-3 mb-4">
                   {/* Icon */}
@@ -170,7 +237,7 @@ export default function SkillList() {
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className={`flex items-center gap-1 shrink-0 ${isLocked ? 'hidden' : ''}`}>
                     {/* Color picker button */}
                     <div className="relative">
                       <button
@@ -236,8 +303,13 @@ export default function SkillList() {
                     {/* Delete button */}
                     <button
                       onClick={(e) => openDeleteSkillModal(skill._id, e)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all ${
+                        hasReachedSkillMapLimit && isFree
+                          ? 'opacity-100 text-red-400'
+                          : 'opacity-0 group-hover:opacity-100'
+                      }`}
                       aria-label="Delete skill"
+                      title="Delete skill map"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
