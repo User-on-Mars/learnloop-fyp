@@ -1,4 +1,5 @@
 import AdminFlag from '../models/AdminFlag.js'
+import XpSettings from '../models/XpSettings.js'
 
 class FlagService {
   /**
@@ -7,10 +8,12 @@ class FlagService {
    */
   async checkAndFlag(userId, userEmail, triggerType, value) {
     try {
+      const settings = await XpSettings.getSettings()
+
       const thresholds = {
-        too_many_sessions: { max: 20, severity: 'high' },
-        short_sessions: { min: 60, severity: 'medium' },
-        high_daily_xp: { max: 500, severity: 'high' },
+        too_many_sessions: { max: settings.maxSessionsPerDay || 20, severity: 'high' },
+        short_sessions: { min: settings.minSessionDuration || 60, severity: 'medium' },
+        high_daily_xp: { max: settings.maxDailyXp || 500, severity: 'high' },
         duplicate_reflection: { severity: 'medium' },
         never_active: { severity: 'low' }
       }

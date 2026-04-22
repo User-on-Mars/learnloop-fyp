@@ -293,6 +293,12 @@ class SkillService {
       if (!userId) {
         throw new ValidationError('userId', userId, { type: 'required' });
       }
+
+      // Check subscription limit for node count
+      const SubscriptionService = (await import('./SubscriptionService.js')).default;
+      const tierInfo = await SubscriptionService.getLimits(userId);
+      const maxNodes = tierInfo.limits.maxNodesPerSkillMap;
+
       const cleanTitle = title.trim();
       if (await this.skillTitleExistsForUser(userId, cleanTitle)) {
         throw new ConflictError('SkillMap', 'A skill map with this title already exists');
@@ -304,8 +310,8 @@ class SkillService {
       }
 
       const contentCount = titles.length;
-      if (contentCount > 15) {
-        throw new ValidationError('sketchTitles', titles, { type: 'maxLength', max: 15 });
+      if (contentCount > maxNodes) {
+        throw new ValidationError('sketchTitles', titles, { type: 'maxLength', max: maxNodes, message: `Your plan allows up to ${maxNodes} nodes per skill map. Upgrade to Pro for up to 15.` });
       }
 
       const session = await mongoose.startSession();
@@ -518,20 +524,22 @@ class SkillService {
       const nodes = await Node.find({ skillId }).session(session);
       const nodeIds = nodes.map(n => n._id);
 
-      // Check for active sessions linked to these nodes - Referential integrity check
-      const activeSessions = await LearningSession.countDocuments({
+      // Auto-abandon any active sessions linked to these nodes before deleting
+      const activeSessions = await LearningSession.find({
         nodeId: { $in: nodeIds },
         status: 'active'
       }).session(session);
 
-      if (activeSessions > 0) {
-        throw new ReferentialIntegrityError(
-          'Skill',
-          skillId,
-          'LearningSession',
-          `Cannot delete skill with ${activeSessions} active session(s). Please end all active sessions first.`,
-          { activeSessions, nodeIds: nodeIds.map(id => id.toString()) }
+      if (activeSessions.length > 0) {
+        await dbMonitor.monitorWrite(
+          () => LearningSession.updateMany(
+            { nodeId: { $in: nodeIds }, status: 'active' },
+            { $set: { status: 'abandoned', endTime: new Date() } },
+            { session }
+          ),
+          'SkillService.deleteSkill - abandon active sessions'
         );
+        console.log(`⚠️ Auto-abandoned ${activeSessions.length} active session(s) for skill ${skillId}`);
       }
 
       // Unlink sessions (set nodeId and skillId to null) - maintains referential integrity

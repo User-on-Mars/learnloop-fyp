@@ -54,6 +54,42 @@ const XpSettingsSchema = new mongoose.Schema({
     default: 200,
     min: 0,
     max: 10000
+  },
+  // Leaderboard settings
+  leaderboardSize: {
+    type: Number,
+    required: true,
+    default: 10,
+    min: 1,
+    max: 100
+  },
+  // Auto-flag thresholds
+  maxSessionsPerDay: {
+    type: Number,
+    required: true,
+    default: 20,
+    min: 1,
+    max: 1000
+  },
+  minSessionDuration: {
+    type: Number,
+    required: true,
+    default: 60,
+    min: 1,
+    max: 3600
+  },
+  maxDailyXp: {
+    type: Number,
+    required: true,
+    default: 500,
+    min: 1,
+    max: 100000
+  },
+  // Contact email shown on the public contact page
+  contactEmail: {
+    type: String,
+    default: 'weweebo@gmail.com',
+    trim: true
   }
 }, { timestamps: true });
 

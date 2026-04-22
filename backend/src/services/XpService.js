@@ -18,8 +18,7 @@ class XpService {
   static _getWeekStart(date) {
     const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
     const day = d.getUTCDay(); // 0=Sun, 1=Mon, ...
-    const diff = day === 0 ? 6 : day - 1; // days since Monday
-    d.setUTCDate(d.getUTCDate() - diff);
+    d.setUTCDate(d.getUTCDate() - day); // Go back to Sunday
     return d;
   }
 

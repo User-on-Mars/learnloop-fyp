@@ -19,7 +19,8 @@ const UserSchema = new mongoose.Schema({
   statusReason: { type: String, default: '', maxlength: 500 },
   lastLoginAt: { type: Date, default: null },
   firebaseUid: { type: String, default: null },
-  emailVerified: { type: Boolean, default: false }
+  emailVerified: { type: Boolean, default: false },
+  avatar: { type: String, default: null }
 }, { timestamps: true })
 
 UserSchema.index({ role: 1 })

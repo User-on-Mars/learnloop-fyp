@@ -28,7 +28,8 @@ class SystemMonitoringService {
   // Alert thresholds
   static ALERT_THRESHOLDS = {
     CPU_USAGE: 80,            // 80% CPU usage
-    MEMORY_USAGE: 85,         // 85% memory usage
+    MEMORY_USAGE: 95,         // 95% OS memory usage (85% was too aggressive — OS disk cache inflates this)
+    HEAP_USAGE: 85,           // 85% Node.js heap usage (this is the meaningful metric)
     ERROR_RATE: 10,           // 10 errors per minute
     RESPONSE_TIME: 2000,      // 2 seconds average response time
     DISK_USAGE: 90,           // 90% disk usage
@@ -737,9 +738,19 @@ class SystemMonitoringService {
    * @private
    */
   _checkResourceThresholds(resourceUsage) {
-    // Check memory usage
+    // Check Node.js heap usage (the meaningful metric for the backend process)
+    if (resourceUsage.memory.percentage > SystemMonitoringService.ALERT_THRESHOLDS.HEAP_USAGE) {
+      this._triggerAlert('high_heap_usage', {
+        heapUsedMB: Math.round(resourceUsage.memory.used / 1024 / 1024),
+        heapTotalMB: Math.round(resourceUsage.memory.total / 1024 / 1024),
+        heapPercentage: resourceUsage.memory.percentage.toFixed(1),
+        threshold: SystemMonitoringService.ALERT_THRESHOLDS.HEAP_USAGE
+      });
+    }
+
+    // Check OS-level memory (only alert at very high usage to avoid false positives from disk cache)
     if (resourceUsage.system.memoryUsagePercentage > SystemMonitoringService.ALERT_THRESHOLDS.MEMORY_USAGE) {
-      this._triggerAlert('high_memory_usage', {
+      this._triggerAlert('high_os_memory_usage', {
         usage: resourceUsage.system.memoryUsagePercentage,
         threshold: SystemMonitoringService.ALERT_THRESHOLDS.MEMORY_USAGE,
         freeMemory: resourceUsage.system.freeMemory

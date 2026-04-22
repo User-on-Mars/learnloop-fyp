@@ -31,7 +31,10 @@ const AdminAuditLogSchema = new mongoose.Schema({
       'template_updated',
       'template_published',
       'template_unpublished',
-      'template_deleted'
+      'template_deleted',
+      'send_nudge',
+      'delete_practice',
+      'delete_reflection'
     ]
   },
   targetType: {

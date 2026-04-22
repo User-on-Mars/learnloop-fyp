@@ -10,6 +10,7 @@ import UserXpProfile from '../models/UserXpProfile.js'
 import UserStreak from '../models/UserStreak.js'
 import WeeklyResetHistory from '../models/WeeklyResetHistory.js'
 import XpTransaction from '../models/XpTransaction.js'
+import Subscription from '../models/Subscription.js'
 
 class AdminService {
   /**
@@ -21,6 +22,9 @@ class AdminService {
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       const weekStart = new Date(todayStart)
       weekStart.setDate(weekStart.getDate() - 7)
+
+      // Only count users linked to Firebase with real emails
+      const fbFilter = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i } }
 
       const [
         totalUsers,
@@ -36,12 +40,12 @@ class AdminService {
         practiceToday,
         practiceWeek
       ] = await Promise.all([
-        User.countDocuments(),
-        User.countDocuments({ createdAt: { $gte: todayStart } }),
-        User.countDocuments({ createdAt: { $gte: weekStart } }),
-        User.countDocuments({ accountStatus: 'active' }),
-        User.countDocuments({ accountStatus: 'suspended' }),
-        User.countDocuments({ accountStatus: 'banned' }),
+        User.countDocuments(fbFilter),
+        User.countDocuments({ ...fbFilter, createdAt: { $gte: todayStart } }),
+        User.countDocuments({ ...fbFilter, createdAt: { $gte: weekStart } }),
+        User.countDocuments({ ...fbFilter, accountStatus: 'active' }),
+        User.countDocuments({ ...fbFilter, accountStatus: 'suspended' }),
+        User.countDocuments({ ...fbFilter, accountStatus: 'banned' }),
         Skill.countDocuments(),
         Practice.countDocuments(),
         Reflection.countDocuments(),
@@ -67,12 +71,111 @@ class AdminService {
   }
 
   /**
+   * Get learning health metrics computed from real data
+   */
+  async getLearningHealth() {
+    try {
+      const now = new Date()
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+      // Node completion rate
+      const [totalNodes, completedNodes] = await Promise.all([
+        Node.countDocuments(),
+        Node.countDocuments({ status: 'Completed' })
+      ])
+      const nodeCompletionRate = totalNodes > 0
+        ? Math.round((completedNodes / totalNodes) * 100)
+        : 0
+
+      // Skill maps completed — a skill map is complete when ALL its nodes are "Completed"
+      const totalSkillMaps = await Skill.countDocuments()
+      const skillMapCompletion = await Node.aggregate([
+        { $group: {
+          _id: '$skillId',
+          totalNodes: { $sum: 1 },
+          completedNodes: { $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] } }
+        }},
+        { $match: { $expr: { $and: [{ $gt: ['$totalNodes', 0] }, { $eq: ['$totalNodes', '$completedNodes'] }] } } }
+      ])
+      const completedSkillMaps = skillMapCompletion.length
+
+      // Total practice hours
+      const practiceHoursResult = await Practice.aggregate([
+        { $group: { _id: null, totalMinutes: { $sum: '$minutesPracticed' } } }
+      ])
+      const totalPracticeHours = Math.round((practiceHoursResult[0]?.totalMinutes || 0) / 60 * 10) / 10
+
+      // Avg practice per session (minutes)
+      const avgPracticeResult = await Practice.aggregate([
+        { $group: { _id: null, avgMinutes: { $avg: '$minutesPracticed' } } }
+      ])
+      const avgPracticeMinutes = Math.round(avgPracticeResult[0]?.avgMinutes || 0)
+
+      // Users active in last 7 days (not banned, Firebase-linked with real emails only)
+      const fbFilter = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i } }
+
+      const activeLearnersCount = await User.countDocuments({
+        ...fbFilter,
+        lastLoginAt: { $gte: sevenDaysAgo },
+        accountStatus: 'active'
+      })
+
+      // Users inactive 7d+ (have logged in before, but not in last 7 days, still active status)
+      const inactiveCount = await User.countDocuments({
+        ...fbFilter,
+        lastLoginAt: { $lt: sevenDaysAgo, $ne: null },
+        accountStatus: 'active'
+      })
+
+      // Users who never logged in
+      const neverActiveCount = await User.countDocuments({
+        ...fbFilter,
+        lastLoginAt: null,
+        accountStatus: 'active'
+      })
+
+      // Total reflections
+      const totalReflections = await Reflection.countDocuments()
+
+      // Reflections in last 7 days
+      const recentReflections = await Reflection.countDocuments({
+        createdAt: { $gte: sevenDaysAgo }
+      })
+
+      // Practices in last 7 days
+      const recentPractices = await Practice.countDocuments({
+        createdAt: { $gte: sevenDaysAgo }
+      })
+
+      return {
+        nodeCompletionRate,
+        totalNodes,
+        completedNodes,
+        totalSkillMaps,
+        completedSkillMaps,
+        totalPracticeHours,
+        avgPracticeMinutes,
+        activeLearnersCount,
+        inactiveCount,
+        neverActiveCount,
+        totalReflections,
+        recentReflections,
+        recentPractices
+      }
+    } catch (error) {
+      console.error('AdminService.getLearningHealth error:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get paginated users list with optional filtering
    */
   async getUsers(page = 1, limit = 20, filter = {}) {
     try {
       const skip = (page - 1) * limit
-      const query = {}
+      // Only show users linked to Firebase with real emails
+      const query = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i } }
 
       if (filter.search) {
         query.$or = [
@@ -95,11 +198,12 @@ class AdminService {
 
       const enriched = await Promise.all(users.map(async (user) => {
         const uid = user.firebaseUid || user._id.toString()
-        const [skillCount, practiceCount, reflectionCount, xpProfile] = await Promise.all([
+        const [skillCount, practiceCount, reflectionCount, xpProfile, subscription] = await Promise.all([
           Skill.countDocuments({ userId: uid }),
           Practice.countDocuments({ userId: uid }),
           Reflection.countDocuments({ userId: uid }),
-          UserXpProfile.findOne({ userId: uid }).lean()
+          UserXpProfile.findOne({ userId: uid }).lean(),
+          Subscription.findOne({ userId: uid }).lean()
         ])
         
         // Calculate league tier based on weekly XP thresholds
@@ -108,13 +212,26 @@ class AdminService {
         if (weeklyXp >= 200) leagueTier = 'Gold'
         else if (weeklyXp >= 100) leagueTier = 'Silver'
         else if (weeklyXp >= 50) leagueTier = 'Bronze'
+
+        // Determine effective plan
+        let plan = 'free'
+        if (subscription?.tier === 'pro') {
+          if (subscription.status === 'canceled' && subscription.currentPeriodEnd && new Date() >= new Date(subscription.currentPeriodEnd)) {
+            plan = 'free'
+          } else {
+            plan = 'pro'
+          }
+        }
         
         return { 
           ...user, 
           skillCount, 
           practiceCount, 
           reflectionCount,
-          leagueTier
+          leagueTier,
+          plan,
+          subscriptionStatus: subscription?.status || 'active',
+          subscriptionEnd: subscription?.currentPeriodEnd || null,
         }
       }))
 
