@@ -160,7 +160,7 @@ export default function LeagueInfo({ userXp = 0, weeklyXp = 0, showProgress = tr
         <div className="mt-3 pt-3 border-t border-green-200">
           <p className="text-xs text-green-700">
             <span className="font-semibold">💡 Tip:</span> Maintain a {settings.streak5DayMultiplier >= 2 ? '5+' : '7+'} day streak to unlock XP multipliers! 
-            Leagues are based on weekly XP and reset every Monday.
+            Leagues are based on weekly XP and reset every Sunday.
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw } from 'lucide-react';
-import { leaderboardAPI, xpAPI } from '../api/client';
+import { RefreshCw, Trophy, Crown } from 'lucide-react';
+import { leaderboardAPI, xpAPI, subscriptionAPI } from '../api/client';
 import Sidebar from '../components/Sidebar';
 import XpProfileCard from '../components/XpProfileCard';
 import LeaderboardTable from '../components/LeaderboardTable';
@@ -24,6 +24,7 @@ export default function Leaderboard() {
   const [xpProfile, setXpProfile] = useState(null);
   const [xpLoading, setXpLoading] = useState(true);
   const [xpError, setXpError] = useState(false);
+  const [latestRewards, setLatestRewards] = useState([]);
 
   const currentUserId = auth.currentUser?.uid;
 
@@ -68,6 +69,10 @@ export default function Leaderboard() {
 
   useEffect(() => {
     fetchXpProfile();
+    // Fetch latest weekly rewards
+    subscriptionAPI.getLatestRewards().then(res => {
+      setLatestRewards(res.data.rewards || []);
+    }).catch(() => {});
   }, [fetchXpProfile]);
 
   useEffect(() => {
@@ -141,6 +146,62 @@ export default function Leaderboard() {
               <LeagueInfo userXp={xpProfile.totalXp || 0} weeklyXp={xpProfile.weeklyXp || 0} />
             </div>
           )}
+
+          {/* Weekly Rewards */}
+          <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              <h3 className="text-base font-semibold text-site-ink">Weekly Pro Rewards</h3>
+            </div>
+
+            {/* Reward rules */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="text-center p-3 bg-amber-50 rounded-lg border border-amber-100">
+                <p className="text-lg font-bold text-amber-700">#1</p>
+                <p className="text-xs text-amber-600 font-medium mt-0.5">6 months Pro</p>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-lg font-bold text-gray-600">#2</p>
+                <p className="text-xs text-gray-500 font-medium mt-0.5">3 months Pro</p>
+              </div>
+              <div className="text-center p-3 bg-orange-50 rounded-lg border border-orange-100">
+                <p className="text-lg font-bold text-orange-600">#3</p>
+                <p className="text-xs text-orange-500 font-medium mt-0.5">1 month Pro</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-400 mb-4">Top 3 weekly XP earners receive free Pro subscriptions every Sunday at midnight. Rewards stack on existing subscriptions.</p>
+
+            {/* Last week's winners */}
+            {latestRewards.length > 0 ? (
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Last Week's Winners</p>
+                <div className="space-y-2">
+                  {latestRewards.map(r => {
+                    const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+                    const isMe = r.userId === currentUserId;
+                    return (
+                      <div key={r._id} className={`flex items-center gap-3 p-2.5 rounded-lg ${isMe ? 'bg-site-soft border border-site-accent/20' : 'bg-gray-50'}`}>
+                        <span className="text-lg w-7 text-center flex-shrink-0">{medals[r.rank]}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-site-ink truncate">
+                            {r.userName}
+                            {isMe && <span className="text-xs text-site-accent ml-1">(You)</span>}
+                          </p>
+                          <p className="text-xs text-gray-400">{r.weeklyXp} XP</p>
+                        </div>
+                        <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full flex-shrink-0">
+                          {r.rewardLabel} Pro
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-2">No rewards given yet. Be the first to earn one!</p>
+            )}
+          </div>
 
           {/* Leaderboard Card */}
           <div className="bg-site-surface rounded-xl shadow-sm border border-site-border">

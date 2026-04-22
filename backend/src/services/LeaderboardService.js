@@ -16,18 +16,17 @@ const CACHE_PREFIX = 'leaderboard:';
  */
 class LeaderboardService {
   /**
-   * Get Monday 00:00 UTC of the week containing the given date.
+   * Get Sunday 00:00 UTC of the week containing the given date.
    */
   static _getWeekStart(date = new Date()) {
     const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-    const day = d.getUTCDay();
-    const diff = day === 0 ? 6 : day - 1;
-    d.setUTCDate(d.getUTCDate() - diff);
+    const day = d.getUTCDay(); // 0=Sun
+    d.setUTCDate(d.getUTCDate() - day); // Go back to Sunday
     return d;
   }
 
   /**
-   * Get Sunday 23:59:59.999 UTC of the week containing the given date.
+   * Get Saturday 23:59:59.999 UTC of the week containing the given date.
    */
   static _getWeekEnd(date = new Date()) {
     const weekStart = LeaderboardService._getWeekStart(date);
@@ -436,8 +435,8 @@ class LeaderboardService {
       // Count total ranked users before reset
       const totalRankedUsers = await UserXpProfile.countDocuments({ weeklyXp: { $gt: 0 } });
 
-      // Reset all weekly XP to 0
-      await UserXpProfile.updateMany({}, { weeklyXp: 0 });
+      // Reset all weekly XP to 0 (use $set to avoid wiping other fields)
+      await UserXpProfile.updateMany({}, { $set: { weeklyXp: 0 } });
 
       // Persist history
       await WeeklyResetHistory.create({

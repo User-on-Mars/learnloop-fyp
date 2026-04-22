@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Calendar, Clock, TrendingUp, TrendingDown, Award, Target,
+  Clock, TrendingUp, TrendingDown, Award, Target,
   ChevronLeft, ChevronRight, ChevronDown, FileText, Flame, Zap, BookOpen,
 } from "lucide-react";
 import { practiceAPI, skillsAPI } from "../api/client";
@@ -10,9 +10,8 @@ import Sidebar from "../components/Sidebar";
 
 function getWeekStart(date) {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
+  const day = d.getDay(); // 0=Sun, 1=Mon, ...
+  d.setDate(d.getDate() - day); // Go back to Sunday
   d.setHours(0, 0, 0, 0);
   return d;
 }
@@ -38,7 +37,7 @@ function weekLabel(offset) {
   return `${Math.abs(offset)} weeks ago`;
 }
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const SKILLS_PER_PAGE = 5;
 
 export default function WeeklySummary() {
@@ -348,18 +347,6 @@ export default function WeeklySummary() {
                       );
                     })}
                   </div>
-                </div>
-              )}
-
-              {/* Empty State */}
-              {totalSessions === 0 && totalReflections === 0 && (
-                <div className="text-center py-12 bg-site-surface rounded-xl border border-site-border shadow-sm">
-                  <Calendar className="w-12 h-12 text-site-faint mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-site-ink mb-2">No activity this week</h3>
-                  <p className="text-site-muted mb-4">Start a practice session to see your weekly summary</p>
-                  <button onClick={() => navigate("/log-practice")} className="px-5 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors">
-                    Start Practicing
-                  </button>
                 </div>
               )}
             </>

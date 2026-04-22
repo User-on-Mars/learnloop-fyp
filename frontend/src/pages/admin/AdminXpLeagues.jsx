@@ -18,7 +18,13 @@ export default function AdminXpLeagues() {
   const loadLeaderboard = async () => {
     try {
       setLoading(true)
-      const result = await adminApi.getXpLeaderboard(100)
+      // Fetch settings to get leaderboard size, then fetch leaderboard
+      const settingsRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/admin/xp-settings`, {
+        headers: { Authorization: `Bearer ${await adminApi.getToken()}` }
+      })
+      const settings = settingsRes.ok ? await settingsRes.json() : {}
+      const size = settings.leaderboardSize || 10
+      const result = await adminApi.getXpLeaderboard(size)
       setLeaderboard(result.leaderboard || [])
     } catch (error) {
       console.error('Failed to load leaderboard:', error)
@@ -94,7 +100,7 @@ export default function AdminXpLeagues() {
       {/* Next Reset */}
       <div className="bg-site-surface rounded-xl border border-site-border p-5 mb-8">
         <p className="text-sm text-site-faint mb-2">Weekly reset schedule</p>
-        <p className="text-2xl font-bold text-site-ink">Every Monday</p>
+        <p className="text-2xl font-bold text-site-ink">Every Sunday</p>
         <p className="text-xs text-site-muted mt-2">Leaderboard resets weekly. Users keep total XP but weekly XP resets to 0.</p>
       </div>
 
