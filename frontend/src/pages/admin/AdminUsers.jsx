@@ -169,6 +169,7 @@ export default function AdminUsers() {
                 <th className="text-left px-4 py-3 font-semibold text-site-muted">User</th>
                 <th className="text-left px-4 py-3 font-semibold text-site-muted">Status</th>
                 <th className="text-left px-4 py-3 font-semibold text-site-muted">Role</th>
+                <th className="text-left px-4 py-3 font-semibold text-site-muted">Plan</th>
                 <th className="text-left px-4 py-3 font-semibold text-site-muted">League</th>
                 <th className="text-center px-4 py-3 font-semibold text-site-muted">Skills</th>
                 <th className="text-center px-4 py-3 font-semibold text-site-muted">Practices</th>
@@ -179,9 +180,9 @@ export default function AdminUsers() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-site-faint">Loading...</td></tr>
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-site-faint">Loading...</td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-site-faint">No users found</td></tr>
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-site-faint">No users found</td></tr>
               ) : users.map(user => {
                 const badge = STATUS_BADGES[user.accountStatus] || STATUS_BADGES.active
                 return (
@@ -200,6 +201,15 @@ export default function AdminUsers() {
                         <span className="inline-flex items-center gap-1 text-site-accent text-xs font-medium"><Crown className="w-3 h-3" /> Admin</span>
                       ) : (
                         <span className="text-site-faint text-xs">User</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {user.plan === 'pro' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold">
+                          <Crown className="w-3 h-3" /> Pro
+                        </span>
+                      ) : (
+                        <span className="text-site-faint text-xs">Free</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
