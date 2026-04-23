@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Trash2, Download, AlertCircle, Loader2 } from 'lucide-react';
+import { Trash2, Download, AlertCircle, Loader2, Lock } from 'lucide-react';
+import { useSubscription } from '../context/SubscriptionContext';
+import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 
 const MOODS = {
@@ -97,6 +99,8 @@ export default function ReflectionHistory() {
   const [reflectionToDelete, setReflectionToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(null);
+  const { isFree } = useSubscription();
+  const navigate = useNavigate();
 
   // Fetch reflections on mount
   useEffect(() => {
@@ -288,14 +292,23 @@ export default function ReflectionHistory() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (isFree) {
+                        navigate('/subscription');
+                        return;
+                      }
                       handleExport(reflection);
                     }}
                     disabled={isExporting === reflection._id}
-                    className="p-2 text-ll-600 hover:bg-ll-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
-                    title="Export to PDF"
+                    className={`relative p-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${isFree ? 'text-gray-400 hover:bg-gray-50 cursor-not-allowed' : 'text-ll-600 hover:bg-ll-50'}`}
+                    title={isFree ? "Pro feature — Upgrade to export PDF" : "Export to PDF"}
                   >
                     {isExporting === reflection._id ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : isFree ? (
+                      <div className="relative">
+                        <Download className="w-5 h-5 opacity-40" />
+                        <Lock className="w-3 h-3 absolute -bottom-0.5 -right-0.5 text-amber-500" />
+                      </div>
                     ) : (
                       <Download className="w-5 h-5" />
                     )}

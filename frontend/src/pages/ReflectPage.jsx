@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../useAuth';
 import { useToast } from '../context/ToastContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { showXpNotification } from '../utils/xpNotifications';
 import Sidebar from '../components/Sidebar';
 import client from '../api/client';
-import { CheckCircle, AlertCircle, Trash2, Download, ChevronDown, ChevronUp, Loader2, BookOpen, Smile, Meh, Frown, Zap, Brain, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, Trash2, Download, ChevronDown, ChevronUp, Loader2, BookOpen, Smile, Meh, Frown, Zap, Brain, X, Lock } from 'lucide-react';
 
 const MOODS = [
   { value: 'Happy', icon: Smile, label: 'Happy' },
@@ -20,6 +21,7 @@ export default function ReflectPage() {
   const user = useAuth();
   const navigate = useNavigate();
   const { showSuccess } = useToast();
+  const { isFree } = useSubscription();
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
   const [mood, setMood] = useState(null);
@@ -247,8 +249,8 @@ export default function ReflectPage() {
                             <div className="pt-3 border-t border-site-border flex items-center justify-between">
                               <p className="text-xs text-site-faint">{fmtDate(r.createdAt)} at {fmtTime(r.createdAt)}</p>
                               <div className="flex gap-1">
-                                <button onClick={() => handleExport(r._id)} disabled={exporting === r._id} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-site-accent hover:bg-site-soft rounded-lg font-medium disabled:opacity-50">
-                                  {exporting === r._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} PDF
+                                <button onClick={() => { if (isFree) { navigate('/subscription'); return; } handleExport(r._id); }} disabled={exporting === r._id} className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg font-medium disabled:opacity-50 ${isFree ? 'text-gray-400 hover:bg-gray-50' : 'text-site-accent hover:bg-site-soft'}`} title={isFree ? "Pro feature — Upgrade to export PDF" : "Export PDF"}>
+                                  {exporting === r._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : isFree ? <><Download className="w-3.5 h-3.5 opacity-40" /><Lock className="w-3 h-3 text-amber-500" /></> : <Download className="w-3.5 h-3.5" />} PDF
                                 </button>
                                 <button onClick={() => setDeleteId(r._id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg font-medium">
                                   <Trash2 className="w-3.5 h-3.5" /> Delete
