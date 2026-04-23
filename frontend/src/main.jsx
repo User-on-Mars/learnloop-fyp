@@ -5,6 +5,7 @@ import {
   RouterProvider,
   Navigate,
   Outlet,
+  useLocation,
 } from "react-router-dom";
 import { Provider } from 'react-redux';
 
@@ -83,6 +84,13 @@ function PublicMarketingGate() {
   return <MarketingLayout />;
 }
 
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  React.useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 // Simplified layout wrapper - adding providers one by one
 function AppLayout() {
   return (
@@ -93,6 +101,7 @@ function AppLayout() {
             <SubscriptionProvider>
             <ActiveSessionProvider>
               <SkillMapProvider>
+                <ScrollToTop />
                 <Outlet />
                 <ActiveSessionPopup />
                 <MobileNav />

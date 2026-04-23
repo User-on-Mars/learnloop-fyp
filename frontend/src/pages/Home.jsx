@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowRight, Crown, Zap, Trophy, Medal,
+  ArrowRight, Crown, Zap, Trophy, Medal, Award,
   Check, X, Sparkles, BarChart3, Gift,
 } from "lucide-react";
 import axios from "axios";
@@ -176,6 +176,164 @@ function FeatureCarousel() {
   );
 }
 
+const PRO_PLANS = [
+  { months: 1, label: "1 Month", price: 299, perMonth: 299, save: 0 },
+  { months: 3, label: "3 Months", price: 749, perMonth: 250, save: 148, badge: "Popular" },
+  { months: 6, label: "6 Months", price: 1299, perMonth: 217, save: 495, badge: "Best Value" },
+];
+
+function PricingSection() {
+  const [selected, setSelected] = useState(1); // index into PRO_PLANS
+  const plan = PRO_PLANS[selected];
+
+  return (
+    <section className="bg-white border-t border-[#e2e6dc]">
+      <div className="max-w-4xl mx-auto px-5 py-20">
+        <h2 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#1c1f1a] text-center mb-1">Simple pricing</h2>
+        <p className="text-sm text-[#565c52] text-center mb-14">Free to start. Upgrade when you need more room.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-14">
+
+          {/* ── FREE ── */}
+          <div className="rounded-2xl border border-[#e2e6dc] bg-[#f8faf6] p-8 flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-11 h-11 rounded-xl bg-gray-200/60 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-gray-400" />
+              </div>
+              <div>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Free Plan</span>
+                <span className="text-lg font-extrabold text-[#1c1f1a]">Free</span>
+              </div>
+            </div>
+
+            <p className="text-[40px] font-extrabold text-[#1c1f1a] leading-none mb-1">Rs. 0</p>
+            <p className="text-sm text-gray-400 mb-8">Forever free</p>
+
+            <ul className="space-y-3 mb-8 flex-1">
+              {["3 Skill Maps", "5 Nodes / map", "5 Sessions / node", "1 Room · 3 members"].map((t) => (
+                <li key={t} className="flex items-start gap-2.5 text-sm text-[#3d4a38] font-medium">
+                  <Check className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />{t}
+                </li>
+              ))}
+              {["PDF Export"].map((t) => (
+                <li key={t} className="flex items-start gap-2.5 text-sm text-[#9aa094]">
+                  <X className="w-4 h-4 text-red-300 mt-0.5 flex-shrink-0" />{t}
+                </li>
+              ))}
+            </ul>
+
+            <Link to="/signup" className="block text-center py-3.5 text-[15px] font-bold text-[#565c52] bg-white border-2 border-[#e2e6dc] rounded-xl hover:bg-gray-100 hover:text-[#1c1f1a] hover:border-[#c8cec0] transition-all">
+              Sign up free
+            </Link>
+          </div>
+
+          {/* ── PRO ── */}
+          <div className="relative rounded-2xl border-2 border-[#2e5023] bg-white p-8 flex flex-col shadow-xl overflow-hidden">
+            {/* Background art */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[#a3c99a] opacity-20 blur-2xl" />
+              <div className="absolute -bottom-8 -left-8 w-36 h-36 rounded-full bg-[#4f7942] opacity-15 blur-2xl" />
+            </div>
+
+            <div className="relative z-10 flex flex-col flex-1">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-11 h-11 rounded-xl bg-[#2e5023] flex items-center justify-center shadow-md shadow-[#2e5023]/20">
+                  <Crown className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-[#2e5023] uppercase tracking-wider block">Pro Plan</span>
+                  <span className="text-lg font-extrabold text-[#1c1f1a]">Pro</span>
+                </div>
+              </div>
+
+              {/* Duration selector */}
+              <div className="flex bg-[#f4f7f2] rounded-xl p-1 mb-6 border border-[#e2e6dc]">
+                {PRO_PLANS.map((p, i) => (
+                  <button
+                    key={p.months}
+                    onClick={() => setSelected(i)}
+                    className={`flex-1 relative py-2.5 text-xs font-bold rounded-lg transition-all ${
+                      selected === i
+                        ? "bg-[#2e5023] text-white shadow-md"
+                        : "text-[#565c52] hover:text-[#1c1f1a]"
+                    }`}
+                  >
+                    {p.label}
+                    {p.badge && selected === i && (
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[9px] font-bold bg-amber-400 text-amber-900 rounded-full whitespace-nowrap">
+                        {p.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Price display */}
+              <div className="mb-6">
+                <div className="flex items-baseline gap-2">
+                  <p className="text-[40px] font-extrabold text-[#1c1f1a] leading-none">Rs. {plan.price.toLocaleString()}</p>
+                </div>
+                <p className="text-sm text-[#565c52] mt-1">
+                  Rs. {plan.perMonth}/month
+                  {plan.save > 0 && (
+                    <span className="ml-2 text-[#2e5023] font-bold">· Save Rs. {plan.save}</span>
+                  )}
+                </p>
+              </div>
+
+              <ul className="space-y-3 mb-8 flex-1">
+                {["Unlimited Skill Maps", "15 Nodes / map", "Unlimited sessions", "Unlimited Rooms", "PDF Export"].map((t) => (
+                  <li key={t} className="flex items-start gap-2.5 text-sm text-[#3d4a38] font-medium">
+                    <Check className="w-4 h-4 text-[#2e5023] mt-0.5 flex-shrink-0" />{t}
+                  </li>
+                ))}
+              </ul>
+
+              <Link to="/signup"
+                className="group relative block text-center py-3.5 text-[15px] font-bold rounded-xl overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 transition-all"
+              >
+                <span className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.08] to-white/[0.15] pointer-events-none" />
+                <span className="relative z-10">Get Pro — {plan.label}</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Comparison table */}
+        <div className="rounded-2xl border border-[#e2e6dc] overflow-hidden bg-white">
+          <div className="grid grid-cols-3 bg-[#edf5e9] px-6 py-4 border-b border-[#d4e8cc]">
+            <span className="text-[11px] font-bold text-[#4f7942] uppercase tracking-wider">Feature</span>
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center">Free</span>
+            <span className="text-[11px] font-bold text-[#2e5023] uppercase tracking-wider text-center flex items-center justify-center gap-1.5"><Crown className="w-3.5 h-3.5 text-[#2e5023]" /> Pro</span>
+          </div>
+          {[
+            { name: "Skill Maps", free: "3", pro: "Unlimited" },
+            { name: "Nodes per Map", free: "5", pro: "15" },
+            { name: "Sessions per Node", free: "5", pro: "Unlimited" },
+            { name: "Rooms", free: "1", pro: "Unlimited" },
+            { name: "Room Members", free: "3", pro: "Unlimited" },
+            { name: "PDF Export", free: false, pro: true },
+          ].map((row, i) => (
+            <div key={row.name} className={`grid grid-cols-3 px-6 py-4 items-center border-b border-[#e2e6dc] last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-[#f8faf6]"}`}>
+              <span className="text-sm font-medium text-[#1c1f1a]">{row.name}</span>
+              <span className="text-center">
+                {typeof row.free === "boolean"
+                  ? row.free ? <Check className="w-5 h-5 text-gray-400 mx-auto" /> : <X className="w-5 h-5 text-red-400 mx-auto" />
+                  : <span className="inline-block px-3 py-0.5 rounded-full bg-gray-100 text-sm text-gray-500 font-medium">{row.free}</span>}
+              </span>
+              <span className="text-center">
+                {typeof row.pro === "boolean"
+                  ? row.pro ? <Check className="w-5 h-5 text-[#2e5023] mx-auto" /> : <X className="w-5 h-5 text-red-400 mx-auto" />
+                  : <span className="inline-block px-3 py-0.5 rounded-full bg-[#edf5e9] text-sm text-[#2e5023] font-bold border border-[#d4e8cc]">{row.pro}</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [winners, setWinners] = useState([]);
 
@@ -226,132 +384,22 @@ export default function Home() {
       <FeatureCarousel />
 
       {/* ━━━━ PRICING ━━━━ */}
-      <section className="bg-white border-t border-[#e2e6dc]">
-        <div className="max-w-5xl mx-auto px-5 py-20">
-          <h2 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#1c1f1a] text-center mb-1">Simple pricing</h2>
-          <p className="text-sm text-[#565c52] text-center mb-14">Free to start. Upgrade when you need more room.</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12 items-end">
-
-            {/* Free */}
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-7 flex flex-col">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">Free Plan</span>
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-gray-200/60 flex items-center justify-center"><Zap className="w-5 h-5 text-gray-400" /></div>
-                <span className="text-lg font-bold text-[#1c1f1a]">Free</span>
-              </div>
-              <p className="text-[42px] font-extrabold text-[#1c1f1a] leading-none">Rs. 0</p>
-              <p className="text-sm text-gray-400 mt-1 mb-7">Forever free</p>
-              <ul className="space-y-3 mb-8 flex-1">
-                {["3 Skill Maps", "5 Nodes / map", "5 Sessions / node", "1 Room · 3 members"].map((t) => (
-                  <li key={t} className="flex items-start gap-2.5 text-sm text-[#565c52]"><Check className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />{t}</li>
-                ))}
-              </ul>
-              <Link to="/signup" className="block text-center py-3 text-sm font-semibold text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 hover:text-[#1c1f1a] transition-colors">Sign up free</Link>
-            </div>
-
-            {/* 1 Month */}
-            <div className="rounded-2xl border border-[#c8cec0] bg-white p-7 flex flex-col hover:shadow-lg transition-all">
-              <span className="text-[11px] font-bold text-[#4f7942] uppercase tracking-wider mb-3">Pro · Monthly</span>
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-[#edf5e9] flex items-center justify-center"><Crown className="w-5 h-5 text-[#4f7942]" /></div>
-                <span className="text-lg font-bold text-[#1c1f1a]">1 Month</span>
-              </div>
-              <p className="text-[42px] font-extrabold text-[#1c1f1a] leading-none">Rs. 299</p>
-              <p className="text-sm text-[#9aa094] mt-1 mb-7">Rs. 299/month</p>
-              <ul className="space-y-3 mb-8 flex-1">
-                {["Unlimited Skill Maps", "15 Nodes / map", "Unlimited sessions", "Unlimited Rooms", "PDF Export"].map((t) => (
-                  <li key={t} className="flex items-start gap-2.5 text-sm text-[#565c52]"><Check className="w-4 h-4 text-[#4f7942] mt-0.5 flex-shrink-0" />{t}</li>
-                ))}
-              </ul>
-              <Link to="/signup" className="block text-center py-3 text-sm font-semibold text-[#2e5023] bg-[#edf5e9] border border-[#c8cec0] rounded-xl hover:bg-[#2e5023] hover:text-white hover:border-[#2e5023] transition-colors">Get Pro</Link>
-            </div>
-
-            {/* 3 Months — highlighted */}
-            <div className="relative rounded-2xl border-2 border-[#2e5023] bg-[#edf5e9] p-7 flex flex-col shadow-xl">
-              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 text-[11px] font-bold bg-[#2e5023] text-white rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm">⭐ Most Popular</span>
-              <span className="text-[11px] font-bold text-[#2e5023] uppercase tracking-wider mb-3">Pro · Quarterly</span>
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-[#2e5023] flex items-center justify-center"><Crown className="w-5 h-5 text-white" /></div>
-                <span className="text-lg font-bold text-[#1c1f1a]">3 Months</span>
-              </div>
-              <p className="text-[42px] font-extrabold text-[#1c1f1a] leading-none">Rs. 749</p>
-              <p className="text-sm text-[#565c52] mt-1">Rs. 250/month</p>
-              <p className="text-sm text-[#2e5023] font-bold mb-7">Save Rs. 148</p>
-              <ul className="space-y-3 mb-8 flex-1">
-                {["Unlimited Skill Maps", "15 Nodes / map", "Unlimited sessions", "Unlimited Rooms", "PDF Export"].map((t) => (
-                  <li key={t} className="flex items-start gap-2.5 text-sm text-[#565c52]"><Check className="w-4 h-4 text-[#2e5023] mt-0.5 flex-shrink-0" />{t}</li>
-                ))}
-              </ul>
-              <Link to="/signup" className="block text-center py-3 text-sm font-bold bg-[#2e5023] text-white rounded-xl hover:bg-[#4f7942] transition-colors">Get Pro</Link>
-            </div>
-
-            {/* 6 Months */}
-            <div className="relative rounded-2xl border border-amber-300 bg-amber-50/40 p-7 flex flex-col hover:shadow-lg transition-all">
-              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 text-[11px] font-bold bg-amber-500 text-white rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm">🏷️ Best Value</span>
-              <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-3">Pro · Half Year</span>
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center"><Crown className="w-5 h-5 text-amber-600" /></div>
-                <span className="text-lg font-bold text-[#1c1f1a]">6 Months</span>
-              </div>
-              <p className="text-[42px] font-extrabold text-[#1c1f1a] leading-none">Rs. 1,299</p>
-              <p className="text-sm text-[#9aa094] mt-1">Rs. 217/month</p>
-              <p className="text-sm text-amber-600 font-bold mb-7">Save Rs. 495</p>
-              <ul className="space-y-3 mb-8 flex-1">
-                {["Unlimited Skill Maps", "15 Nodes / map", "Unlimited sessions", "Unlimited Rooms", "PDF Export"].map((t) => (
-                  <li key={t} className="flex items-start gap-2.5 text-sm text-[#565c52]"><Check className="w-4 h-4 text-[#4f7942] mt-0.5 flex-shrink-0" />{t}</li>
-                ))}
-              </ul>
-              <Link to="/signup" className="block text-center py-3 text-sm font-semibold text-amber-800 bg-amber-100 border border-amber-300 rounded-xl hover:bg-amber-400 hover:text-white hover:border-amber-400 transition-colors">Get Pro</Link>
-            </div>
-          </div>
-
-          {/* Comparison table */}
-          <div className="rounded-2xl border border-[#e2e6dc] overflow-hidden bg-white">
-            {/* Header — light teal */}
-            <div className="grid grid-cols-3 bg-[#edf5e9] px-6 py-4 border-b border-[#d4e8cc]">
-              <span className="text-[11px] font-bold text-[#4f7942] uppercase tracking-wider">Feature</span>
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center">Free</span>
-              <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider text-center flex items-center justify-center gap-1.5"><Crown className="w-3.5 h-3.5 text-amber-500" /> Pro</span>
-            </div>
-            {[
-              { name: "Skill Maps", free: "3", pro: "Unlimited" },
-              { name: "Nodes per Map", free: "5", pro: "15" },
-              { name: "Sessions per Node", free: "5", pro: "Unlimited" },
-              { name: "Rooms", free: "1", pro: "Unlimited" },
-              { name: "Room Members", free: "3", pro: "Unlimited" },
-              { name: "PDF Export", free: false, pro: true },
-            ].map((row, i) => (
-              <div key={row.name} className={`grid grid-cols-3 px-6 py-4 items-center border-b border-[#e2e6dc] last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-[#f8faf6]"}`}>
-                <span className="text-sm font-medium text-[#1c1f1a]">{row.name}</span>
-                {/* Free column — silver */}
-                <span className="text-center">
-                  {typeof row.free === "boolean"
-                    ? row.free ? <Check className="w-5 h-5 text-gray-400 mx-auto" /> : <X className="w-5 h-5 text-red-400 mx-auto" />
-                    : <span className="inline-block px-3 py-0.5 rounded-full bg-gray-100 text-sm text-gray-500 font-medium">{row.free}</span>}
-                </span>
-                {/* Pro column — gold */}
-                <span className="text-center">
-                  {typeof row.pro === "boolean"
-                    ? row.pro ? <Check className="w-5 h-5 text-amber-500 mx-auto" /> : <X className="w-5 h-5 text-red-400 mx-auto" />
-                    : <span className="inline-block px-3 py-0.5 rounded-full bg-amber-50 text-sm text-amber-700 font-bold border border-amber-200">{row.pro}</span>}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <PricingSection />
 
       {/* ━━━━ WEEKLY REWARDS ━━━━ */}
-      <section className="bg-[#f4f7f2] border-t border-[#e2e6dc]">
-        <div className="max-w-4xl mx-auto px-5 py-16">
+      <section className="relative bg-gradient-to-br from-[#edf5e9] via-[#f4f7f2] to-white border-t border-[#e2e6dc] overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-[#a3c99a] opacity-[0.08] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-[#4f7942] opacity-[0.06] blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-5xl mx-auto px-5 py-20">
           {/* Header */}
-          <div className="text-center mb-12">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <Trophy className="w-6 h-6 text-amber-500" />
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-1.5 rounded-full text-sm font-bold mb-5">
+              <Trophy className="w-4 h-4" /> Weekly Rewards
             </div>
-            <h2 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#1c1f1a] mb-2">Weekly Pro Rewards</h2>
-            <p className="text-sm text-[#565c52] max-w-lg mx-auto leading-relaxed">
+            <h2 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#1c1f1a] mb-3">Earn XP. Win free Pro.</h2>
+            <p className="text-sm text-[#565c52] max-w-md mx-auto leading-relaxed">
               Every Sunday, the top 3 XP earners win free Pro subscriptions. Practice more, climb higher, win bigger.
             </p>
           </div>
@@ -360,9 +408,9 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-end justify-center gap-4 mb-14">
             {/* 2nd place */}
             <div className="w-full sm:w-56 text-center bg-white rounded-2xl border border-gray-200 p-6 order-2 sm:order-1">
-              <Medal className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-2xl font-extrabold text-[#1c1f1a]">2</p>
-              <p className="text-sm text-[#565c52] mt-1 mb-4">3 months Pro</p>
+              <Award className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-xl font-extrabold text-[#1c1f1a]">2nd</p>
+              <p className="text-sm text-[#565c52] font-semibold mt-1 mb-4">3 months Pro</p>
               <div className="h-14 sm:h-20 bg-gray-50 rounded-lg flex items-end justify-center">
                 <div className="w-14 h-10 sm:h-14 bg-gradient-to-t from-gray-300 to-gray-200 rounded-t-md" />
               </div>
@@ -371,18 +419,18 @@ export default function Home() {
             {/* 1st place */}
             <div className="w-full sm:w-64 text-center bg-gradient-to-b from-amber-50 to-white rounded-2xl border-2 border-amber-300 p-7 shadow-lg order-1 sm:order-2">
               <Crown className="w-10 h-10 text-amber-500 mx-auto mb-2" />
-              <p className="text-3xl font-extrabold text-[#1c1f1a]">1</p>
-              <p className="text-base font-semibold text-amber-700 mt-1 mb-4">6 months Pro</p>
+              <p className="text-2xl font-extrabold text-[#1c1f1a]">1st</p>
+              <p className="text-base font-bold text-amber-700 mt-1 mb-4">6 months Pro</p>
               <div className="h-20 sm:h-28 bg-amber-50 rounded-lg flex items-end justify-center">
-                <div className="w-16 h-16 sm:h-22 bg-gradient-to-t from-amber-400 to-amber-300 rounded-t-md" />
+                <div className="w-16 h-16 sm:h-[5.5rem] bg-gradient-to-t from-amber-400 to-amber-300 rounded-t-md" />
               </div>
             </div>
 
             {/* 3rd place */}
             <div className="w-full sm:w-56 text-center bg-white rounded-2xl border border-orange-200 p-6 order-3">
-              <Medal className="w-8 h-8 text-orange-400 mx-auto mb-2" />
-              <p className="text-2xl font-extrabold text-[#1c1f1a]">3</p>
-              <p className="text-sm text-[#565c52] mt-1 mb-4">1 month Pro</p>
+              <Award className="w-8 h-8 text-orange-400 mx-auto mb-2" />
+              <p className="text-xl font-extrabold text-[#1c1f1a]">3rd</p>
+              <p className="text-sm text-[#565c52] font-semibold mt-1 mb-4">1 month Pro</p>
               <div className="h-10 sm:h-14 bg-orange-50 rounded-lg flex items-end justify-center">
                 <div className="w-14 h-7 sm:h-10 bg-gradient-to-t from-orange-300 to-orange-200 rounded-t-md" />
               </div>
@@ -392,13 +440,13 @@ export default function Home() {
           {/* How it works */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             {[
-              { icon: Sparkles, color: "text-violet-500", bg: "bg-violet-100", cardBg: "bg-violet-50", border: "border-violet-200", n: "1", t: "Earn XP", d: "Log practice, complete skill map nodes, and write reflections. Every action earns you XP." },
-              { icon: BarChart3, color: "text-blue-500", bg: "bg-blue-100", cardBg: "bg-blue-50", border: "border-blue-200", n: "2", t: "Climb the board", d: "Weekly XP resets every Sunday at midnight. Compete for the top 3 spots." },
-              { icon: Gift, color: "text-emerald-500", bg: "bg-emerald-100", cardBg: "bg-emerald-50", border: "border-emerald-200", n: "3", t: "Win Pro free", d: "Top 3 earners get free Pro subscriptions. Rewards stack on your existing plan." },
+              { icon: Sparkles, color: "text-violet-500", bg: "bg-violet-100", cardBg: "bg-violet-50", border: "border-violet-200", t: "Earn XP", d: "Log practice, complete skill map nodes, and write reflections. Every action earns you XP." },
+              { icon: BarChart3, color: "text-blue-500", bg: "bg-blue-100", cardBg: "bg-blue-50", border: "border-blue-200", t: "Climb the board", d: "Weekly XP resets every Sunday at midnight. Compete for the top 3 spots." },
+              { icon: Gift, color: "text-emerald-500", bg: "bg-emerald-100", cardBg: "bg-emerald-50", border: "border-emerald-200", t: "Win Pro free", d: "Top 3 earners get free Pro subscriptions. Rewards stack on your existing plan." },
             ].map((s) => {
               const StepIcon = s.icon;
               return (
-                <div key={s.n} className={`${s.cardBg} border ${s.border} rounded-2xl p-6 text-center`}>
+                <div key={s.t} className={`${s.cardBg} border ${s.border} rounded-2xl p-6 text-center`}>
                   <div className="flex items-center justify-center mb-4">
                     <div className={`w-10 h-10 rounded-lg ${s.bg} flex items-center justify-center`}>
                       <StepIcon className={`w-5 h-5 ${s.color}`} />
@@ -413,22 +461,20 @@ export default function Home() {
 
           {/* Last week's winners */}
           {winners.length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#e2e6dc] p-10">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                  <Trophy className="w-5 h-5 text-amber-500" />
-                </div>
-                <h3 className="text-xl font-bold text-[#1c1f1a]">Last week's winners</h3>
+            <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden">
+              <div className="flex items-center gap-3 px-8 py-5 border-b border-[#e2e6dc] bg-[#f8faf6]">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <h3 className="text-base font-bold text-[#1c1f1a]">Last week's winners</h3>
               </div>
-              <div className="space-y-3">
+              <div className="divide-y divide-[#e2e6dc]">
                 {winners.map((r) => (
-                  <div key={r._id} className="flex items-center gap-4 py-4 px-5 bg-[#f8faf6] rounded-xl border border-[#e2e6dc]">
-                    <span className="text-2xl flex-shrink-0">{MEDALS[r.rank]}</span>
+                  <div key={r._id} className="flex items-center gap-4 py-4 px-8">
+                    <span className="text-2xl flex-shrink-0 w-8 text-center">{MEDALS[r.rank]}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-base font-semibold text-[#1c1f1a] truncate">{r.userName}</p>
-                      <p className="text-sm text-[#9aa094]">{r.weeklyXp} XP earned</p>
+                      <p className="text-sm font-bold text-[#1c1f1a] truncate">{r.userName}</p>
+                      <p className="text-xs text-[#9aa094]">{r.weeklyXp.toLocaleString()} XP</p>
                     </div>
-                    <span className="text-sm font-bold text-amber-700 bg-amber-50 px-4 py-1.5 rounded-full border border-amber-200 flex-shrink-0">
+                    <span className="text-xs font-bold text-[#2e5023] bg-[#edf5e9] px-3 py-1.5 rounded-full border border-[#d4e8cc] flex-shrink-0">
                       {r.rewardLabel} Pro
                     </span>
                   </div>

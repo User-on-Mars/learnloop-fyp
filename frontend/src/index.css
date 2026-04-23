@@ -171,3 +171,40 @@ button.wizard-foot-skip:hover {
   background-color: var(--site-accent-soft, #ecfdf3) !important;
   border-color: var(--site-accent-border, #a3c99a) !important;
 }
+
+/* ── Custom Scrollbar ── */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #a3c99a #f4f7f2;
+}
+
+/* Webkit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: linear-gradient(to bottom, #f4f7f2, #edf5e9);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #a3c99a, #4f7942);
+  border-radius: 9999px;
+  min-height: 40px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #4f7942, #2e5023);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #2e5023;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

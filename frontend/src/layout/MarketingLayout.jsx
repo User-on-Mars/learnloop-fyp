@@ -22,7 +22,7 @@ export default function MarketingLayout() {
         <div className="w-full px-6 lg:px-10 h-16 flex items-center justify-between">
           {/* Logo — far left */}
           <Link to="/" className="flex items-center" onClick={close}>
-            <Logo size={56} />
+            <Logo size={48} />
           </Link>
 
           {/* Desktop nav + auth — far right */}
