@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Crown, Check, X, ArrowLeft, Zap, Users, Map, FileText,
-  CreditCard, Loader2,
+  CreditCard, Loader2, Trophy, Receipt, Gift, Clock,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { useSubscription } from "../context/SubscriptionContext";
+import { subscriptionAPI } from "../api/client";
 
 const PLANS = [
   { id: "pro_1month", label: "1 Month", price: 299, perMonth: 299, duration: "1 month", savings: null, badge: null },
@@ -41,8 +42,24 @@ export default function Subscription() {
   const [message, setMessage] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelConfirmInput, setCancelConfirmInput] = useState("");
+  const [billingHistory, setBillingHistory] = useState([]);
+  const [billingLoading, setBillingLoading] = useState(true);
 
   const plan = PLANS.find(p => p.id === selectedPlan) || PLANS[1];
+
+  const fetchBillingHistory = useCallback(async () => {
+    try {
+      setBillingLoading(true);
+      const res = await subscriptionAPI.getBillingHistory();
+      setBillingHistory(res.data.history || []);
+    } catch {
+      setBillingHistory([]);
+    } finally {
+      setBillingLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchBillingHistory(); }, [fetchBillingHistory]);
 
   const handleUpgrade = async () => {
     try {
@@ -257,6 +274,94 @@ export default function Subscription() {
               <p className="text-xs text-gray-400 text-center mt-3">You'll be redirected to eSewa to complete payment. Pro access starts immediately.</p>
             </div>
           )}
+
+          {/* ── Billing History ── */}
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 mb-6">
+            <div className="flex items-center gap-2 mb-5">
+              <Receipt className="w-5 h-5 text-gray-500" />
+              <h3 className="text-lg font-bold text-site-ink">Billing History</h3>
+            </div>
+
+            {billingLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-32 bg-gray-200 rounded" />
+                      <div className="h-3 w-24 bg-gray-200 rounded" />
+                    </div>
+                    <div className="h-4 w-20 bg-gray-200 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : billingHistory.length === 0 ? (
+              <div className="text-center py-8">
+                <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-site-muted">No billing history yet</p>
+                <p className="text-xs text-gray-400 mt-1">Purchases and rewards will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {billingHistory.map(item => {
+                  const isReward = item.type === 'reward';
+                  const isComplete = item.status === 'COMPLETE';
+                  const statusColors = {
+                    COMPLETE: 'bg-green-50 text-green-700',
+                    PENDING: 'bg-yellow-50 text-yellow-700',
+                    FAILED: 'bg-red-50 text-red-700',
+                    CANCELED: 'bg-gray-50 text-gray-500',
+                  };
+                  const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+                  return (
+                    <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isReward ? 'bg-amber-100' : 'bg-green-100'}`}>
+                        {isReward ? (
+                          <span className="text-lg">{medals[item.rank] || '🏆'}</span>
+                        ) : (
+                          <CreditCard className="w-5 h-5 text-green-600" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-site-ink truncate">{item.label}</p>
+                          {isReward && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-[10px] font-bold text-amber-700 flex-shrink-0">
+                              <Gift className="w-3 h-3" /> Reward
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-xs text-gray-400">
+                            {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                          <span className="text-gray-300">·</span>
+                          <p className="text-xs text-gray-400">{item.method}</p>
+                          {item.transactionId && (
+                            <>
+                              <span className="text-gray-300">·</span>
+                              <p className="text-[10px] text-gray-400 font-mono truncate max-w-[120px]">{item.transactionId}</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        {isReward ? (
+                          <p className="text-sm font-bold text-amber-600">Free</p>
+                        ) : (
+                          <p className="text-sm font-bold text-site-ink">Rs. {item.amount}</p>
+                        )}
+                        <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColors[item.status] || 'bg-gray-50 text-gray-500'}`}>
+                          {item.status === 'COMPLETE' ? 'Paid' : item.status}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </main>
 

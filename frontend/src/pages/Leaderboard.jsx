@@ -60,8 +60,13 @@ export default function Leaderboard() {
       } catch {
         setMyRanks(null);
       }
-    } catch {
-      setError('Failed to load leaderboard data');
+    } catch (err) {
+      // Distinguish network errors from server errors
+      if (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error') {
+        setError('Cannot connect to server. Please make sure the backend is running.');
+      } else {
+        setError('Failed to load leaderboard data');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -188,6 +193,9 @@ export default function Leaderboard() {
                             {r.userName}
                             {isMe && <span className="text-xs text-site-accent ml-1">(You)</span>}
                           </p>
+                          {r.userEmail && (
+                            <p className="text-xs text-gray-400 truncate">{r.userEmail}</p>
+                          )}
                           <p className="text-xs text-gray-400">{r.weeklyXp} XP</p>
                         </div>
                         <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full flex-shrink-0">

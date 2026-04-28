@@ -7,7 +7,7 @@ const TIER_BADGES = {
   Newcomer: <Star className="w-4 h-4 text-site-accent" />,
 };
 
-function SkeletonRows({ count = 10 }) {
+function SkeletonRows({ count = 5 }) {
   return Array.from({ length: count }, (_, i) => (
     <tr key={i} className="animate-pulse">
       <td className="px-4 py-3"><div className="h-4 w-8 bg-gray-200 rounded" /></td>
@@ -21,7 +21,7 @@ export default function LeaderboardTable({
   entries = [],
   total = 0,
   page = 1,
-  pageSize = 50,
+  pageSize = 10,
   isLoading = false,
   currentUserId,
   metricLabel = 'XP',
@@ -48,8 +48,9 @@ export default function LeaderboardTable({
               <SkeletonRows />
             ) : entries.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-site-muted">
-                  No entries yet
+                <td colSpan={3} className="px-4 py-12 text-center">
+                  <p className="text-site-muted font-medium mb-1">No one on the board yet</p>
+                  <p className="text-xs text-site-faint">Be the first to earn XP and claim your spot on the leaderboard!</p>
                 </td>
               </tr>
             ) : (

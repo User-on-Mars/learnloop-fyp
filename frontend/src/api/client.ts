@@ -136,9 +136,9 @@ export const xpAPI = {
 
 // ============ LEADERBOARD API ============
 export const leaderboardAPI = {
-  getWeekly: (page = 1) => client.get('/leaderboard/weekly', { params: { page } }),
-  getStreaks: (page = 1) => client.get('/leaderboard/streaks', { params: { page } }),
-  getAllTime: (page = 1) => client.get('/leaderboard/all-time', { params: { page } }),
+  getWeekly: (page = 1, limit = 10) => client.get('/leaderboard/weekly', { params: { page, limit } }),
+  getStreaks: (page = 1, limit = 10) => client.get('/leaderboard/streaks', { params: { page, limit } }),
+  getAllTime: (page = 1, limit = 10) => client.get('/leaderboard/all-time', { params: { page, limit } }),
   getMyRanks: () => client.get('/leaderboard/my-ranks'),
 }
 
@@ -150,6 +150,7 @@ export const subscriptionAPI = {
   getPayments: () => client.get('/subscription/payments'),
   getRewards: () => client.get('/subscription/rewards'),
   getLatestRewards: () => client.get('/subscription/rewards/latest'),
+  getBillingHistory: () => client.get('/subscription/billing-history'),
   cancel: () => client.post('/subscription/cancel'),
   // eSewa payment
   esewaInitiate: (planId: string) => client.post('/subscription/esewa/initiate', { planId }),

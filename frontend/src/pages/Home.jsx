@@ -254,13 +254,15 @@ function PricingSection() {
                     onClick={() => setSelected(i)}
                     className={`flex-1 relative py-2.5 text-xs font-bold rounded-lg transition-all ${
                       selected === i
-                        ? "bg-[#2e5023] text-white shadow-md"
+                        ? "bg-[#4f7942] text-white shadow-md"
                         : "text-[#565c52] hover:text-[#1c1f1a]"
                     }`}
                   >
                     {p.label}
-                    {p.badge && selected === i && (
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[9px] font-bold bg-amber-400 text-amber-900 rounded-full whitespace-nowrap">
+                    {p.badge && (
+                      <span className={`absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[9px] font-bold rounded-full whitespace-nowrap ${
+                        selected === i ? "bg-amber-400 text-amber-900" : "bg-amber-100 text-amber-600 border border-amber-200"
+                      }`}>
                         {p.badge}
                       </span>
                     )}
@@ -293,7 +295,7 @@ function PricingSection() {
                 className="group relative block text-center py-3.5 text-[15px] font-bold rounded-xl overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 transition-all"
               >
                 <span className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.08] to-white/[0.15] pointer-events-none" />
-                <span className="relative z-10">Get Pro — {plan.label}</span>
+                <span className="relative z-10">Get ProZxcv bnmkjkhgfdsaXC/. {plan.label}</span>
               </Link>
             </div>
           </div>
@@ -472,6 +474,9 @@ export default function Home() {
                     <span className="text-2xl flex-shrink-0 w-8 text-center">{MEDALS[r.rank]}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-[#1c1f1a] truncate">{r.userName}</p>
+                      {r.userEmail && (
+                        <p className="text-xs text-[#9aa094] truncate">{r.userEmail}</p>
+                      )}
                       <p className="text-xs text-[#9aa094]">{r.weeklyXp.toLocaleString()} XP</p>
                     </div>
                     <span className="text-xs font-bold text-[#2e5023] bg-[#edf5e9] px-3 py-1.5 rounded-full border border-[#d4e8cc] flex-shrink-0">
