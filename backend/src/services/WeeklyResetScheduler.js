@@ -3,6 +3,7 @@ import ErrorLoggingService from './ErrorLoggingService.js';
 import UserXpProfile from '../models/UserXpProfile.js';
 import User from '../models/User.js';
 import WeeklyReward from '../models/WeeklyReward.js';
+import WeeklyResetHistory from '../models/WeeklyResetHistory.js';
 import SubscriptionService from './SubscriptionService.js';
 import NotificationService from './NotificationService.js';
 
@@ -17,9 +18,10 @@ const REWARD_CONFIG = [
 
 /**
  * WeeklyResetScheduler - Runs LeaderboardService.executeWeeklyReset()
- * every Monday at 00:00 UTC using a two-phase timer approach:
- *   1. setTimeout to align to the next Monday 00:00 UTC
- *   2. setInterval every 7 days after that
+ * every Sunday at 00:00 UTC using a two-phase timer approach:
+ *   1. On startup, check if a reset was missed (server was down over Sunday)
+ *   2. setTimeout to align to the next Sunday 00:00 UTC
+ *   3. setInterval every 7 days after that
  */
 class WeeklyResetScheduler {
   constructor() {
@@ -28,7 +30,7 @@ class WeeklyResetScheduler {
   }
 
   /**
-   * Calculate ms until next Sunday 00:00 UTC (midnight Saturday→Sunday).
+   * Calculate ms until next Sunday 00:00 UTC.
    * If it's exactly Sunday 00:00 UTC, returns ONE_WEEK_MS (schedule for next week).
    */
   static _msUntilNextSundayUTC(now = new Date()) {
@@ -43,6 +45,67 @@ class WeeklyResetScheduler {
 
     const ms = nextSunday.getTime() - now.getTime();
     return ms <= 0 ? ONE_WEEK_MS : ms;
+  }
+
+  /**
+   * Get the most recent Sunday 00:00 UTC before or equal to the given date.
+   */
+  static _getLastSundayUTC(now = new Date()) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const day = d.getUTCDay(); // 0=Sun
+    d.setUTCDate(d.getUTCDate() - day);
+    return d;
+  }
+
+  /**
+   * Check if the weekly reset was missed (e.g. server was down on Sunday).
+   * If so, run it now. Uses WeeklyResetHistory to determine the last reset.
+   */
+  async _checkForMissedReset() {
+    try {
+      const now = new Date();
+      const lastSunday = WeeklyResetScheduler._getLastSundayUTC(now);
+
+      // If today is Sunday, the reset should happen at 00:00 — don't catch up yet,
+      // let the normal timer handle it (unless it's already past 00:00 and no reset ran)
+      // We check if there's a reset record for this week's boundary
+      const lastReset = await WeeklyResetHistory.findOne()
+        .sort({ weekEndDate: -1 })
+        .select('weekEndDate createdAt')
+        .lean();
+
+      if (!lastReset) {
+        // No reset has ever run — if there are users with weeklyXp, run it now
+        const usersWithXp = await UserXpProfile.countDocuments({ weeklyXp: { $gt: 0 } });
+        if (usersWithXp > 0) {
+          console.log('⚠️ No weekly reset has ever run and users have weekly XP — running catch-up reset now');
+          await this._runReset();
+          return true;
+        }
+        console.log('📊 No weekly reset history found, but no users with weekly XP — skipping catch-up');
+        return false;
+      }
+
+      // Check if the last reset covers the most recent Sunday boundary
+      // The reset creates a weekEndDate that's the Saturday 23:59:59.999 before the reset
+      // If lastReset.createdAt is before lastSunday, we missed a reset
+      const lastResetTime = new Date(lastReset.createdAt);
+      if (lastResetTime < lastSunday) {
+        const usersWithXp = await UserXpProfile.countDocuments({ weeklyXp: { $gt: 0 } });
+        if (usersWithXp > 0) {
+          console.log(`⚠️ Missed weekly reset! Last reset: ${lastResetTime.toISOString()}, last Sunday: ${lastSunday.toISOString()} — running catch-up now`);
+          await this._runReset();
+          return true;
+        }
+        console.log('📊 Missed reset window but no users with weekly XP — skipping catch-up');
+      }
+
+      return false;
+    } catch (error) {
+      console.error('❌ Error checking for missed reset:', error.message);
+      await ErrorLoggingService.logError(error, { operation: 'checkForMissedReset' });
+      return false;
+    }
   }
 
   /**
@@ -103,12 +166,12 @@ class WeeklyResetScheduler {
 
           rewards.push(reward);
 
-          // Send notification
+          // Send winner notification
           if (user) {
             try {
-              await NotificationService.sendSubscriptionUpgradeNotification(
+              await NotificationService.sendWeeklyRewardWinnerNotification(
                 { ...user, _id: user.firebaseUid },
-                { currentPeriodEnd: newEndDate }
+                reward
               );
             } catch (notifErr) {
               console.error(`⚠️ Failed to notify reward winner ${profile.userId}:`, notifErr.message);
@@ -149,6 +212,7 @@ class WeeklyResetScheduler {
       const result = await LeaderboardService.executeWeeklyReset();
 
       await ErrorLoggingService.logSystemEvent('weekly_reset_scheduler_success', {
+        rewards: rewards.length,
         promotions: result.promotions.length,
         relegations: result.relegations.length,
         totalRankedUsers: result.totalRankedUsers
@@ -162,10 +226,13 @@ class WeeklyResetScheduler {
   }
 
   /**
-   * Start the scheduler. First aligns to next Sunday 00:00 UTC,
-   * then repeats every 7 days.
+   * Start the scheduler. First checks for missed resets, then aligns
+   * to next Sunday 00:00 UTC and repeats every 7 days.
    */
-  start() {
+  async start() {
+    // Check for missed resets on startup (handles server restarts)
+    await this._checkForMissedReset();
+
     const delay = WeeklyResetScheduler._msUntilNextSundayUTC();
     const nextRun = new Date(Date.now() + delay);
 

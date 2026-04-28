@@ -202,8 +202,8 @@ async function startServer() {
     SystemMonitoringService.start();
     console.log('✅ System monitoring started');
     
-    // Start weekly reset scheduler
-    WeeklyResetScheduler.start();
+    // Start weekly reset scheduler (async — checks for missed resets)
+    await WeeklyResetScheduler.start();
     console.log('✅ Weekly reset scheduler started');
     
     // Start daily streak reset scheduler
