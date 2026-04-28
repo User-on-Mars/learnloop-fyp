@@ -590,6 +590,132 @@ The LearnLoop Team
       return { error: error.message }
     }
   }
+  /**
+   * Send a celebratory "You won!" email to weekly reward winners.
+   */
+  async sendWeeklyRewardWinnerNotification(user, reward) {
+    try {
+      const clientUrl = process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5173';
+      const endDate = reward.subscriptionExtendedTo
+        ? new Date(reward.subscriptionExtendedTo).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : 'N/A';
+      const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+      const medal = medals[reward.rank] || '🏆';
+      const ordinal = { 1: '1st', 2: '2nd', 3: '3rd' }[reward.rank] || `#${reward.rank}`;
+
+      // In-app notification
+      await this._sendInAppNotification(user.firebaseUid || user._id?.toString(), {
+        type: 'weekly_reward_won',
+        rank: reward.rank,
+        rewardLabel: reward.rewardLabel,
+        weeklyXp: reward.weeklyXp,
+        subscriptionExtendedTo: reward.subscriptionExtendedTo,
+        timestamp: new Date().toISOString()
+      });
+
+      const subject = `${medal} Congratulations! You won ${reward.rewardLabel} of free Pro!`;
+      const text = `Hi ${user.name},\n\nAmazing news! You placed ${ordinal} on this week's XP leaderboard with ${reward.weeklyXp.toLocaleString()} XP!\n\nYour reward: ${reward.rewardLabel} of free Pro subscription.\nPro access until: ${endDate}\n\nKeep up the incredible work!\nThe LearnLoop Team`;
+      const html = `
+<!DOCTYPE html><html><head><style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#1a1a1a;margin:0;padding:0;background:#f3f4f6}
+.c{max-width:560px;margin:40px auto}.card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.hd{background:linear-gradient(135deg,#d97706,#f59e0b);padding:36px 32px;text-align:center}
+.hd .medal{font-size:48px;margin-bottom:8px}.hd h1{color:#fff;font-size:24px;margin:0;font-weight:800}.hd p{color:rgba(255,255,255,.9);font-size:15px;margin:8px 0 0}
+.ct{padding:32px}
+.reward-box{background:linear-gradient(135deg,#fef3c7,#fffbeb);border:2px solid #fbbf24;border-radius:14px;padding:24px;margin:20px 0;text-align:center}
+.reward-box .rank{font-size:14px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px}
+.reward-box .prize{font-size:22px;font-weight:800;color:#78350f;margin:0}
+.reward-box .xp{font-size:14px;color:#a16207;margin:8px 0 0}
+.info{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin:16px 0;text-align:center}
+.info .t{font-size:16px;font-weight:700;color:#2e5023;margin:0}.info .s{font-size:13px;color:#4b5563;margin:4px 0 0}
+.btn{display:block;width:100%;padding:14px;background:#2e5023;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:16px;text-align:center;margin:24px 0;box-sizing:border-box}
+.ft{text-align:center;padding:24px;font-size:13px;color:#9ca3af}
+</style></head><body><div class="c"><div class="card">
+<div class="hd"><div class="medal">${medal}</div><h1>You're a Winner!</h1><p>Weekly XP Leaderboard Reward</p></div>
+<div class="ct">
+<p>Hi <strong>${user.name}</strong>,</p>
+<p style="font-size:14px;color:#4b5563">Amazing news! You placed <strong>${ordinal}</strong> on this week's XP leaderboard!</p>
+<div class="reward-box">
+<p class="rank">${ordinal} Place</p>
+<p class="prize">${reward.rewardLabel} Free Pro</p>
+<p class="xp">${reward.weeklyXp.toLocaleString()} XP earned this week</p>
+</div>
+<div class="info"><p class="t">Pro active until</p><p class="s">${endDate}</p></div>
+<p style="font-size:14px;color:#4b5563">Your Pro subscription has been automatically extended. Keep practicing to win again next week!</p>
+<a href="${clientUrl}/subscription" class="btn">View Your Subscription</a>
+</div><div class="ft">Keep learning, keep winning! · The LearnLoop Team</div>
+</div></div></body></html>`.trim();
+
+      await this._sendEmail(user.email, subject, text, html);
+      console.log(`🏆📧 Weekly reward winner notification sent to ${user.email} (rank #${reward.rank})`);
+    } catch (error) {
+      console.error('Failed to send weekly reward winner notification:', error.message);
+    }
+  }
+
+  /**
+   * Send a payment receipt email after successful eSewa payment.
+   */
+  async sendPaymentReceiptNotification(user, payment, subscription) {
+    try {
+      const clientUrl = process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5173';
+      const paidDate = new Date(payment.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const endDate = subscription.currentPeriodEnd
+        ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'N/A';
+      const planLabel = {
+        pro_1month: 'Pro — 1 Month',
+        pro_3month: 'Pro — 3 Months',
+        pro_6month: 'Pro — 6 Months',
+      }[payment.plan] || payment.plan;
+
+      // In-app notification
+      await this._sendInAppNotification(user.firebaseUid || user._id?.toString(), {
+        type: 'payment_receipt',
+        amount: payment.totalAmount,
+        plan: payment.plan,
+        transactionUuid: payment.transactionUuid,
+        timestamp: new Date().toISOString()
+      });
+
+      const subject = `Payment Receipt — LearnLoop Pro (Rs. ${payment.totalAmount})`;
+      const text = `Hi ${user.name},\n\nThank you for your payment!\n\nReceipt\n-------\nPlan: ${planLabel}\nAmount: Rs. ${payment.totalAmount}\nTransaction ID: ${payment.transactionUuid}\nDate: ${paidDate}\nPro active until: ${endDate}\n\nThank you for supporting LearnLoop!\nThe LearnLoop Team`;
+      const html = `
+<!DOCTYPE html><html><head><style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#1a1a1a;margin:0;padding:0;background:#f3f4f6}
+.c{max-width:560px;margin:40px auto}.card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.hd{background:#2e5023;padding:32px;text-align:center}.hd h1{color:#fff;font-size:22px;margin:0;font-weight:700}.hd p{color:rgba(255,255,255,.8);font-size:14px;margin:8px 0 0}
+.ct{padding:32px}
+.receipt{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin:20px 0}
+.receipt .row{display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e5e7eb;font-size:14px}
+.receipt .row:last-child{border-bottom:none}
+.receipt .row .lbl{color:#6b7280}.receipt .row .val{font-weight:600;color:#1a1a1a}
+.receipt .total{background:#f0fdf4;font-size:15px}.receipt .total .val{color:#2e5023;font-weight:700}
+.btn{display:block;width:100%;padding:14px;background:#2e5023;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:16px;text-align:center;margin:24px 0;box-sizing:border-box}
+.ft{text-align:center;padding:24px;font-size:13px;color:#9ca3af}
+</style></head><body><div class="c"><div class="card">
+<div class="hd"><h1>Payment Receipt</h1><p>Thank you for your purchase</p></div>
+<div class="ct">
+<p>Hi <strong>${user.name}</strong>,</p>
+<p style="font-size:14px;color:#4b5563">Here's your receipt for your LearnLoop Pro subscription.</p>
+<div class="receipt">
+<div class="row"><span class="lbl">Plan</span><span class="val">${planLabel}</span></div>
+<div class="row"><span class="lbl">Date</span><span class="val">${paidDate}</span></div>
+<div class="row"><span class="lbl">Transaction ID</span><span class="val" style="font-size:12px;font-family:monospace">${payment.transactionUuid}</span></div>
+<div class="row"><span class="lbl">Payment Method</span><span class="val">eSewa</span></div>
+<div class="row"><span class="lbl">Pro Active Until</span><span class="val">${endDate}</span></div>
+<div class="row total"><span class="lbl">Total Paid</span><span class="val">Rs. ${payment.totalAmount}</span></div>
+</div>
+<a href="${clientUrl}/subscription" class="btn">View Subscription</a>
+</div><div class="ft">Thank you for supporting LearnLoop! · The LearnLoop Team</div>
+</div></div></body></html>`.trim();
+
+      await this._sendEmail(user.email, subject, text, html);
+      console.log(`🧾📧 Payment receipt sent to ${user.email} (Rs. ${payment.totalAmount})`);
+    } catch (error) {
+      console.error('Failed to send payment receipt notification:', error.message);
+    }
+  }
 }
 
 export default new NotificationService();

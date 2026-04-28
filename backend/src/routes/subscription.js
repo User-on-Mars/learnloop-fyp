@@ -35,7 +35,20 @@ router.get('/rewards/latest', async (req, res) => {
       .sort({ weekEndDate: -1, rank: 1 })
       .limit(3)
       .lean();
-    res.json({ rewards: latest });
+
+    // Mask emails for public display (e.g. "jo***@gmail.com")
+    const masked = latest.map(r => {
+      let maskedEmail = '';
+      if (r.userEmail) {
+        const [local, domain] = r.userEmail.split('@');
+        if (local && domain) {
+          maskedEmail = local.slice(0, 2) + '***@' + domain;
+        }
+      }
+      return { ...r, userEmail: maskedEmail };
+    });
+
+    res.json({ rewards: masked });
   } catch (error) {
     console.error('❌ Error getting latest rewards:', error.message);
     res.status(500).json({ message: 'Failed to get latest rewards' });
@@ -130,7 +143,7 @@ router.post('/esewa/verify', async (req, res) => {
     // Return updated subscription info
     const info = await SubscriptionService.getSubscriptionInfo(req.user.id);
 
-    // Send upgrade notification (email + in-app)
+    // Send upgrade notification + payment receipt (email + in-app)
     if (result.applied) {
       try {
         const user = await User.findOne({ firebaseUid: req.user.id }).lean()
@@ -138,9 +151,15 @@ router.post('/esewa/verify', async (req, res) => {
         if (user) {
           const sub = await SubscriptionService.getSubscription(req.user.id);
           await NotificationService.sendSubscriptionUpgradeNotification(user, sub);
+
+          // Send payment receipt
+          const payment = await EsewaService.getPaymentByTransaction(result.transactionUuid);
+          if (payment) {
+            await NotificationService.sendPaymentReceiptNotification(user, payment, sub);
+          }
         }
       } catch (notifErr) {
-        console.error('⚠️ Failed to send upgrade notification:', notifErr.message);
+        console.error('⚠️ Failed to send upgrade/receipt notification:', notifErr.message);
       }
     }
 
@@ -170,6 +189,57 @@ router.get('/rewards', async (req, res) => {
   } catch (error) {
     console.error('❌ Error getting user rewards:', error.message);
     res.status(500).json({ message: 'Failed to get rewards' });
+  }
+});
+
+/**
+ * GET /api/subscription/billing-history
+ * Unified billing history: payments + rewards, sorted by date.
+ */
+router.get('/billing-history', async (req, res) => {
+  try {
+    const [payments, rewards] = await Promise.all([
+      EsewaService.getPaymentHistory(req.user.id),
+      WeeklyReward.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(20).lean(),
+    ]);
+
+    // Normalize into a unified format
+    const history = [
+      ...payments.map(p => ({
+        id: p._id,
+        type: 'payment',
+        date: p.createdAt,
+        plan: p.plan,
+        amount: p.totalAmount,
+        currency: 'NPR',
+        status: p.status,
+        transactionId: p.transactionUuid,
+        durationDays: p.durationDays,
+        method: 'eSewa',
+        label: { pro_1month: '1 Month', pro_3month: '3 Months', pro_6month: '6 Months' }[p.plan] || p.plan,
+      })),
+      ...rewards.map(r => ({
+        id: r._id,
+        type: 'reward',
+        date: r.createdAt,
+        plan: `reward_rank${r.rank}`,
+        amount: 0,
+        currency: 'NPR',
+        status: 'COMPLETE',
+        transactionId: null,
+        durationDays: r.rewardDays,
+        method: 'Weekly Reward',
+        label: `${r.rewardLabel} Pro (Rank #${r.rank})`,
+        rank: r.rank,
+        weeklyXp: r.weeklyXp,
+        subscriptionExtendedTo: r.subscriptionExtendedTo,
+      })),
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json({ history });
+  } catch (error) {
+    console.error('❌ Error getting billing history:', error.message);
+    res.status(500).json({ message: 'Failed to get billing history' });
   }
 });
 

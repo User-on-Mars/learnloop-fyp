@@ -271,6 +271,13 @@ class EsewaService {
   }
 
   /**
+   * Get a single payment by transaction UUID.
+   */
+  async getPaymentByTransaction(transactionUuid) {
+    return Payment.findOne({ transactionUuid }).lean();
+  }
+
+  /**
    * Get all pro plan pricing info (for frontend display).
    */
   getPlanInfo() {
