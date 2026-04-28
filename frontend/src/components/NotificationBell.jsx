@@ -112,11 +112,11 @@ export default function NotificationBell() {
 
   // Calculate dropdown position based on bell button
   const getDropdownStyle = () => {
-    if (!bellRef.current) return { top: 8, left: 248 };
+    if (!bellRef.current) return { top: 8, right: 8 };
     const rect = bellRef.current.getBoundingClientRect();
     return {
       top: rect.bottom + 8,
-      left: rect.left,
+      right: Math.max(8, window.innerWidth - rect.right),
     };
   };
 
