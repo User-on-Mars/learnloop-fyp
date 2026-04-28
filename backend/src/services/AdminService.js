@@ -23,8 +23,8 @@ class AdminService {
       const weekStart = new Date(todayStart)
       weekStart.setDate(weekStart.getDate() - 7)
 
-      // Only count users linked to Firebase with real emails
-      const fbFilter = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i } }
+      // Only count verified users linked to Firebase with real emails
+      const fbFilter = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i }, emailVerified: true }
 
       const [
         totalUsers,
@@ -112,7 +112,7 @@ class AdminService {
       const avgPracticeMinutes = Math.round(avgPracticeResult[0]?.avgMinutes || 0)
 
       // Users active in last 7 days (not banned, Firebase-linked with real emails only)
-      const fbFilter = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i } }
+      const fbFilter = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i }, emailVerified: true }
 
       const activeLearnersCount = await User.countDocuments({
         ...fbFilter,
@@ -174,8 +174,8 @@ class AdminService {
   async getUsers(page = 1, limit = 20, filter = {}) {
     try {
       const skip = (page - 1) * limit
-      // Only show users linked to Firebase with real emails
-      const query = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i } }
+      // Only show verified users linked to Firebase with real emails
+      const query = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i }, emailVerified: true }
 
       if (filter.search) {
         query.$or = [

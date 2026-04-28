@@ -51,13 +51,17 @@ const SubscriptionSchema = new mongoose.Schema({
 
 /**
  * Check if the subscription grants pro-level access right now.
+ * For time-limited subscriptions (e.g. weekly rewards), checks currentPeriodEnd.
  */
 SubscriptionSchema.methods.isPro = function () {
   if (this.tier !== 'pro') return false;
-  if (this.status === 'canceled' && this.currentPeriodEnd) {
-    // Still active until period end
+
+  // If there's an expiry date, enforce it regardless of status
+  if (this.currentPeriodEnd) {
     return new Date() < this.currentPeriodEnd;
   }
+
+  // No expiry set — active or trialing means Pro
   return this.status === 'active' || this.status === 'trialing';
 };
 

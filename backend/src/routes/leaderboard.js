@@ -7,11 +7,12 @@ const router = Router();
 // All leaderboard routes require authentication
 router.use(requireAuth);
 
-// GET /api/leaderboard/weekly?page=1 — Weekly XP leaderboard
+// GET /api/leaderboard/weekly?page=1&limit=10 — Weekly XP leaderboard
 router.get('/weekly', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const data = await LeaderboardService.getWeeklyBoard(page, 50);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+    const data = await LeaderboardService.getWeeklyBoard(page, limit);
     res.json(data);
   } catch (error) {
     console.error('❌ Error fetching weekly leaderboard:', error.message);
@@ -21,11 +22,12 @@ router.get('/weekly', async (req, res) => {
   }
 });
 
-// GET /api/leaderboard/streaks?page=1 — Streak leaderboard
+// GET /api/leaderboard/streaks?page=1&limit=10 — Streak leaderboard
 router.get('/streaks', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const data = await LeaderboardService.getStreakBoard(page, 50);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+    const data = await LeaderboardService.getStreakBoard(page, limit);
     res.json(data);
   } catch (error) {
     console.error('❌ Error fetching streak leaderboard:', error.message);
@@ -35,11 +37,12 @@ router.get('/streaks', async (req, res) => {
   }
 });
 
-// GET /api/leaderboard/all-time?page=1 — All-time XP leaderboard
+// GET /api/leaderboard/all-time?page=1&limit=10 — All-time XP leaderboard
 router.get('/all-time', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const data = await LeaderboardService.getAllTimeBoard(page, 50);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+    const data = await LeaderboardService.getAllTimeBoard(page, limit);
     res.json(data);
   } catch (error) {
     console.error('❌ Error fetching all-time leaderboard:', error.message);
