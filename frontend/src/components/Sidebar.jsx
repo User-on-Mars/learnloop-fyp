@@ -68,7 +68,7 @@ export default function Sidebar() {
   return (
     <>
       {/* ═══ TOP BAR ═══ */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-[#dde1d6] flex items-center px-4 gap-4 z-40 shadow-sm shadow-black/[0.02]">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-[#dde1d6] flex items-center px-4 gap-4 z-30 shadow-sm shadow-black/[0.02]">
         {/* Hamburger */}
         <button onClick={() => setSidebarOpen(o => !o)} className="w-9 h-9 rounded-lg flex items-center justify-center text-[#565c52] hover:bg-[#eef0ea] transition-colors">
           <Menu className="w-5 h-5" />

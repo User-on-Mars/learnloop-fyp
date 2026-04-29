@@ -13,12 +13,12 @@ export default function SkillMapPage() {
     loadSkills();
   }, [loadSkills]);
 
-  // Skill detail view — same layout as all other pages
+  // Skill detail view
   if (skillId) {
     return (
-      <div className="flex min-h-screen bg-site-bg">
+      <div className="flex min-h-screen bg-[#eef0ea]">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto w-full">
+        <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
           <ProgressionPathGamefied />
         </main>
       </div>
@@ -27,14 +27,14 @@ export default function SkillMapPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen bg-site-bg">
+      <div className="flex min-h-screen bg-[#eef0ea]">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
+          <div className="px-4 sm:px-6 py-6">
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-site-accent mx-auto mb-4" />
-                <p className="text-site-muted">Loading skills...</p>
+                <div className="animate-spin rounded-full h-10 w-10 border-3 border-[#2e5023] border-t-transparent mx-auto mb-4" />
+                <p className="text-sm text-[#9aa094]">Loading skill maps...</p>
               </div>
             </div>
           </div>
@@ -45,15 +45,13 @@ export default function SkillMapPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen bg-site-bg">
+      <div className="flex min-h-screen bg-[#eef0ea]">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="bg-red-50 border border-red-300 text-red-700 p-4 rounded-lg">
-              <p>{error}</p>
-              <button type="button" onClick={() => loadSkills()} className="mt-2 text-sm underline hover:no-underline">
-                Try again
-              </button>
+        <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
+          <div className="px-4 sm:px-6 py-6">
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm">
+              <p className="font-medium">{error}</p>
+              <button type="button" onClick={() => loadSkills()} className="mt-2 text-xs text-red-500 underline hover:no-underline">Try again</button>
             </div>
           </div>
         </main>
@@ -62,10 +60,10 @@ export default function SkillMapPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-site-bg">
+    <div className="flex min-h-screen bg-[#eef0ea]">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 w-full pt-16 md:pl-14">
+        <div className="px-4 sm:px-6 py-6">
           <SkillList />
         </div>
       </main>

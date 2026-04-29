@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Clock, ChevronRight, ChevronLeft, Zap, Award, Target,
+  Clock, ChevronRight, ChevronLeft, ChevronDown, Zap, Award, Target,
   Flame, Trophy, Play, MapPin, TrendingUp,
   Sparkles, ArrowUpRight, BarChart3,
 } from "lucide-react";
@@ -12,6 +12,8 @@ import { SkillIcon } from "../components/IconPicker";
 import { useAuth } from "../useAuth";
 
 const MAPS_PER_PAGE = 5;
+
+import FilterDropdown from "../components/FilterDropdown";
 
 function DashboardSkeleton() {
   return (
@@ -46,6 +48,8 @@ export default function Dashboard() {
   const [mapPage, setMapPage] = useState(1);
   const [activeTab, setActiveTab] = useState('skills');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [moodFilter, setMoodFilter] = useState('all');
+  const [sessionTypeFilter, setSessionTypeFilter] = useState('all');
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -116,6 +120,18 @@ export default function Dashboard() {
 
   const filteredMapPages = Math.ceil(filteredSkills.length / MAPS_PER_PAGE);
   const filteredPagedSkills = filteredSkills.slice((mapPage - 1) * MAPS_PER_PAGE, mapPage * MAPS_PER_PAGE);
+
+  const filteredReflections = useMemo(() => {
+    if (moodFilter === 'all') return reflections;
+    return reflections.filter(r => r.mood === moodFilter);
+  }, [reflections, moodFilter]);
+
+  const filteredSessions = useMemo(() => {
+    if (sessionTypeFilter === 'all') return practices;
+    if (sessionTypeFilter === 'skillmap') return practices.filter(p => !!p.skillId);
+    if (sessionTypeFilter === 'free') return practices.filter(p => !p.skillId);
+    return practices;
+  }, [practices, sessionTypeFilter]);
 
   const topSkills = useMemo(() =>
     [...skills].filter(s => !s.locked).sort((a, b) => (b.completionPercentage || 0) - (a.completionPercentage || 0)),
@@ -229,16 +245,17 @@ export default function Dashboard() {
           {/* ═══ 3. Tabbed section ═══ */}
           <h2 className="text-xl font-bold text-site-ink mt-2">My Learning</h2>
 
+          {/* ── Filter Card (separate) ── */}
           <div className="bg-white rounded-2xl border border-[#e2e6dc]">
             {/* Tabs row */}
-            <div className="px-6 pt-5 flex items-center justify-between border-b border-[#e8ece3]">
+            <div className="px-6 pt-5 flex items-center justify-between">
               <div className="flex gap-6">
                 {[
                   { id: 'skills', label: 'Skill Maps', count: unlockedSkills.length },
                   { id: 'reflections', label: 'Reflections', count: reflections.length },
                   { id: 'sessions', label: 'Sessions', count: practices.length },
                 ].map(tab => (
-                  <button key={tab.id} onClick={() => { setActiveTab(tab.id); setMapPage(1); setStatusFilter('all'); }}
+                  <button key={tab.id} onClick={() => { setActiveTab(tab.id); setMapPage(1); setStatusFilter('all'); setMoodFilter('all'); setSessionTypeFilter('all'); }}
                     className={`pb-3.5 text-[13px] font-semibold border-b-2 transition-colors ${
                       activeTab === tab.id ? 'border-[#2e5023] text-[#2e5023]' : 'border-transparent text-[#9aa094] hover:text-[#565c52]'
                     }`}>
@@ -248,7 +265,7 @@ export default function Dashboard() {
               </div>
               <span className="text-[11px] text-site-faint pb-3.5">
                 {(() => {
-                  const list = activeTab === 'skills' ? filteredSkills : activeTab === 'reflections' ? reflections : practices;
+                  const list = activeTab === 'skills' ? filteredSkills : activeTab === 'reflections' ? filteredReflections : filteredSessions;
                   if (list.length === 0) return '';
                   return `Showing ${(mapPage - 1) * MAPS_PER_PAGE + 1} - ${Math.min(mapPage * MAPS_PER_PAGE, list.length)} of ${list.length}`;
                 })()}
@@ -256,30 +273,75 @@ export default function Dashboard() {
             </div>
 
             {/* Filter row */}
-            {activeTab === 'skills' && (
-              <div className="px-6 py-3.5 flex items-center gap-2.5 border-b border-[#f0f2eb]">
-                <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setMapPage(1); }}
-                  className="px-3 py-1.5 border border-[#dde1d6] rounded-lg text-[12px] text-site-ink bg-white focus:outline-none focus:border-[#2e5023]/40 min-w-[140px]">
-                  <option value="all">All Status</option>
-                  <option value="done">Completed</option>
-                  <option value="active">In Progress</option>
-                  <option value="new">Not Started</option>
-                </select>
-                {statusFilter !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#f0f2eb] border border-[#dde1d6] rounded-lg text-[11px] text-site-ink font-medium">
-                    {statusFilter === 'done' ? 'Completed' : statusFilter === 'active' ? 'In Progress' : 'Not Started'}
-                    <button onClick={() => { setStatusFilter('all'); setMapPage(1); }} className="text-site-faint hover:text-red-500 ml-0.5 text-sm leading-none">×</button>
-                  </span>
-                )}
-                <button onClick={() => setMapPage(1)}
-                  className="px-4 py-1.5 bg-[#2e5023] text-white text-[11px] font-semibold rounded-lg hover:bg-[#3a6b2e] transition-colors">
-                  Filter
-                </button>
-              </div>
-            )}
+            <div className="px-6 py-4 flex items-center gap-3 border-t border-[#e2e6dc] bg-[#f8faf6]">
+              {/* Skills filter */}
+              {activeTab === 'skills' && (
+                <>
+                  <FilterDropdown value={statusFilter} onChange={v => { setStatusFilter(v); setMapPage(1); }}
+                    options={[
+                      { value: 'all', label: 'All Status' },
+                      { value: 'done', label: 'Completed' },
+                      { value: 'active', label: 'In Progress' },
+                      { value: 'new', label: 'Not Started' },
+                    ]} />
+                  {statusFilter !== 'all' && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#edf5e9] border border-[#c8dbbe] rounded-full text-[11px] text-[#2e5023] font-semibold">
+                      {statusFilter === 'done' ? 'Completed' : statusFilter === 'active' ? 'In Progress' : 'Not Started'}
+                      <button onClick={() => { setStatusFilter('all'); setMapPage(1); }} className="text-[#4f7942] hover:text-red-500 ml-0.5 text-sm leading-none transition-colors">×</button>
+                    </span>
+                  )}
+                </>
+              )}
 
-            {/* Tab content */}
-            <div className="px-6 pb-6 pt-2">
+              {/* Reflections filter */}
+              {activeTab === 'reflections' && (
+                <>
+                  <FilterDropdown value={moodFilter} onChange={v => { setMoodFilter(v); setMapPage(1); }}
+                    options={[
+                      { value: 'all', label: 'All Moods' },
+                      { value: 'Happy', label: '😊 Happy' },
+                      { value: 'Neutral', label: '😐 Neutral' },
+                      { value: 'Sad', label: '😔 Struggling' },
+                      { value: 'Energized', label: '⚡ Energized' },
+                      { value: 'Thoughtful', label: '🧠 Thoughtful' },
+                    ]} />
+                  {moodFilter !== 'all' && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#edf5e9] border border-[#c8dbbe] rounded-full text-[11px] text-[#2e5023] font-semibold">
+                      {moodFilter}
+                      <button onClick={() => { setMoodFilter('all'); setMapPage(1); }} className="text-[#4f7942] hover:text-red-500 ml-0.5 text-sm leading-none transition-colors">×</button>
+                    </span>
+                  )}
+                </>
+              )}
+
+              {/* Sessions filter */}
+              {activeTab === 'sessions' && (
+                <>
+                  <FilterDropdown value={sessionTypeFilter} onChange={v => { setSessionTypeFilter(v); setMapPage(1); }}
+                    options={[
+                      { value: 'all', label: 'All Types' },
+                      { value: 'skillmap', label: 'Skill Map' },
+                      { value: 'free', label: 'Free Practice' },
+                    ]} />
+                  {sessionTypeFilter !== 'all' && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#edf5e9] border border-[#c8dbbe] rounded-full text-[11px] text-[#2e5023] font-semibold">
+                      {sessionTypeFilter === 'skillmap' ? 'Skill Map' : 'Free Practice'}
+                      <button onClick={() => { setSessionTypeFilter('all'); setMapPage(1); }} className="text-[#4f7942] hover:text-red-500 ml-0.5 text-sm leading-none transition-colors">×</button>
+                    </span>
+                  )}
+                </>
+              )}
+
+              <button onClick={() => setMapPage(1)}
+                className="px-5 py-2 bg-[#2e5023] text-white text-[12px] font-bold rounded-xl hover:bg-[#4f7942] shadow-sm shadow-[#2e5023]/15 transition-all active:scale-[0.97]">
+                Filter
+              </button>
+            </div>
+          </div>
+
+          {/* ── Result Card (separate) ── */}
+          <div className="bg-white rounded-2xl border border-[#e2e6dc]">
+            <div className="px-6 pb-6 pt-4">
               {/* Skill Maps tab */}
               {activeTab === 'skills' && (
                 filteredSkills.length === 0 ? (
@@ -304,7 +366,7 @@ export default function Dashboard() {
                     </div>
                     {/* Rows */}
                     <div className="divide-y divide-[#f0f2eb]">
-                      {pagedSkills.map((skill, i) => {                        const pct = skill.completionPercentage || 0;
+                      {filteredSkills.slice((mapPage - 1) * MAPS_PER_PAGE, mapPage * MAPS_PER_PAGE).map((skill, i) => {                        const pct = skill.completionPercentage || 0;
                         const done = skill.completedNodes || 0;
                         const total = skill.nodeCount || 0;
                         const color = skill.color || "#2e5023";
@@ -329,13 +391,17 @@ export default function Dashboard() {
                             </div>
                             <div className="col-span-2 text-right">
                               {isComplete ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full">
-                                  <Sparkles className="w-2.5 h-2.5" /> Completed
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-full border border-emerald-200">
+                                  <Sparkles className="w-3 h-3" /> Completed
                                 </span>
                               ) : pct > 0 ? (
-                                <span className="inline-flex px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full">In Progress</span>
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 text-[11px] font-bold rounded-full border border-amber-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> In Progress
+                                </span>
                               ) : (
-                                <span className="inline-flex px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full">Not Started</span>
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 text-[11px] font-bold rounded-full border border-gray-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Not Started
+                                </span>
                               )}
                             </div>
                           </div>
@@ -349,13 +415,15 @@ export default function Dashboard() {
 
               {/* Reflections tab */}
               {activeTab === 'reflections' && (
-                reflections.length === 0 ? (
+                filteredReflections.length === 0 ? (
                   <div className="text-center py-10">
                     <Award className="w-6 h-6 text-gray-300 mx-auto mb-2" />
-                    <p className="text-xs text-site-muted">No reflections yet</p>
-                    <button onClick={() => navigate("/reflect")} className="inline-flex items-center gap-1 text-xs text-[#2e5023] font-bold hover:underline mt-2">
-                      Write a reflection <ArrowUpRight className="w-3 h-3" />
-                    </button>
+                    <p className="text-xs text-site-muted">{moodFilter !== 'all' ? 'No matching reflections' : 'No reflections yet'}</p>
+                    {moodFilter === 'all' && (
+                      <button onClick={() => navigate("/reflect")} className="inline-flex items-center gap-1 text-xs text-[#2e5023] font-bold hover:underline mt-2">
+                        Write a reflection <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <>
@@ -367,7 +435,7 @@ export default function Dashboard() {
                       <span className="col-span-2 text-right">Action</span>
                     </div>
                     <div className="divide-y divide-[#f0f2eb]">
-                      {reflections.slice((mapPage-1)*MAPS_PER_PAGE, mapPage*MAPS_PER_PAGE).map((r, i) => {
+                      {filteredReflections.slice((mapPage-1)*MAPS_PER_PAGE, mapPage*MAPS_PER_PAGE).map((r, i) => {
                         const moods = { Happy: { emoji: '😊', label: 'Happy', cls: 'text-emerald-700 bg-emerald-50' }, Neutral: { emoji: '😐', label: 'Neutral', cls: 'text-gray-600 bg-gray-100' }, Sad: { emoji: '😔', label: 'Struggling', cls: 'text-blue-700 bg-blue-50' }, Energized: { emoji: '⚡', label: 'Energized', cls: 'text-amber-700 bg-amber-50' }, Thoughtful: { emoji: '🧠', label: 'Thoughtful', cls: 'text-violet-700 bg-violet-50' } };
                         const m = moods[r.mood] || { emoji: '—', label: r.mood || 'None', cls: 'text-gray-500 bg-gray-50' };
                         return (
@@ -391,17 +459,17 @@ export default function Dashboard() {
                         );
                       })}
                     </div>
-                    <Pagination page={mapPage} setPage={setMapPage} totalPages={Math.ceil(reflections.length / MAPS_PER_PAGE)} />
+                    <Pagination page={mapPage} setPage={setMapPage} totalPages={Math.ceil(filteredReflections.length / MAPS_PER_PAGE)} />
                   </>
                 )
               )}
 
               {/* Sessions tab */}
               {activeTab === 'sessions' && (
-                practices.length === 0 ? (
+                filteredSessions.length === 0 ? (
                   <div className="text-center py-10">
                     <Clock className="w-6 h-6 text-gray-300 mx-auto mb-2" />
-                    <p className="text-xs text-site-muted">No sessions yet</p>
+                    <p className="text-xs text-site-muted">{sessionTypeFilter !== 'all' ? 'No matching sessions' : 'No sessions yet'}</p>
                   </div>
                 ) : (
                   <>
@@ -414,7 +482,7 @@ export default function Dashboard() {
                       <span className="col-span-2 text-right">Action</span>
                     </div>
                     <div className="divide-y divide-[#f0f2eb]">
-                      {practices.slice((mapPage-1)*MAPS_PER_PAGE, mapPage*MAPS_PER_PAGE).map((p, i) => {
+                      {filteredSessions.slice((mapPage-1)*MAPS_PER_PAGE, mapPage*MAPS_PER_PAGE).map((p, i) => {
                         const isSkillMap = !!p.skillId;
                         return (
                         <div key={p._id} onClick={() => navigate("/log-practice")}
@@ -440,12 +508,12 @@ export default function Dashboard() {
                         );
                       })}
                     </div>
-                    <Pagination page={mapPage} setPage={setMapPage} totalPages={Math.ceil(practices.length / MAPS_PER_PAGE)} />
+                    <Pagination page={mapPage} setPage={setMapPage} totalPages={Math.ceil(filteredSessions.length / MAPS_PER_PAGE)} />
                   </>
                 )
               )}
             </div>
-          </div>
+          </div>  {/* end Result Card */}
 
         </div>
       </div>
