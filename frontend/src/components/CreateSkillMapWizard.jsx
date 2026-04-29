@@ -1,22 +1,17 @@
-import { Fragment, useMemo, useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { Fragment, useMemo, useState, useEffect } from 'react';
+import { X, Loader2, ChevronRight, Check, Plus, Trash2, Target, Map } from 'lucide-react';
 import { useSkillMap } from '../context/SkillMapContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import IconPicker, { SkillIcon } from './IconPicker';
-import ColorPicker, { COLOR_THEMES } from './ColorPicker';
+import { SkillIcon, default as IconPicker } from './IconPicker';
+import { COLOR_THEMES } from './ColorPicker';
 import { DEFAULT_ICONS } from '../utils/iconLibrary';
 
 const STEPS = [
-  { id: 1, label: 'Name & icon' },
-  { id: 2, label: 'Goal' },
-  { id: 3, label: 'Sketch nodes' },
-  { id: 4, label: 'Review' }
+  { id: 1, label: 'Basics' },
+  { id: 2, label: 'Appearance' },
+  { id: 3, label: 'Nodes' },
+  { id: 4, label: 'Review' },
 ];
-
-function truncate(s, n) {
-  if (!s) return '';
-  return s.length <= n ? s : `${s.slice(0, n)}…`;
-}
 
 export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwitchToTemplates }) {
   const { skills, createSkillMap } = useSkillMap();
@@ -36,428 +31,330 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
   const titleUnique = useMemo(() => {
     const t = title.trim().toLowerCase();
     if (!t) return true;
-    return !skills.some((s) => (s.name || '').trim().toLowerCase() === t);
+    return !skills.some(s => (s.name || '').trim().toLowerCase() === t);
   }, [skills, title]);
 
   const reset = () => {
-    setStep(1);
-    setTitle('');
-    setDescription('');
-    setIcon(DEFAULT_ICONS[0]);
-    setColor(COLOR_THEMES[0].value);
-    setGoal('');
-    setNodeInputs(['', '', '']);
-    setAttemptedNext({});
-    setSubmitError('');
-    setIsSubmitting(false);
+    setStep(1); setTitle(''); setDescription(''); setIcon(DEFAULT_ICONS[0]);
+    setColor(COLOR_THEMES[0].value); setGoal(''); setNodeInputs(['', '', '']);
+    setAttemptedNext({}); setSubmitError(''); setIsSubmitting(false);
   };
+  const resetAndClose = () => { reset(); onClose(); };
 
-  const resetAndClose = () => {
-    reset();
-    onClose();
-  };
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const markAttempt = (s) => setAttemptedNext((prev) => ({ ...prev, [s]: true }));
+  const markAttempt = s => setAttemptedNext(p => ({ ...p, [s]: true }));
+  const filledSketchTitles = nodeInputs.map(x => x.trim()).filter(Boolean);
 
-  const goNextFrom1 = () => {
-    markAttempt(1);
-    if (!title.trim() || !titleUnique) return;
-    setStep(2);
+  const goNext = () => {
+    markAttempt(step);
+    if (step === 1 && (!title.trim() || !titleUnique || !goal.trim())) return;
+    if (step === 3) {
+      const filled = nodeInputs.map(x => x.trim()).filter(Boolean);
+      const lower = filled.map(x => x.toLowerCase());
+      if (filled.length === 0 || lower.length !== new Set(lower).size) return;
+    }
+    setStep(s => Math.min(4, s + 1));
   };
 
-  const goNextFrom2 = () => {
-    markAttempt(2);
-    if (!goal.trim()) return;
-    setStep(3);
-  };
-
-  const sketchTitlesNonUnique = () => {
-    const filled = nodeInputs.map((x) => x.trim()).filter(Boolean);
-    const lower = filled.map((x) => x.toLowerCase());
-    return lower.length !== new Set(lower).size;
-  };
-
-  const goNextFrom3 = () => {
-    markAttempt(3);
-    if (sketchTitlesNonUnique()) return;
-    // Require at least 1 node with a name
-    const filled = nodeInputs.map(x => x.trim()).filter(Boolean);
-    if (filled.length === 0) return;
-    setStep(4);
-  };
-
-  const skipStep3 = () => {
-    // No longer allow skipping — require at least 1 node
-    goNextFrom3();
-  };
-
-  const filledSketchTitles = nodeInputs.map((x) => x.trim()).filter(Boolean);
-  const contentCount = filledSketchTitles.length;
-
-  const addNodeRow = () => {
-    if (nodeInputs.length >= maxNodes) return;
-    setNodeInputs((prev) => [...prev, '']);
-  };
-
-  const removeNodeRow = (index) => {
-    if (nodeInputs.length <= 1) return;
-    setNodeInputs((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateNodeRow = (index, value) => {
-    if (value.length > 16) return;
-    setNodeInputs((prev) => prev.map((v, i) => (i === index ? value : v)));
-  };
+  const addNodeRow = () => { if (nodeInputs.length < maxNodes) setNodeInputs(p => [...p, '']); };
+  const removeNodeRow = i => { if (nodeInputs.length > 1) setNodeInputs(p => p.filter((_, idx) => idx !== i)); };
+  const updateNodeRow = (i, v) => { if (v.length <= 16) setNodeInputs(p => p.map((x, idx) => idx === i ? v : x)); };
 
   const handleCreate = async () => {
-    setSubmitError('');
-    setIsSubmitting(true);
+    setSubmitError(''); setIsSubmitting(true);
     try {
       const { skill } = await createSkillMap({
-        title: title.trim(),
-        description: description.trim() || null,
-        icon,
-        color,
-        goal: goal.trim(),
-        sketchTitles: filledSketchTitles
+        title: title.trim(), description: description.trim() || null,
+        icon, color, goal: goal.trim(), sketchTitles: filledSketchTitles,
       });
-      const id = skill._id ?? skill.id;
-      const t = title.trim();
-      onCreated?.({ skillId: String(id), title: t });
+      onCreated?.({ skillId: String(skill._id ?? skill.id), title: title.trim() });
       resetAndClose();
-    } catch (e) {
-      const msg = e.message || 'Could not create skill map';
-      setSubmitError(msg);
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (e) { setSubmitError(e.message || 'Could not create skill map'); }
+    finally { setIsSubmitting(false); }
   };
 
-  const renderStepIndicator = () => (
-    <div className="border-b border-gray-100 px-2 py-4">
-      <div className="flex w-full flex-nowrap items-start">
-        {STEPS.map((s, idx) => {
-          const isActive = step === s.id;
-          const isDone = step > s.id;
-          const segmentDone = idx > 0 && step > idx;
-
-          return (
-            <Fragment key={s.id}>
-              {idx > 0 && (
-                <div
-                  className="flex h-8 min-w-[6px] shrink flex-1 items-center sm:min-w-[10px]"
-                  aria-hidden
-                >
-                  <div
-                    className={`h-0.5 w-full rounded-full ${
-                      segmentDone ? 'bg-site-accent' : 'bg-gray-200'
-                    }`}
-                  />
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (s.id < step) setStep(s.id);
-                }}
-                className={`flex w-[4.25rem] shrink-0 flex-col items-center sm:w-[5.25rem] ${
-                  s.id < step ? 'cursor-pointer' : 'cursor-default'
-                }`}
-                aria-current={isActive ? 'step' : undefined}
-              >
-                <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold ${
-                    isDone
-                      ? 'border-site-accent bg-site-accent text-white'
-                      : isActive
-                        ? 'border-site-accent bg-site-accent text-white'
-                        : 'border-gray-300 bg-white text-gray-400'
-                  }`}
-                >
-                  {isDone || isActive ? s.id : ''}
-                </span>
-                <span
-                  className={`mt-2 text-center text-[10px] font-medium leading-tight sm:text-xs ${
-                    isDone ? 'text-site-accent' : isActive ? 'text-gray-900' : 'text-gray-400'
-                  }`}
-                >
-                  {s.label}
-                </span>
-              </button>
-            </Fragment>
-          );
-        })}
-      </div>
-    </div>
-  );
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[92vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Create skill map</h2>
-          <button
-            type="button"
-            onClick={resetAndClose}
-            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100"
-            aria-label="Close"
-          >
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col border border-[#e2e6dc]">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e6dc]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#edf5e9] flex items-center justify-center">
+              <Map className="w-[18px] h-[18px] text-[#2e5023]" />
+            </div>
+            <div>
+              <h2 className="text-[16px] font-bold text-[#1c1f1a]">Create Skill Map</h2>
+              <p className="text-[11px] text-[#9aa094]">Step {step} of {STEPS.length} — {STEPS[step - 1].label}</p>
+            </div>
+          </div>
+          <button type="button" onClick={resetAndClose} className="text-[#c8cec0] hover:text-[#1c1f1a] transition-colors p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {renderStepIndicator()}
+        {/* Step indicator */}
+        <div className="px-6 py-3 border-b border-[#e8ece3] bg-[#f8faf6]">
+          <div className="flex items-center gap-1">
+            {STEPS.map((s, i) => {
+              const active = step === s.id;
+              const done = step > s.id;
+              return (
+                <Fragment key={s.id}>
+                  {i > 0 && <div className={`flex-1 h-0.5 rounded-full mx-1 ${done ? 'bg-[#2e5023]' : 'bg-[#e2e6dc]'}`} />}
+                  <button type="button" onClick={() => { if (s.id < step) setStep(s.id); }}
+                    disabled={s.id > step}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-all ${
+                      done ? 'bg-[#2e5023] text-white' :
+                      active ? 'bg-[#2e5023] text-white ring-4 ring-[#2e5023]/15' :
+                      'bg-[#e8ece3] text-[#9aa094]'
+                    }`}>
+                    {done ? <Check className="w-3.5 h-3.5" /> : s.id}
+                  </button>
+                </Fragment>
+              );
+            })}
+          </div>
+        </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+
+          {/* Step 1: Basics — Title, Description, Goal */}
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value.slice(0, 20))}
-                  className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
-                  placeholder="My learning path"
-                  maxLength={20}
-                />
-                <div className="flex justify-end mt-1 text-xs text-gray-500">{title.length}/20</div>
-                {attemptedNext[1] && !title.trim() && (
-                  <p className="text-sm text-red-600 mt-1">Title is required</p>
-                )}
-                {attemptedNext[1] && title.trim() && !titleUnique && (
-                  <p className="text-sm text-red-600 mt-1">You already have a map with this title</p>
-                )}
+                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
+                  Title <span className="text-red-400">*</span>
+                  <span className="text-xs text-[#9aa094] font-normal ml-2">{title.length}/20</span>
+                </label>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value.slice(0, 20))} maxLength={20}
+                  placeholder="e.g. Python Basics, Guitar"
+                  className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm transition-all" />
+                {attemptedNext[1] && !title.trim() && <p className="text-xs text-red-500 mt-1.5">Title is required</p>}
+                {attemptedNext[1] && title.trim() && !titleUnique && <p className="text-xs text-red-500 mt-1.5">You already have a map with this title</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value.slice(0, 120))}
-                  rows={3}
-                  className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
+                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
+                  Description <span className="text-xs text-[#9aa094] font-normal">(optional · {description.length}/120)</span>
+                </label>
+                <textarea value={description} onChange={e => setDescription(e.target.value.slice(0, 120))} rows={2} maxLength={120}
                   placeholder="What will this skill map help you learn?"
-                  maxLength={120}
-                />
-                <div className="text-right text-xs text-gray-500 mt-1">{description.length}/120</div>
+                  className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm resize-none transition-all" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
+                  Goal <span className="text-red-400">*</span>
+                  <span className="text-xs text-[#9aa094] font-normal ml-2">{goal.length}/16</span>
+                </label>
+                <input type="text" value={goal} onChange={e => setGoal(e.target.value.slice(0, 16))} maxLength={16}
+                  placeholder="e.g. Build a web app"
+                  className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm transition-all" />
+                {attemptedNext[1] && !goal.trim() && <p className="text-xs text-red-500 mt-1.5">Goal is required</p>}
+                <p className="text-[11px] text-[#9aa094] mt-1.5">Something concrete you can do or build — keeps you motivated.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Appearance — Icon + Color */}
+          {step === 2 && (
+            <div className="space-y-6">
+              {/* Preview */}
+              <div className="flex items-center gap-4 p-4 bg-[#f4f7f2] rounded-xl border border-[#e2e6dc]">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-sm shrink-0" style={{ backgroundColor: color }}>
+                  <SkillIcon name={icon} size={28} />
+                </div>
+                <div>
+                  <p className="text-[15px] font-bold text-[#1c1f1a]">{title.trim() || 'Your Skill Map'}</p>
+                  <p className="text-[12px] text-[#9aa094]">This is how your skill map will look</p>
+                </div>
+              </div>
+
+              {/* Icon picker */}
+              <div>
+                <label className="block text-sm font-semibold text-[#1c1f1a] mb-3">Choose Icon</label>
                 <IconPicker value={icon} onChange={setIcon} />
               </div>
 
+              {/* Color picker */}
               <div>
-                <ColorPicker selectedColor={color} onColorChange={setColor} label="Theme Color" />
+                <label className="block text-sm font-semibold text-[#1c1f1a] mb-3">Theme Color</label>
+                <div className="grid grid-cols-6 gap-2.5">
+                  {COLOR_THEMES.map(theme => (
+                    <button key={theme.value} type="button" onClick={() => setColor(theme.value)} title={theme.name}
+                      className="group relative">
+                      <div className={`w-full aspect-square rounded-xl transition-all ${
+                        color === theme.value ? 'ring-2 ring-offset-2 ring-[#1c1f1a] scale-110' : 'hover:scale-105 hover:shadow-md'
+                      }`} style={{ backgroundColor: theme.value }}>
+                        {color === theme.value && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white drop-shadow-lg" strokeWidth={3} />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[9px] text-[#9aa094] text-center mt-1 truncate">{theme.name}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {step === 2 && (
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">Goal</label>
-              <textarea
-                value={goal}
-                onChange={(e) => setGoal(e.target.value.slice(0, 16))}
-                rows={2}
-                className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
-                placeholder="e.g. Master Python basics"
-                maxLength={16}
-              />
-              <div className="flex justify-end text-xs text-gray-500">{goal.length}/16</div>
-              {attemptedNext[2] && !goal.trim() && (
-                <p className="text-sm text-red-600">Goal is required</p>
-              )}
-              <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                Write it as something concrete you can do or build — not just &apos;learn Python.&apos; A clear goal
-                keeps you motivated.
-              </p>
-            </div>
-          )}
-
+          {/* Step 3: Nodes */}
           {step === 3 && (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Add up to {maxNodes} node titles for your learning path. Node 1 is your starting point. Empty rows are ignored.
+              <p className="text-[12px] text-[#565c52]">
+                Add up to {maxNodes} nodes for your learning path. Node 1 is your starting point.
               </p>
+
               <div className="space-y-2">
                 {nodeInputs.map((val, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <span className="text-xs text-gray-500 w-5 text-right shrink-0">{i + 1}.</span>
-                    <div className="flex-1 min-w-0">
-                      <input
-                        type="text"
-                        value={val}
-                        onChange={(e) => updateNodeRow(i, e.target.value)}
-                        className="w-full border-2 border-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-site-accent transition-colors bg-gray-50 focus:bg-white"
-                        placeholder={`Node ${i + 1}`}
-                        maxLength={16}
-                      />
-                      <div className="text-right text-[10px] text-gray-400 mt-0.5">{val.length}/16</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeNodeRow(i)}
-                      disabled={nodeInputs.length <= 1}
-                      className="shrink-0 px-2 py-2 text-gray-500 hover:text-red-600 disabled:opacity-30 text-lg leading-none"
-                      aria-label="Remove row"
-                    >
-                      ×
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-[#2e5023] text-white text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</div>
+                    <input type="text" value={val} onChange={e => updateNodeRow(i, e.target.value)} maxLength={16}
+                      placeholder={`Node ${i + 1} title`}
+                      className="flex-1 px-3 py-2 border border-[#e2e6dc] rounded-lg outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm transition-all" />
+                    <span className="text-[10px] text-[#c8cec0] w-8 text-right shrink-0">{val.length}/16</span>
+                    <button type="button" onClick={() => removeNodeRow(i)} disabled={nodeInputs.length <= 1}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-[#c8cec0] hover:text-red-500 hover:bg-red-50 disabled:opacity-30 transition-all shrink-0">
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={addNodeRow}
-                disabled={nodeInputs.length >= maxNodes}
-                className="text-sm font-medium text-site-accent hover:text-site-accent-hover disabled:text-gray-400 disabled:cursor-not-allowed"
-              >
-                ＋ Add node ({nodeInputs.length}/{maxNodes})
-              </button>
-              {attemptedNext[3] && sketchTitlesNonUnique() && (
-                <p className="text-sm text-red-600">Node titles must be unique</p>
-              )}
-              {attemptedNext[3] && nodeInputs.map(x => x.trim()).filter(Boolean).length === 0 && (
-                <p className="text-sm text-red-600">Add at least 1 node with a title</p>
-              )}
 
-              <div className="rounded-lg border border-site-border bg-site-bg/80 p-3 sm:p-4 overflow-x-auto">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-site-muted mb-2">Path preview</p>
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap min-w-0 text-xs sm:text-sm">
-                  {nodeInputs.map((val, i) => (
-                    <span key={i} className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                      {i > 0 && <span className="text-site-accent font-semibold" aria-hidden>→</span>}
-                      <span className={`inline-flex max-w-[9rem] sm:max-w-[11rem] truncate rounded-md border px-2 py-1 font-medium text-site-ink ${i === 0 ? 'border-site-accent bg-site-soft' : 'border-dashed border-site-accent/40 bg-site-soft'}`}>
-                        {truncate(val.trim() || `Node ${i + 1}`, 16)}
-                      </span>
-                    </span>
-                  ))}
-                  {goal.trim() && (
-                    <span className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                      <span className="text-yellow-500 font-semibold" aria-hidden>→</span>
-                      <span className="inline-flex items-center gap-1 rounded-md border border-yellow-300 bg-yellow-50 px-2 py-1 font-semibold text-yellow-700 text-xs">
-                        🏆 {truncate(goal.trim(), 16)}
-                      </span>
-                    </span>
-                  )}
+              <button type="button" onClick={addNodeRow} disabled={nodeInputs.length >= maxNodes}
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-[#2e5023] hover:text-[#4f7942] disabled:text-[#c8cec0] disabled:cursor-not-allowed transition-colors">
+                <Plus className="w-3.5 h-3.5" /> Add node ({nodeInputs.length}/{maxNodes})
+              </button>
+
+              {attemptedNext[3] && nodeInputs.map(x => x.trim()).filter(Boolean).length === 0 && (
+                <p className="text-xs text-red-500">Add at least 1 node with a title</p>
+              )}
+              {attemptedNext[3] && (() => {
+                const filled = nodeInputs.map(x => x.trim()).filter(Boolean);
+                const lower = filled.map(x => x.toLowerCase());
+                return lower.length !== new Set(lower).size;
+              })() && <p className="text-xs text-red-500">Node titles must be unique</p>}
+
+              {/* Path preview */}
+              {filledSketchTitles.length > 0 && (
+                <div className="bg-[#f4f7f2] rounded-xl p-4 border border-[#e2e6dc]">
+                  <p className="text-[10px] font-semibold text-[#9aa094] uppercase tracking-wider mb-3">Path Preview</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {filledSketchTitles.map((t, i) => (
+                      <Fragment key={i}>
+                        {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-[#c8cec0] shrink-0" />}
+                        <span className="px-2.5 py-1 bg-white border border-[#d4e8cc] rounded-lg text-[12px] font-medium text-[#2e5023]">{t}</span>
+                      </Fragment>
+                    ))}
+                    {goal.trim() && (
+                      <>
+                        <ChevronRight className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-lg text-[12px] font-semibold text-amber-700 flex items-center gap-1">
+                          <Target className="w-3 h-3" /> {goal.trim()}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
+          {/* Step 4: Review */}
           {step === 4 && (
-            <div className="space-y-4 text-sm">
-              <div className="flex items-start gap-2">
-                <SkillIcon name={icon} size={28} className="text-site-accent shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-gray-900 text-base break-words">{title.trim() || '—'}</p>
-                  {(description || '').trim() ? (
-                    <p className="text-gray-600 mt-1 break-words whitespace-normal">{description.trim()}</p>
-                  ) : null}
+            <div className="space-y-5">
+              {/* Card preview */}
+              <div className="bg-[#f4f7f2] rounded-xl p-5 border border-[#e2e6dc]">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white shadow-sm shrink-0" style={{ backgroundColor: color }}>
+                    <SkillIcon name={icon} size={28} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[17px] font-bold text-[#1c1f1a] break-words">{title.trim()}</h3>
+                    {description.trim() && <p className="text-[12px] text-[#565c52] mt-1 break-words">{description.trim()}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-lg p-3 border border-[#e2e6dc]">
+                    <p className="text-[10px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1">Goal</p>
+                    <p className="text-[13px] font-semibold text-[#2e5023]">{goal.trim()}</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-[#e2e6dc]">
+                    <p className="text-[10px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1">Nodes</p>
+                    <p className="text-[13px] font-semibold text-[#1c1f1a]">{filledSketchTitles.length} node{filledSketchTitles.length !== 1 ? 's' : ''}</p>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Goal</p>
-                <div className="mt-2 rounded-lg border border-site-border bg-site-soft p-3 text-xs sm:text-sm text-site-accent break-words whitespace-normal font-medium">
-                  {goal.trim()}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Sketch nodes</p>
-                {filledSketchTitles.length === 0 ? (
-                  <p className="text-gray-600">No nodes sketched — add them after creation.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
+
+              {/* Node list */}
+              {filledSketchTitles.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-2">Learning Path</p>
+                  <div className="space-y-0">
                     {filledSketchTitles.map((t, i) => (
-                      <span
-                        key={`${i}-${t}`}
-                        className="inline-flex px-2 py-1 bg-site-soft text-site-accent rounded-full text-xs break-words"
-                      >
-                        {i + 1}. {t}
-                      </span>
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center" style={{ backgroundColor: color }}>{i + 1}</div>
+                          {i < filledSketchTitles.length - 1 && <div className="w-0.5 h-4" style={{ backgroundColor: color + '40' }} />}
+                        </div>
+                        <p className="text-[13px] font-medium text-[#1c1f1a] py-1.5">{t}</p>
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 border-t border-gray-100 pt-3">
-                {contentCount === 0 ? 'No nodes yet — you can add them after creation.' : `Node 1 is your starting point. ${contentCount} node${contentCount === 1 ? '' : 's'} will be created.`}
-              </p>
+                </div>
+              )}
+
+              {submitError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-xl text-[12px]">{submitError}</div>
+              )}
             </div>
           )}
         </div>
 
-        <div className="border-t border-gray-100 px-4 py-3 flex flex-wrap items-center gap-2 justify-between bg-gray-50">
+        {/* Footer */}
+        <div className="border-t border-[#e2e6dc] px-6 py-4 bg-[#f8faf6] flex items-center justify-between">
           <div>
-            {step === 1 && onSwitchToTemplates ? (
-              <button
-                type="button"
-                onClick={() => { reset(); onSwitchToTemplates(); }}
-                className="px-4 py-2 text-sm font-medium text-site-accent rounded-lg transition-colors hover:bg-site-soft"
-              >
+            {step > 1 ? (
+              <button type="button" onClick={() => setStep(s => s - 1)}
+                className="text-[13px] font-semibold text-[#565c52] hover:text-[#2e5023] transition-colors">
                 Back
               </button>
-            ) : step > 1 ? (
-              <button
-                type="button"
-                onClick={() => setStep((s) => s - 1)}
-                className="px-4 py-2 text-sm font-medium text-site-ink rounded-lg transition-colors hover:bg-site-soft hover:text-site-accent"
-              >
-                Back
+            ) : (
+              <button type="button" onClick={resetAndClose}
+                className="text-[13px] font-semibold text-[#9aa094] hover:text-[#565c52] transition-colors">
+                Cancel
               </button>
-            ) : null}
+            )}
           </div>
-          <div className="flex flex-wrap gap-2 justify-end">
-            {step === 1 && (
-              <button
-                type="button"
-                onClick={goNextFrom1}
-                className="px-4 py-2 text-sm font-medium text-white bg-site-accent rounded-lg hover:bg-site-accent-hover"
-              >
-                Next
+          <div>
+            {step < 4 ? (
+              <button type="button" onClick={goNext}
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-[#2e5023] text-white text-[13px] font-bold rounded-xl hover:bg-[#4f7942] transition-all shadow-sm active:scale-[0.97]">
+                Next <ChevronRight className="w-4 h-4" />
               </button>
-            )}
-            {step === 2 && (
-              <button
-                type="button"
-                onClick={goNextFrom2}
-                className="px-4 py-2 text-sm font-medium text-white bg-site-accent rounded-lg hover:bg-site-accent-hover"
-              >
-                Next
+            ) : (
+              <button type="button" onClick={handleCreate} disabled={isSubmitting}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#2e5023] text-white text-[13px] font-bold rounded-xl hover:bg-[#4f7942] disabled:opacity-50 transition-all shadow-sm active:scale-[0.97]">
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isSubmitting ? 'Creating...' : 'Create Skill Map'}
               </button>
-            )}
-            {step === 3 && (
-              <>
-                <button
-                  type="button"
-                  onClick={goNextFrom3}
-                  className="px-4 py-2 text-sm font-medium text-white bg-site-accent rounded-lg hover:bg-site-accent-hover"
-                >
-                  Continue
-                </button>
-              </>
-            )}
-            {step === 4 && (
-              <>
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={handleCreate}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-site-accent rounded-lg hover:bg-site-accent-hover disabled:opacity-60"
-                >
-                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Create skill map
-                </button>
-              </>
             )}
           </div>
         </div>
-        {step === 4 && submitError && (
-          <p className="px-4 pb-3 text-sm text-red-600 bg-gray-50 -mt-1">{submitError}</p>
-        )}
       </div>
     </div>
   );
