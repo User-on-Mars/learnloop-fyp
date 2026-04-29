@@ -7,15 +7,23 @@ import { showXpNotification } from '../utils/xpNotifications';
 import { practiceAPI } from '../api/client';
 import client from '../api/client';
 import { auth } from '../firebase';
-import { Lock, Unlock, CheckCircle, Rocket, Play, Pause, RotateCcw, Star, AlertTriangle, ArrowRight, X, ChevronLeft, ChevronRight, Clock, Target } from 'lucide-react';
-const CONF = ['','Not confident','Slightly','Moderate','Confident','Very confident'];
-const PER = 5;
+import {
+  Lock, CheckCircle, Rocket, Play, Pause, RotateCcw,
+  Star, AlertTriangle, ArrowRight, X, ArrowLeft,
+  Clock, Target, ChevronLeft, ChevronRight, PenLine, Unlock,
+  Zap, BookOpen, Trophy,
+} from 'lucide-react';
+
+const CONF_LABELS = ['', 'Not confident', 'Slightly', 'Moderate', 'Confident', 'Very confident'];
+const PER_PAGE = 5;
+
 export default function NodeDetailPage() {
   const { skillId, nodeId } = useParams();
   const nav = useNavigate();
   const { showSuccess } = useToast();
   const { currentSkill, nodes, loadSkillMapFull, updateNodeStatus, updateNodeContent, getNodeDetails } = useSkillMap();
   const { activeSessions, addSession, removeSession, toggleSession, resetSession, formatTimer, getProgress } = useActiveSessions();
+
   const [nodeDetails, setNodeDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -28,374 +36,448 @@ export default function NodeDetailPage() {
   const [cd, setCd] = useState(true);
   const [showComp, setShowComp] = useState(false);
   const [compS, setCompS] = useState(null);
-  const [comp, setComp] = useState({ notes:'', confidence:3, blockers:'', nextStep:'' });
+  const [comp, setComp] = useState({ notes: '', confidence: 3, blockers: '', nextStep: '' });
   const [sub, setSub] = useState(false);
   const [showMark, setShowMark] = useState(false);
   const [hist, setHist] = useState([]);
   const [page, setPage] = useState(1);
-  const [sidebar, setSidebar] = useState(true);
   const [showRemove, setShowRemove] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
-  // Template session state
   const [tplTimer, setTplTimer] = useState(0);
   const [tplRunning, setTplRunning] = useState(false);
   const [tplCompleting, setTplCompleting] = useState(false);
   const tplIntervalRef = useRef(null);
-  // Template session stopwatch
+
   useEffect(() => {
-    if (tplRunning) {
-      tplIntervalRef.current = setInterval(() => setTplTimer(t => t + 1), 1000);
-    } else {
-      clearInterval(tplIntervalRef.current);
-    }
+    if (tplRunning) tplIntervalRef.current = setInterval(() => setTplTimer(t => t + 1), 1000);
+    else clearInterval(tplIntervalRef.current);
     return () => clearInterval(tplIntervalRef.current);
   }, [tplRunning]);
-  // Reset timer when switching nodes — restore from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem(`tplTimer_${nodeId}`);
-    setTplTimer(saved ? parseInt(saved, 10) || 0 : 0);
-    setTplRunning(false);
-  }, [nodeId]);
-  // Persist timer to localStorage on change
-  useEffect(() => {
-    if (nodeId && tplTimer > 0) localStorage.setItem(`tplTimer_${nodeId}`, String(tplTimer));
-  }, [tplTimer, nodeId]);
-  const fmtTplTimer = (s) => { const m = Math.floor(s / 60); const sec = s % 60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
+  useEffect(() => { const s = localStorage.getItem(`tplTimer_${nodeId}`); setTplTimer(s ? parseInt(s, 10) || 0 : 0); setTplRunning(false); }, [nodeId]);
+  useEffect(() => { if (nodeId && tplTimer > 0) localStorage.setItem(`tplTimer_${nodeId}`, String(tplTimer)); }, [tplTimer, nodeId]);
+  const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
   const completeTplSession = async (idx) => {
     if (tplCompleting) return;
-    // Require at least 60 seconds
-    if (tplTimer < 60) {
-      setErr('Session must be at least 1 minute long');
-      setTimeout(() => setErr(''), 4000);
-      return;
-    }
-    setTplCompleting(true);
-    setTplRunning(false);
+    if (tplTimer < 60) { flash('Session must be at least 1 minute', true); return; }
+    setTplCompleting(true); setTplRunning(false);
     try {
       const token = await auth.currentUser.getIdToken();
       const res = await client.post(`/nodes/${nodeId}/complete-template-session`, { sessionIndex: idx }, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.data.node) {
-        await loadSkillMapFull(skillId);
-        fetchD();
-      }
-      setTplTimer(0);
-      localStorage.removeItem(`tplTimer_${nodeId}`);
-      setOk('Session completed!');
-      setTimeout(() => setOk(''), 3000);
-    } catch (e) {
-      setErr(e.response?.data?.message || 'Failed to complete session');
-      setTimeout(() => setErr(''), 4000);
-    } finally {
-      setTplCompleting(false);
-    }
+      if (res.data.node) { await loadSkillMapFull(skillId); fetchD(); }
+      setTplTimer(0); localStorage.removeItem(`tplTimer_${nodeId}`);
+      flash('Session completed!');
+    } catch (e) { flash(e.response?.data?.message || 'Failed', true); }
+    finally { setTplCompleting(false); }
   };
+
+  const flash = (msg, isErr = false) => { isErr ? setErr(msg) : setOk(msg); setTimeout(() => isErr ? setErr('') : setOk(''), 4000); };
+
   useEffect(() => { if (skillId) loadSkillMapFull(skillId); }, [skillId, loadSkillMapFull]);
   const node = nodes.find(n => n._id === nodeId);
-  const hasTemplateSessions = node?.sessionDefinitions && node.sessionDefinitions.length > 0;
-  const completedSessions = node?.completedSessions || [];
-  const currentTplIndex = hasTemplateSessions ? node.sessionDefinitions.findIndex((_, i) => !completedSessions.includes(i)) : -1;
+  const hasTPL = node?.sessionDefinitions?.length > 0;
+  const doneTPL = node?.completedSessions || [];
+  const curTPLIdx = hasTPL ? node.sessionDefinitions.findIndex((_, i) => !doneTPL.includes(i)) : -1;
   const uNodes = nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start'));
   const isFirst = node && uNodes.indexOf(node) === 0;
-  const fetchD = useCallback(async () => { if (!nodeId) return; try { setLoading(true); const d = await getNodeDetails(nodeId); setNodeDetails(d); setDescIn(d.node?.description||''); } catch {} finally { setLoading(false); } }, [nodeId, getNodeDetails]);
-  const fetchH = useCallback(async () => { if (!node?.title) return; try { const r = await practiceAPI.getPractices({ limit:200 }); setHist((r.data.practices||[]).filter(p => p.skillName === node.title)); } catch {} }, [node?.title]);
+
+  const fetchD = useCallback(async () => { if (!nodeId) return; try { setLoading(true); const d = await getNodeDetails(nodeId); setNodeDetails(d); setDescIn(d.node?.description || ''); } catch {} finally { setLoading(false); } }, [nodeId, getNodeDetails]);
+  const fetchH = useCallback(async () => { if (!node?.title) return; try { const r = await practiceAPI.getPractices({ limit: 200 }); setHist((r.data.practices || []).filter(p => p.skillName === node.title)); } catch {} }, [node?.title]);
   useEffect(() => { fetchD(); }, [fetchD]);
   useEffect(() => { fetchH(); }, [fetchH]);
-  const activeS = activeSessions.find(s => s.nodeId === nodeId);
 
-  // Auto-open completion modal when countdown reaches 0
+  const activeS = activeSessions.find(s => s.nodeId === nodeId);
   const prevTimerRef = useRef(null);
   useEffect(() => {
-    if (activeS && activeS.isCountdown && activeS.timer === 0 && !activeS.isRunning && prevTimerRef.current > 0 && !showComp) {
-      openComp(activeS);
-    }
+    if (activeS && activeS.isCountdown && activeS.timer === 0 && !activeS.isRunning && prevTimerRef.current > 0 && !showComp) openComp(activeS);
     prevTimerRef.current = activeS?.timer ?? null;
   }, [activeS?.timer, activeS?.isRunning]);
 
   const isLocked = node?.status === 'Locked' && !isFirst;
   const isUnlocked = !isLocked && node?.status !== 'Completed';
   const isCompleted = node?.status === 'Completed';
-  // Total time – only count full minutes per session (seconds don't roll over across sessions)
-  const totalM = hist.reduce((s,p) => s + Math.floor((p.timerSeconds || p.minutesPracticed * 60 || 0) / 60), 0);
-  const totalH = Math.floor(totalM / 60);
-  const remM = totalM % 60;
-  const timeStr = totalH > 0 ? `${totalH}h ${remM}m` : `${remM}m`;
-  const dispStatus = isCompleted ? 'Completed' : isLocked ? 'Locked' : hist.length > 0 ? 'In Progress' : node?.status === 'In_Progress' ? 'In Progress' : 'Not Started';
-  const paged = hist.slice((page-1)*PER, page*PER);
-  const totPages = Math.max(1, Math.ceil(hist.length / PER));
-  const markDone = async () => { try { const response = await updateNodeStatus(nodeId, 'Completed'); if (response?.skillMapXpAwarded) { showXpNotification(showSuccess, response.skillMapXpAwarded); } setShowMark(false); setOk('Node completed!'); setTimeout(()=>setOk(''),3000); fetchD(); fetchH(); } catch(e) { setErr(e.message||'Failed'); setTimeout(()=>setErr(''),4000); } };
-  const saveDesc = async () => { try { await updateNodeContent(nodeId, { description: descIn.trim() }); setEditDesc(false); setOk('Saved!'); setTimeout(()=>setOk(''),2000); fetchD(); } catch { setErr('Failed to save'); setTimeout(()=>setErr(''),3000); } };
+  const totalM = hist.reduce((s, p) => s + Math.floor((p.timerSeconds || p.minutesPracticed * 60 || 0) / 60), 0);
+  const timeStr = totalM >= 60 ? `${Math.floor(totalM / 60)}h ${totalM % 60}m` : `${totalM}m`;
+  const avgConf = hist.length > 0 ? (hist.reduce((s, p) => s + (p.confidence || 0), 0) / hist.length).toFixed(1) : '—';
+  const dispStatus = isCompleted ? 'Completed' : isLocked ? 'Locked' : hist.length > 0 || node?.status === 'In_Progress' ? 'In Progress' : 'Not Started';
+  const paged = hist.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totPages = Math.max(1, Math.ceil(hist.length / PER_PAGE));
+
+  const goBack = () => { if ((activeS?.isRunning) || tplRunning) setShowBackConfirm(true); else nav(`/skills/${skillId}`); };
+  const markDone = async () => { try { const r = await updateNodeStatus(nodeId, 'Completed'); if (r?.skillMapXpAwarded) showXpNotification(showSuccess, r.skillMapXpAwarded); setShowMark(false); flash('Node completed!'); fetchD(); fetchH(); } catch (e) { flash(e.message || 'Failed', true); } };
+  const saveDesc = async () => { try { await updateNodeContent(nodeId, { description: descIn.trim() }); setEditDesc(false); flash('Saved!'); fetchD(); } catch { flash('Failed to save', true); } };
+
   const startPractice = () => {
     if (!node || !sessTitle.trim()) return;
-    // Block if session already exists for this node
-    if (activeS) { setErr('A session for this node already exists. Complete or remove it first.'); setTimeout(()=>setErr(''),5000); return; }
-    // Block if any session is running
+    if (activeS) { flash('Complete or remove the current session first', true); return; }
     const running = activeSessions.find(s => s.isRunning);
-    if (running) { setErr(`"${running.skillName}" is running. Pause it first.`); setTimeout(()=>setErr(''),5000); return; }
-    const t = cd ? tgtM*60 : 0;
-    // Truncate node title to 20 chars to match practice API validation
-    const truncatedTitle = node.title.slice(0, 20);
-    addSession({ skillName: truncatedTitle, nodeId, skillId, tags: [currentSkill?.name||''], notes: sessTitle.trim(), timer: cd?t:0, targetTime: t, isCountdown: cd, isRunning: true });
-    setShowPractice(false); setSessTitle(''); setOk('Session started!'); setTimeout(()=>setOk(''),3000);
+    if (running) { flash(`"${running.skillName}" is running. Pause it first.`, true); return; }
+    const t = cd ? tgtM * 60 : 0;
+    addSession({ skillName: node.title.slice(0, 20), nodeId, skillId, tags: [currentSkill?.name || ''], notes: sessTitle.trim(), timer: cd ? t : 0, targetTime: t, isCountdown: cd, isRunning: true });
+    setShowPractice(false); setSessTitle(''); flash('Session started!');
   };
-  const openComp = (s) => {
-    // Calculate elapsed time
-    const elapsed = s.isCountdown ? Math.max(0, s.targetTime - s.timer) : s.timer;
-    // Require at least 60 seconds
-    if (elapsed < 60) {
-      setErr('Session must be at least 1 minute long');
-      setTimeout(() => setErr(''), 4000);
-      return;
-    }
-    if (s.isRunning) toggleSession(s.id);
-    setCompS(s);
-    setComp({ notes:'', confidence:3, blockers:'', nextStep:'' });
-    setShowComp(true);
-  };
-  const submitComp = async () => { 
-    if (!compS||!node) return; 
-    setSub(true); 
-    try { 
-      const sec = compS.isCountdown ? Math.max(0, compS.targetTime - compS.timer) : compS.timer; 
-      const mins = Math.max(1, Math.floor(sec/60));
-      const xpEarned = mins * 2;
-      // Truncate node title to 20 chars to match practice API validation
-      const truncatedTitle = node.title.slice(0, 20);
-      await practiceAPI.createPractice({ 
-        skillName: truncatedTitle, 
-        minutesPracticed: mins, 
-        tags: [currentSkill?.name||''], 
-        timerSeconds: sec, 
-        notes: comp.notes, 
-        confidence: comp.confidence, 
-        blockers: comp.blockers, 
-        nextStep: comp.nextStep, 
-        date: new Date().toISOString() 
-      }); 
-      if (node.status !== 'Completed' && node.status !== 'In_Progress') { 
-        try { await updateNodeStatus(nodeId, 'In_Progress'); } catch {} 
-      } 
-      removeSession(compS.id); 
-      setShowComp(false); 
-      showSuccess('Practice Logged!', `+${xpEarned} XP earned (${mins} min × 2 XP)`);
-      setOk(`+${xpEarned} XP earned!`); 
-      setTimeout(()=>setOk(''),5000); 
-      fetchD(); 
-      fetchH(); 
-    } catch { 
-      setErr('Failed'); 
-    } finally { 
-      setSub(false); 
-    } 
-  };
-  const removeActive = () => { if (activeS) { removeSession(activeS.id); setShowRemove(false); } };
-  if (loading && !node) return (<div className="min-h-screen bg-site-bg flex items-center justify-center"><div className="animate-spin w-10 h-10 border-4 border-site-accent border-t-transparent rounded-full" /></div>);
-  return (
-    <div className="min-h-screen bg-site-bg flex relative">
-      <div className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebar ? 'mr-0 lg:mr-80' : 'mr-0'}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-          <button onClick={() => { if ((activeS && activeS.isRunning) || tplRunning) { setShowBackConfirm(true); } else { nav(`/skills/${skillId}`); } }} className="mb-6 px-5 py-2.5 rounded-lg font-medium bg-site-accent text-white hover:bg-site-accent-hover text-sm shadow-lg border-2 border-[#1f3518]">Back to Skill Map</button>
-          {ok && <div className="mb-4 bg-green-50 border border-green-300 text-green-700 p-3 rounded-lg text-sm">{ok}</div>}
-          {err && <div className="mb-4 bg-red-50 border border-red-300 text-red-700 p-3 rounded-lg text-sm">{err}</div>}
-          {isLocked && <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl text-sm mb-6">Complete the previous node to unlock this one.</div>}
 
-          {/* Template Sessions or Regular Actions */}
-          {hasTemplateSessions ? (
-            <div className="mb-6 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold text-site-ink">Practice Sessions</h3>
-                <span className="text-xs text-site-faint">{completedSessions.length}/{node.sessionDefinitions.length} completed</span>
+  const openComp = (s) => {
+    const elapsed = s.isCountdown ? Math.max(0, s.targetTime - s.timer) : s.timer;
+    if (elapsed < 60) { flash('Session must be at least 1 minute', true); return; }
+    if (s.isRunning) toggleSession(s.id);
+    setCompS(s); setComp({ notes: '', confidence: 3, blockers: '', nextStep: '' }); setShowComp(true);
+  };
+
+  const submitComp = async () => {
+    if (!compS || !node) return; setSub(true);
+    try {
+      const sec = compS.isCountdown ? Math.max(0, compS.targetTime - compS.timer) : compS.timer;
+      const mins = Math.max(1, Math.floor(sec / 60)); const xp = mins * 2;
+      await practiceAPI.createPractice({ skillName: node.title.slice(0, 20), minutesPracticed: mins, tags: [currentSkill?.name || ''], timerSeconds: sec, notes: comp.notes, confidence: comp.confidence, blockers: comp.blockers, nextStep: comp.nextStep, date: new Date().toISOString() });
+      if (node.status !== 'Completed' && node.status !== 'In_Progress') { try { await updateNodeStatus(nodeId, 'In_Progress'); } catch {} }
+      removeSession(compS.id); setShowComp(false);
+      showSuccess('Practice Logged!', `+${xp} XP earned (${mins} min × 2 XP)`);
+      flash(`+${xp} XP earned!`); fetchD(); fetchH();
+    } catch { flash('Failed', true); } finally { setSub(false); }
+  };
+
+  const removeActive = () => { if (activeS) { removeSession(activeS.id); setShowRemove(false); } };
+
+  if (loading && !node) return (
+    <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
+      <div className="text-center">
+        <div className="animate-spin w-8 h-8 border-[3px] border-[#2e5023] border-t-transparent rounded-full mx-auto mb-3" />
+        <p className="text-sm text-[#9aa094]">Loading node...</p>
+      </div>
+    </div>
+  );
+
+  const nodeIdx = uNodes.indexOf(node);
+  const totalNodes = uNodes.length;
+
+  return (
+    <div className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden">
+
+      {/* ── Top bar ── */}
+      <header className="flex items-center justify-between px-5 sm:px-8 h-14 border-b border-[#eef0ea] flex-shrink-0">
+        <button onClick={goBack} className="flex items-center gap-2 text-[13px] text-[#565c52] hover:text-[#2e5023] font-medium transition-colors -ml-1">
+          <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">{currentSkill?.name || 'Back'}</span>
+        </button>
+        {nodeIdx >= 0 && totalNodes > 0 && (
+          <span className="text-[11px] text-[#b0b5ae] font-medium">Node {nodeIdx + 1} of {totalNodes}</span>
+        )}
+      </header>
+
+      {/* ── Scrollable content ── */}
+      <div className="flex-1 overflow-y-auto">
+
+        {/* ═══ HERO SECTION ═══ */}
+        <div className={`relative overflow-hidden ${isCompleted ? 'bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30' : activeS ? 'bg-gradient-to-br from-[#edf5e9] via-white to-[#f0faf0]' : 'bg-gradient-to-br from-[#f5f7f2] via-white to-[#fafbf8]'}`}>
+          {/* Decorative circles */}
+          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-[#2e5023] opacity-[0.03]" />
+          <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-[#2e5023] opacity-[0.02]" />
+
+          <div className="max-w-2xl mx-auto px-5 sm:px-8 pt-10 pb-8">
+            {/* Alerts */}
+            {ok && <div className="mb-4 flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-[13px] font-medium"><Zap className="w-4 h-4" />{ok}</div>}
+            {err && <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-xl text-[13px] font-medium"><AlertTriangle className="w-4 h-4" />{err}</div>}
+            {isLocked && <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2.5 rounded-xl text-[13px] font-medium"><Lock className="w-4 h-4" />Complete the previous node to unlock this one.</div>}
+
+            {/* Node identity */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ${isCompleted ? 'bg-emerald-500 shadow-emerald-500/20' : isLocked ? 'bg-gray-400 shadow-gray-400/20' : 'bg-[#2e5023] shadow-[#2e5023]/20'}`}>
+                {isFirst && !isCompleted ? <Rocket className="w-7 h-7 text-white" /> : isCompleted ? <CheckCircle className="w-7 h-7 text-white" /> : isLocked ? <Lock className="w-7 h-7 text-white" /> : <Unlock className="w-7 h-7 text-white" />}
               </div>
-              {isLocked ? null : node.sessionDefinitions.map((sd, i) => {
-                const isDone = completedSessions.includes(i);
-                const isCurrent = i === currentTplIndex;
-                const isSessionLocked = !isDone && !isCurrent;
-                return (
-                  <div key={i} className={`rounded-xl border-2 p-4 transition-all ${isDone ? 'border-green-300 bg-green-50/50' : isCurrent ? 'border-site-accent bg-white shadow-md' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${isDone ? 'bg-green-500' : isCurrent ? 'bg-site-accent' : 'bg-gray-300'}`}>
-                        {isDone ? <CheckCircle className="w-4 h-4 text-white" /> : isSessionLocked ? <Lock className="w-3.5 h-3.5 text-white" /> : <span className="text-xs font-bold text-white">{i + 1}</span>}
+              <div className="flex-1 min-w-0 pt-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a] leading-tight mb-2">{node?.title}</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full ${isCompleted ? 'bg-emerald-100 text-emerald-700' : isLocked ? 'bg-amber-100 text-amber-700' : hist.length > 0 ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {isCompleted ? <CheckCircle className="w-3 h-3" /> : isLocked ? <Lock className="w-3 h-3" /> : hist.length > 0 ? <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> : null}
+                    {dispStatus}
+                  </span>
+                  <span className="text-[11px] text-[#b0b5ae]">in {currentSkill?.name || 'Skill Map'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="mb-8">
+              {editDesc ? (
+                <div>
+                  <textarea value={descIn} onChange={e => setDescIn(e.target.value)} rows={3} maxLength={2000} autoFocus className="w-full px-4 py-3 border border-[#d4e8cc] rounded-xl text-sm text-[#1c1f1a] focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none bg-white/80 backdrop-blur-sm" placeholder="Describe what to learn in this node..." />
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={saveDesc} className="px-5 py-2 bg-[#2e5023] text-white text-[12px] font-semibold rounded-lg hover:bg-[#3d6b30] transition-colors">Save</button>
+                    <button onClick={() => { setEditDesc(false); setDescIn(nodeDetails?.node?.description || ''); }} className="px-5 py-2 text-[12px] text-[#565c52] hover:text-[#1c1f1a] font-medium transition-colors">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="group">
+                  <p className="text-[15px] text-[#565c52] leading-relaxed">
+                    {nodeDetails?.node?.description || <span className="italic text-[#c8cec0]">No description yet — add one to remember what this node is about</span>}
+                  </p>
+                  <button onClick={() => setEditDesc(true)} className="mt-1.5 text-[#2e5023] text-[12px] font-medium hover:underline inline-flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity"><PenLine className="w-3 h-3" />Edit description</button>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            {!isLocked && (
+              <div className="flex items-center gap-3 flex-wrap">
+                {isUnlocked && !isCompleted && !activeS && (
+                  <button onClick={() => setShowPractice(true)} className="flex items-center gap-2 px-6 py-3 bg-[#2e5023] text-white text-sm font-semibold rounded-xl hover:bg-[#3d6b30] transition-all shadow-lg shadow-[#2e5023]/15 active:scale-[0.97]">
+                    <Play className="w-4 h-4" />Start Practice Session
+                  </button>
+                )}
+                {isUnlocked && !isCompleted && hist.length > 0 && !activeS && (
+                  <button onClick={() => setShowMark(true)} className="flex items-center gap-2 px-6 py-3 text-[#2e5023] text-sm font-semibold rounded-xl border-2 border-[#c8dbbe] hover:bg-[#edf5e9] transition-colors">
+                    <CheckCircle className="w-4 h-4" />Mark as Complete
+                  </button>
+                )}
+                {isCompleted && (
+                  <div className="flex items-center gap-2 px-5 py-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <Trophy className="w-5 h-5 text-emerald-600" />
+                    <span className="text-sm font-semibold text-emerald-700">Node completed — great work!</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ═══ MAIN CONTENT ═══ */}
+        <div className="max-w-2xl mx-auto px-5 sm:px-8 py-8 space-y-8">
+
+          {/* ── Active Session Timer ── */}
+          {activeS && (
+            <section className={`rounded-2xl border-2 overflow-hidden ${activeS.isRunning ? 'border-emerald-300' : 'border-[#e8ebe4]'}`}>
+              <div className={`px-6 py-3 flex items-center justify-between ${activeS.isRunning ? 'bg-emerald-50' : 'bg-[#fafbf8]'}`}>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${activeS.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                  <span className="text-[13px] font-semibold text-[#1c1f1a]">{activeS.notes || 'Practice Session'}</span>
+                </div>
+                <button onClick={() => setShowRemove(true)} className="text-[12px] text-[#b0b5ae] hover:text-red-500 font-medium transition-colors">Discard</button>
+              </div>
+              <div className="bg-white px-6 py-10 flex flex-col items-center">
+                <p className={`text-7xl sm:text-8xl font-bold font-mono tracking-tighter leading-none ${activeS.isRunning ? 'text-emerald-600' : 'text-[#1c1f1a]'}`}>{formatTimer(activeS.timer)}</p>
+                {activeS.isCountdown && (
+                  <div className="w-full max-w-sm mt-6 h-2 bg-[#f0f2ec] rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${activeS.isRunning ? 'bg-emerald-500' : 'bg-[#2e5023]'}`} style={{ width: `${getProgress(activeS)}%` }} />
+                  </div>
+                )}
+              </div>
+              <div className="bg-[#fafbf8] border-t border-[#f0f2ec] px-6 py-4 flex gap-2">
+                <button onClick={() => toggleSession(activeS.id)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.97] ${activeS.isRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{activeS.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{activeS.isRunning ? 'Pause' : 'Resume'}</button>
+                <button onClick={() => resetSession(activeS.id)} className="px-4 py-3 border border-[#e8ebe4] text-[#565c52] rounded-xl hover:bg-white transition-colors"><RotateCcw className="w-4 h-4" /></button>
+                <button onClick={() => openComp(activeS)} disabled={(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60; })()} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">{(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60 ? `${60 - e}s left` : 'Complete & Log'; })()}</button>
+              </div>
+            </section>
+          )}
+
+          {/* ── Stats ── */}
+          <section>
+            <h2 className="text-xs font-bold text-[#9aa094] uppercase tracking-wider mb-3">Progress</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50', ring: 'ring-blue-100', val: timeStr, label: 'Total Time' },
+                { icon: Target, color: 'text-violet-500', bg: 'bg-violet-50', ring: 'ring-violet-100', val: String(hist.length), label: 'Sessions' },
+                { icon: Star, color: 'text-amber-500', bg: 'bg-amber-50', ring: 'ring-amber-100', val: avgConf, label: 'Confidence' },
+              ].map(s => (
+                <div key={s.label} className="bg-white rounded-2xl border border-[#eef0ea] p-5 text-center hover:shadow-md hover:shadow-black/[0.03] transition-shadow">
+                  <div className={`w-10 h-10 rounded-xl ${s.bg} ring-4 ${s.ring} flex items-center justify-center mx-auto mb-3`}>
+                    <s.icon className={`w-5 h-5 ${s.color}`} />
+                  </div>
+                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{s.val}</p>
+                  <p className="text-[11px] text-[#9aa094] font-medium">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── Template Sessions ── */}
+          {hasTPL && !activeS && (
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-bold text-[#9aa094] uppercase tracking-wider flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" />Practice Sessions</h2>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex gap-0.5">{node.sessionDefinitions.map((_, i) => <div key={i} className={`w-2 h-2 rounded-full ${doneTPL.includes(i) ? 'bg-emerald-500' : i === curTPLIdx ? 'bg-[#2e5023]' : 'bg-[#e8ebe4]'}`} />)}</div>
+                  <span className="text-[11px] font-semibold text-[#565c52] ml-1">{doneTPL.length}/{node.sessionDefinitions.length}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {isLocked ? null : node.sessionDefinitions.map((sd, i) => {
+                  const isDone = doneTPL.includes(i);
+                  const isCur = i === curTPLIdx;
+                  const isLk = !isDone && !isCur;
+                  return (
+                    <div key={i} className={`rounded-2xl border p-5 transition-all ${isDone ? 'border-emerald-200 bg-emerald-50/40' : isCur ? 'border-[#2e5023] bg-white shadow-md shadow-[#2e5023]/5' : 'border-[#eef0ea] bg-[#fafbf8] opacity-50'}`}>
+                      <div className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isDone ? 'bg-emerald-500' : isCur ? 'bg-[#2e5023]' : 'bg-[#d4d8ce]'}`}>
+                          {isDone ? <CheckCircle className="w-4 h-4 text-white" /> : isLk ? <Lock className="w-3.5 h-3.5 text-white" /> : <span className="text-xs font-bold text-white">{i + 1}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold ${isDone ? 'text-emerald-700' : isCur ? 'text-[#1c1f1a]' : 'text-[#b0b5ae]'}`}>{sd.title}</p>
+                          {sd.description && <p className={`text-[12px] mt-0.5 leading-relaxed ${isDone ? 'text-emerald-600/80' : isCur ? 'text-[#565c52]' : 'text-[#c8cec0]'}`}>{sd.description}</p>}
+                          {isDone && <p className="text-[10px] text-emerald-600 font-semibold mt-1.5">✓ Completed</p>}
+                          {isLk && <p className="text-[10px] text-[#c8cec0] mt-1">Complete previous session first</p>}
+                        </div>
+                      </div>
+                      {isCur && !isLocked && (
+                        <div className="mt-5 pt-4 border-t border-[#eef0ea]">
+                          <p className={`text-5xl font-bold font-mono text-center py-5 rounded-2xl mb-3 tracking-tight ${tplRunning ? 'bg-emerald-50 text-emerald-600' : 'bg-[#f5f7f2] text-[#1c1f1a]'}`}>{fmtTime(tplTimer)}</p>
+                          <div className="flex gap-2">
+                            <button onClick={() => setTplRunning(r => !r)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm active:scale-[0.97] ${tplRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{tplRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{tplRunning ? 'Pause' : 'Start'}</button>
+                            <button onClick={() => { setTplTimer(0); setTplRunning(false); }} className="px-4 py-3 border border-[#eef0ea] text-[#565c52] rounded-xl hover:bg-[#f5f7f2]"><RotateCcw className="w-4 h-4" /></button>
+                          </div>
+                          <button onClick={() => completeTplSession(i)} disabled={tplTimer < 60 || tplCompleting} className="w-full mt-2 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">{tplCompleting ? 'Completing...' : tplTimer < 60 ? `${60 - tplTimer}s until 1 min` : 'Complete Session'}</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {isCompleted && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-5 rounded-2xl text-sm text-center font-semibold flex items-center justify-center gap-2"><Trophy className="w-4 h-4" />All sessions completed!</div>}
+              </div>
+            </section>
+          )}
+
+          {/* ── Practice History ── */}
+          {!hasTPL && (
+            <section>
+              <h2 className="text-xs font-bold text-[#9aa094] uppercase tracking-wider mb-3">Practice History</h2>
+              {hist.length === 0 ? (
+                <div className="rounded-2xl border-2 border-dashed border-[#e8ebe4] bg-[#fafbf8] p-10 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white border border-[#eef0ea] flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <Clock className="w-7 h-7 text-[#d4d8ce]" />
+                  </div>
+                  <p className="text-[15px] font-semibold text-[#1c1f1a] mb-1">No sessions yet</p>
+                  <p className="text-[13px] text-[#9aa094] max-w-xs mx-auto">Start your first practice session to begin tracking your progress on this node.</p>
+                  {isUnlocked && !isCompleted && !activeS && (
+                    <button onClick={() => setShowPractice(true)} className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-[#2e5023] text-white text-[13px] font-semibold rounded-xl hover:bg-[#3d6b30] transition-colors shadow-md shadow-[#2e5023]/10 active:scale-[0.97]"><Play className="w-3.5 h-3.5" />Start Practicing</button>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-[#eef0ea] bg-white overflow-hidden">
+                  {paged.map((p, i) => (
+                    <div key={p._id} className={`px-5 py-4 flex items-start gap-4 ${i > 0 ? 'border-t border-[#f5f7f2]' : ''} hover:bg-[#fafbf8] transition-colors`}>
+                      <div className="w-9 h-9 rounded-xl bg-[#f5f7f2] flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-[12px] font-bold text-[#2e5023]">{(page - 1) * PER_PAGE + i + 1}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold ${isDone ? 'text-green-700' : isCurrent ? 'text-site-ink' : 'text-gray-400'}`}>{sd.title}</p>
-                        {sd.description && <p className={`text-xs mt-1 leading-relaxed ${isDone ? 'text-green-600' : isCurrent ? 'text-site-muted' : 'text-gray-400'}`}>{sd.description}</p>}
-                        {isDone && <p className="text-[10px] text-green-600 font-medium mt-1">✓ Completed</p>}
-                        {isSessionLocked && <p className="text-[10px] text-gray-400 mt-1">Complete previous session to unlock</p>}
-                      </div>
-                    </div>
-                    {isCurrent && !isLocked && (
-                      <div className="mt-4 pt-3 border-t border-site-border">
-                        <div className={`text-3xl font-bold font-mono text-center py-3 rounded-xl mb-3 ${tplRunning ? 'bg-green-100 text-green-700' : 'bg-site-bg text-site-ink'}`}>{fmtTplTimer(tplTimer)}</div>
-                        <div className="flex gap-2">
-                          <button onClick={() => setTplRunning(r => !r)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-medium text-sm ${tplRunning ? 'bg-gray-700 text-white hover:bg-gray-800' : 'bg-site-accent text-white hover:bg-site-accent-hover'}`}>{tplRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{tplRunning ? 'Pause' : 'Start'}</button>
-                          <button onClick={() => { setTplTimer(0); setTplRunning(false); }} className="px-3 py-2.5 border border-site-border text-site-muted rounded-lg hover:bg-site-bg"><RotateCcw className="w-4 h-4" /></button>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[14px] font-semibold text-[#1c1f1a]">{p.notes || 'Session'}</span>
+                          <span className="text-[11px] text-[#b0b5ae] bg-[#f5f7f2] px-2 py-0.5 rounded-full font-medium">{p.timerSeconds ? `${Math.floor(p.timerSeconds / 60)}m ${p.timerSeconds % 60}s` : `${p.minutesPracticed}m`}</span>
                         </div>
-                        <button onClick={() => completeTplSession(i)} disabled={tplTimer < 60 || tplCompleting} className="w-full mt-2 py-2.5 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed">{tplCompleting ? 'Completing...' : tplTimer < 60 ? `${60 - tplTimer}s until 1 min` : 'Complete Session'}</button>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {p.confidence > 0 && (
+                            <div className="flex items-center gap-1">
+                              <div className="flex gap-px">{[1, 2, 3, 4, 5].map(s => <Star key={s} className={`w-3 h-3 ${s <= p.confidence ? 'text-amber-400 fill-amber-400' : 'text-[#e8ebe4]'}`} />)}</div>
+                              <span className="text-[10px] text-[#b0b5ae] ml-0.5">{CONF_LABELS[p.confidence]}</span>
+                            </div>
+                          )}
+                          {p.blockers && <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{p.blockers}</span>}
+                          {p.nextStep && <span className="text-[11px] text-[#2e5023] bg-[#edf5e9] px-2 py-0.5 rounded-lg font-medium flex items-center gap-1"><ArrowRight className="w-3 h-3" />{p.nextStep}</span>}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-              {isCompleted && <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-sm text-center font-medium">✓ All sessions completed — node done!</div>}
-            </div>
-          ) : (
-          <>
-          {/* Actions + Active Session row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-stretch">
-            {/* Left: Actions */}
-            <div className="flex flex-col space-y-3">
-              {isUnlocked && !isCompleted && (
-                <button onClick={() => { if (activeS) { setErr('Complete or end the ongoing session to start a new one'); setTimeout(()=>setErr(''),4000); } else { setShowPractice(true); } }} className={`w-full py-3.5 rounded-xl font-semibold shadow-md text-sm flex items-center justify-center gap-2 ${activeS ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-site-accent text-white hover:bg-site-accent-hover'}`}><Play className="w-5 h-5" />Start Practice Session</button>
-              )}
-              {isUnlocked && !isCompleted && (
-                <button onClick={() => { if (activeS) { setErr('Complete or end the ongoing session first'); setTimeout(()=>setErr(''),4000); } else if (hist.length === 0) { setErr('Complete at least one practice session before marking as complete'); setTimeout(()=>setErr(''),4000); } else { setShowMark(true); } }} className={`w-full py-3 border-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 ${activeS || hist.length === 0 ? 'border-gray-300 text-gray-400 cursor-not-allowed' : 'border-green-500 text-green-700 hover:bg-green-50'}`}><CheckCircle className="w-4 h-4" />Mark as Complete</button>
-              )}
-              {isCompleted && <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-sm text-center font-medium">✓ This node is completed</div>}
-              {/* Quick stats inline */}
-              <div className="grid grid-cols-3 gap-2 flex-1">
-                <div className="bg-site-surface rounded-lg border border-site-border p-3 text-center flex flex-col items-center justify-center"><Clock className="w-4 h-4 text-site-accent mx-auto mb-1" /><p className="text-sm font-bold text-site-ink">{timeStr}</p><p className="text-[10px] text-site-faint">Total Time</p></div>
-                <div className="bg-site-surface rounded-lg border border-site-border p-3 text-center flex flex-col items-center justify-center"><Target className="w-4 h-4 text-site-accent mx-auto mb-1" /><p className="text-sm font-bold text-site-ink">{hist.length}</p><p className="text-[10px] text-site-faint">Sessions</p></div>
-                <div className="bg-site-surface rounded-lg border border-site-border p-3 text-center flex flex-col items-center justify-center"><Star className="w-4 h-4 text-yellow-500 mx-auto mb-1" /><p className="text-sm font-bold text-site-ink">{hist.length > 0 ? (hist.reduce((s,p) => s + (p.confidence||0), 0) / hist.length).toFixed(1) : '—'}</p><p className="text-[10px] text-site-faint">Avg Confidence</p></div>
-              </div>
-            </div>
-
-            {/* Right: Active Session */}
-            <div className="flex flex-col">
-              {activeS ? (
-                <div className={`rounded-xl border-2 p-5 shadow-sm flex-1 flex flex-col ${activeS.isRunning ? 'border-green-500 bg-green-50/50' : 'border-site-border bg-site-surface'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold text-site-ink">{activeS.notes || 'Session'}</p>
-                    <button onClick={() => setShowRemove(true)} className="p-1 text-site-faint hover:text-red-500 rounded"><X className="w-4 h-4" /></button>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-center">
-                    <div className={`text-4xl font-bold font-mono text-center py-4 rounded-xl mb-3 ${activeS.isRunning ? 'bg-green-100 text-green-700' : 'bg-site-bg text-site-ink'}`}>{formatTimer(activeS.timer)}</div>
-                    {activeS.isCountdown && <div className="w-full h-1.5 bg-gray-200 rounded-full mb-3 overflow-hidden"><div className={`h-full rounded-full transition-all duration-1000 ${activeS.isRunning ? 'bg-green-500' : 'bg-site-accent'}`} style={{ width: `${getProgress(activeS)}%` }} /></div>}
-                  </div>
-                  <div className="flex gap-2 mb-3">
-                    <button onClick={() => toggleSession(activeS.id)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-medium text-sm ${activeS.isRunning ? 'bg-gray-700 text-white' : 'bg-site-accent text-white hover:bg-site-accent-hover'}`}>{activeS.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{activeS.isRunning ? 'Pause' : 'Resume'}</button>
-                    <button onClick={() => resetSession(activeS.id)} className="px-3 py-2.5 border border-site-border text-site-muted rounded-lg hover:bg-site-bg"><RotateCcw className="w-4 h-4" /></button>
-                  </div>
-                  <button onClick={() => openComp(activeS)} disabled={(() => { const elapsed = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return elapsed < 60; })()} className="w-full py-2.5 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed">{(() => { const elapsed = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return elapsed < 60 ? `${60 - elapsed}s until 1 min` : 'Complete & Log'; })()}</button>
-                </div>
-              ) : !isLocked && !isCompleted ? (
-                <div className="rounded-xl border-2 border-dashed border-site-border p-8 text-center flex-1 flex flex-col items-center justify-center">
-                  <Play className="w-8 h-8 text-site-faint mb-2" />
-                  <p className="text-sm text-site-muted">No active session</p>
-                  <p className="text-xs text-site-faint mt-1">Click "Start Practice" to begin</p>
-                </div>
-              ) : null}
-            </div>
-          </div>
-          </>
-          )}
-
-          {/* Practice History - hidden for template nodes */}
-          {!hasTemplateSessions && (
-          <div className="bg-site-surface rounded-xl border border-site-border p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-site-ink">Practice History ({hist.length})</h3>
-            </div>
-            {hist.length === 0 ? (
-              <p className="text-sm text-site-muted text-center py-8">No sessions yet. Start practicing!</p>
-            ) : (<>
-              <div className="space-y-2">
-                {paged.map(p => (
-                  <div key={p._id} className="p-3 bg-site-bg rounded-lg">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2"><span className="text-sm font-semibold text-site-ink">{p.notes || 'Session'}</span><span className="text-xs text-site-faint">· {p.timerSeconds ? `${Math.floor(p.timerSeconds/60)}m ${p.timerSeconds%60}s` : `${p.minutesPracticed}min`}</span></div>
-                      <span className="text-xs text-site-faint">{new Date(p.date).toLocaleDateString()}</span>
+                      <span className="text-[11px] text-[#b0b5ae] flex-shrink-0 pt-1">{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     </div>
-                    {p.confidence && <div className="flex gap-0.5 mb-1">{[1,2,3,4,5].map(i => <Star key={i} className={`w-3 h-3 ${i <= p.confidence ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />)}</div>}
-                    {p.blockers && <p className="text-xs text-amber-600 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{p.blockers}</p>}
-                    {p.nextStep && <p className="text-xs text-site-accent flex items-center gap-1"><ArrowRight className="w-3 h-3" />{p.nextStep}</p>}
-                  </div>
-                ))}
-              </div>
-              {totPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-4">
-                  <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1} className="p-1.5 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
-                  <span className="text-xs text-site-muted">{page}/{totPages}</span>
-                  <button onClick={() => setPage(p => Math.min(totPages,p+1))} disabled={page>=totPages} className="p-1.5 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
+                  ))}
+                  {totPages > 1 && (
+                    <div className="flex items-center justify-between px-5 py-3 border-t border-[#f5f7f2] bg-[#fafbf8]">
+                      <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="flex items-center gap-1 text-[12px] text-[#565c52] hover:text-[#1c1f1a] disabled:opacity-30 font-medium transition-colors"><ChevronLeft className="w-3.5 h-3.5" />Previous</button>
+                      <span className="text-[11px] text-[#b0b5ae]">Page {page} of {totPages}</span>
+                      <button onClick={() => setPage(p => Math.min(totPages, p + 1))} disabled={page >= totPages} className="flex items-center gap-1 text-[12px] text-[#565c52] hover:text-[#1c1f1a] disabled:opacity-30 font-medium transition-colors">Next<ChevronRight className="w-3.5 h-3.5" /></button>
+                    </div>
+                  )}
                 </div>
               )}
-            </>)}
-          </div>
+            </section>
           )}
+
+          {/* Bottom spacer */}
+          <div className="h-8" />
         </div>
       </div>
 
-      {/* Sidebar */}
-      <div className={`fixed lg:fixed top-0 right-0 h-full bg-white border-l-4 border-site-accent shadow-xl transition-transform duration-300 z-40 ${sidebar ? 'translate-x-0' : 'translate-x-full'} w-80 flex flex-col`}>
-        <div className="p-4 border-b-4 border-site-accent bg-gradient-to-r from-green-100 to-emerald-100"><h2 className="text-lg font-bold text-gray-900">Node Details</h2></div>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4">
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isCompleted ? 'bg-green-500' : isUnlocked ? 'bg-site-accent' : 'bg-gray-300'}`}>
-                {isFirst && !isCompleted ? <Rocket className="w-5 h-5 text-white" /> : isCompleted ? <CheckCircle className="w-5 h-5 text-white" /> : isUnlocked ? <Unlock className="w-5 h-5 text-white" /> : <Lock className="w-5 h-5 text-white" />}
-              </div>
-              <div className="min-w-0"><h3 className="font-bold text-gray-900 truncate">{node?.title}</h3><span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${isCompleted ? 'bg-green-100 text-green-700' : isUnlocked ? 'bg-site-soft text-site-accent' : 'bg-gray-100 text-gray-500'}`}>{dispStatus}</span></div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="text-center p-2 bg-site-bg rounded-lg"><p className="text-lg font-bold text-site-ink">{hist.length}</p><p className="text-[10px] text-site-faint">Sessions</p></div>
-              <div className="text-center p-2 bg-site-bg rounded-lg"><p className="text-lg font-bold text-site-ink">{timeStr}</p><p className="text-[10px] text-site-faint">Total Time</p></div>
-            </div>
-          </div>
-          <div className="bg-site-soft rounded-lg p-3 border border-site-border"><p className="text-[10px] text-site-faint uppercase mb-0.5">Skill Map</p><p className="text-sm font-semibold text-site-ink truncate">{currentSkill?.name || '—'}</p></div>
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-2"><h4 className="text-sm font-bold text-gray-900">Description</h4>{!editDesc && <button onClick={() => setEditDesc(true)} className="text-[10px] text-site-accent font-medium hover:underline">Edit</button>}</div>
-            {editDesc ? (<div><textarea value={descIn} onChange={e => setDescIn(e.target.value)} rows={4} maxLength={2000} className="w-full px-3 py-2 border border-site-border rounded-lg text-xs focus:border-site-accent outline-none resize-none mb-2" placeholder="What to learn?" /><div className="flex gap-2"><button onClick={saveDesc} className="px-3 py-1 bg-site-accent text-white text-[10px] rounded font-medium">Save</button><button onClick={() => { setEditDesc(false); setDescIn(nodeDetails?.node?.description||''); }} className="px-3 py-1 border border-site-border text-site-muted text-[10px] rounded">Cancel</button></div></div>
-            ) : (<p className="text-xs text-gray-600 break-words">{nodeDetails?.node?.description || 'No description yet.'}</p>)}
-          </div>
-          {node?.sessionDefinitions && node.sessionDefinitions.length > 0 && (
-            <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-              <h4 className="text-sm font-bold text-gray-900 mb-2">Practice Sessions ({node.sessionDefinitions.length})</h4>
-              <div className="space-y-2">
-                {node.sessionDefinitions.map((sd, i) => (
-                  <div key={i} className="p-2.5 bg-site-bg rounded-lg">
-                    <p className="text-xs font-semibold text-site-ink mb-0.5">{sd.title}</p>
-                    {sd.description && <p className="text-[11px] text-site-muted leading-relaxed">{sd.description}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      <button onClick={() => setSidebar(!sidebar)} className={`fixed top-4 p-2.5 bg-white border-2 border-site-accent rounded-full shadow-lg hover:shadow-xl transition-all z-50 hover:bg-site-soft ${sidebar ? 'right-[20.5rem]' : 'right-4'}`}>{sidebar ? <ChevronRight className="w-5 h-5 text-site-accent" /> : <ChevronLeft className="w-5 h-5 text-site-accent" />}</button>
-      {sidebar && <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setSidebar(false)} />}
+      {/* ═══ MODALS ═══ */}
 
-      {/* Back confirm when session running */}
-      {showBackConfirm && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-xs p-6 text-center">
-        <h2 className="text-lg font-bold text-site-ink mb-2">Leave this page?</h2><p className="text-sm text-site-muted mb-4">Your session is still running. Progress will not be saved.</p>
-        <div className="flex gap-3"><button onClick={() => setShowBackConfirm(false)} className="flex-1 py-2 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg">Stay</button><button onClick={() => { setTplRunning(false); setShowBackConfirm(false); nav(`/skills/${skillId}`); }} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700">Leave</button></div>
+      {showBackConfirm && (<div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4"><div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-6 h-6 text-amber-500" /></div>
+        <h3 className="text-base font-bold text-[#1c1f1a] mb-1">Leave this page?</h3>
+        <p className="text-[13px] text-[#565c52] mb-5">Session is running. Progress won't be saved.</p>
+        <div className="flex gap-2">
+          <button onClick={() => setShowBackConfirm(false)} className="flex-1 py-2.5 border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Stay</button>
+          <button onClick={() => { setTplRunning(false); setShowBackConfirm(false); nav(`/skills/${skillId}`); }} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 text-sm transition-colors">Leave</button>
+        </div>
       </div></div>)}
-      {/* Remove session confirm */}
-      {showRemove && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-xs p-6 text-center">
-        <h2 className="text-lg font-bold text-site-ink mb-2">Remove session?</h2><p className="text-sm text-site-muted mb-4">This will discard the active session and unsaved progress.</p>
-        <div className="flex gap-3"><button onClick={() => setShowRemove(false)} className="flex-1 py-2 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg">Cancel</button><button onClick={removeActive} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700">Remove</button></div>
+
+      {showRemove && (<div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4"><div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4"><X className="w-6 h-6 text-red-500" /></div>
+        <h3 className="text-base font-bold text-[#1c1f1a] mb-1">Discard session?</h3>
+        <p className="text-[13px] text-[#565c52] mb-5">This removes the active session and unsaved progress.</p>
+        <div className="flex gap-2">
+          <button onClick={() => setShowRemove(false)} className="flex-1 py-2.5 border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Keep</button>
+          <button onClick={removeActive} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 text-sm transition-colors">Discard</button>
+        </div>
       </div></div>)}
-      {/* Mark complete confirm */}
-      {showMark && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
-        <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" /><h2 className="text-lg font-bold text-site-ink mb-2">Mark as Complete?</h2><p className="text-sm text-site-muted mb-5">Are you sure you want to mark <span className="font-semibold text-site-ink">"{node?.title}"</span> as completed?</p>
-        <div className="flex gap-3"><button onClick={() => setShowMark(false)} className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg">Cancel</button><button onClick={markDone} className="flex-1 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">Yes, Complete</button></div>
+
+      {showMark && (<div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4"><div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4"><CheckCircle className="w-6 h-6 text-emerald-500" /></div>
+        <h3 className="text-base font-bold text-[#1c1f1a] mb-1">Mark as complete?</h3>
+        <p className="text-[13px] text-[#565c52] mb-5"><span className="font-semibold">"{node?.title}"</span> will be marked done.</p>
+        <div className="flex gap-2">
+          <button onClick={() => setShowMark(false)} className="flex-1 py-2.5 border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Cancel</button>
+          <button onClick={markDone} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 text-sm transition-colors">Complete</button>
+        </div>
       </div></div>)}
-      {/* Start practice */}
-      {showPractice && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
-        <h2 className="text-lg font-bold text-site-ink mb-1">Start Practice</h2><p className="text-xs text-site-muted mb-4">Node: <span className="font-semibold text-site-ink">{node?.title}</span></p>
-        <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1">Session Title *</label><input type="text" value={sessTitle} onChange={e => { if (e.target.value.length <= 20) setSessTitle(e.target.value); }} placeholder="e.g. 1st session" maxLength={20} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none" /><div className="text-right text-[10px] text-site-faint mt-0.5">{sessTitle.length}/20</div></div>
-        <div className="flex gap-2 mb-3"><button onClick={() => setCd(true)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${cd ? 'bg-site-accent text-white' : 'bg-site-bg text-site-muted border border-site-border'}`}>Countdown</button><button onClick={() => setCd(false)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${!cd ? 'bg-site-accent text-white' : 'bg-site-bg text-site-muted border border-site-border'}`}>Stopwatch</button></div>
-        {cd && <div className="mb-4"><label className="block text-xs text-site-faint mb-1">Minutes</label><input type="number" min={1} max={120} value={tgtM} onChange={e => setTgtM(Math.max(1,Math.min(120,parseInt(e.target.value)||25)))} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm text-center focus:border-site-accent outline-none" /></div>}
-        <div className="flex gap-3"><button onClick={startPractice} disabled={!sessTitle.trim()} className="flex-1 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover disabled:opacity-40 disabled:cursor-not-allowed">Start</button><button onClick={() => { setShowPractice(false); setSessTitle(''); }} className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg">Cancel</button></div>
+
+      {showPractice && (<div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4"><div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <h3 className="text-lg font-bold text-[#1c1f1a] mb-0.5">Start Practice</h3>
+        <p className="text-[12px] text-[#9aa094] mb-5">{node?.title}</p>
+        <div className="mb-4">
+          <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5">Session title *</label>
+          <input type="text" value={sessTitle} onChange={e => { if (e.target.value.length <= 20) setSessTitle(e.target.value); }} placeholder="e.g. Fundamentals review" maxLength={20} autoFocus className="w-full px-4 py-2.5 border border-[#e8ebe4] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none transition-all" />
+          <span className="text-[10px] text-[#b0b5ae] float-right mt-1">{sessTitle.length}/20</span>
+        </div>
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setCd(true)} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${cd ? 'bg-[#2e5023] text-white shadow-md' : 'bg-[#f5f7f2] text-[#565c52] border border-[#e8ebe4] hover:border-[#c8dbbe]'}`}>Countdown</button>
+          <button onClick={() => setCd(false)} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${!cd ? 'bg-[#2e5023] text-white shadow-md' : 'bg-[#f5f7f2] text-[#565c52] border border-[#e8ebe4] hover:border-[#c8dbbe]'}`}>Stopwatch</button>
+        </div>
+        {cd && <div className="mb-5"><label className="block text-[12px] text-[#9aa094] mb-1.5">Duration (minutes)</label><input type="number" min={1} max={120} value={tgtM} onChange={e => setTgtM(Math.max(1, Math.min(120, parseInt(e.target.value) || 25)))} className="w-full px-4 py-2.5 border border-[#e8ebe4] rounded-xl text-sm text-center focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none" /></div>}
+        <div className="flex gap-2">
+          <button onClick={startPractice} disabled={!sessTitle.trim()} className="flex-1 py-3 bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#3d6b30] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Start</button>
+          <button onClick={() => { setShowPractice(false); setSessTitle(''); }} className="flex-1 py-3 border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Cancel</button>
+        </div>
       </div></div>)}
-      {/* Complete session */}
-      {showComp && compS && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-        <div className="flex items-center justify-between mb-4"><h2 className="text-xl font-bold text-site-ink">Complete Session</h2><button onClick={() => { setShowComp(false); setCompS(null); }} className="text-site-faint hover:text-site-ink"><X className="w-5 h-5" /></button></div>
-        <div className="bg-site-bg rounded-lg p-3 mb-4"><p className="font-semibold text-site-ink">{node?.title}</p>{compS.notes && <p className="text-xs text-site-muted">{compS.notes}</p>}</div>
-        <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-2">Confidence *</label><div className="flex gap-1.5">{[1,2,3,4,5].map(n => (<button key={n} onClick={() => setComp(p => ({...p, confidence: n}))} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${comp.confidence === n ? 'bg-site-accent text-white shadow-md scale-105' : 'bg-site-bg text-site-muted border border-site-border hover:border-site-accent'}`}><Star className={`w-4 h-4 mx-auto mb-0.5 ${comp.confidence === n ? 'fill-white' : ''}`} />{n}</button>))}</div><p className="text-xs text-site-faint mt-1 text-center">{CONF[comp.confidence]}</p></div>
-        <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1">Notes</label><textarea value={comp.notes} onChange={e => { if (e.target.value.length <= 50) setComp(p => ({...p, notes: e.target.value})); }} rows={2} maxLength={50} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="What did you practice?" /><div className="text-right text-[10px] text-site-faint">{comp.notes.length}/50</div></div>
-        <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5 text-amber-500" />Blockers</label><textarea value={comp.blockers} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({...p, blockers: e.target.value})); }} rows={2} maxLength={200} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="Any challenges?" /><div className="text-right text-[10px] text-site-faint">{comp.blockers.length}/200</div></div>
-        <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1"><ArrowRight className="w-3.5 h-3.5 text-site-accent" />Next step</label><textarea value={comp.nextStep} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({...p, nextStep: e.target.value})); }} rows={2} maxLength={200} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="What's next?" /><div className="text-right text-[10px] text-site-faint">{comp.nextStep.length}/200</div></div>
-        <button onClick={submitComp} disabled={sub} className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50">{sub ? 'Saving...' : 'Save Practice Log'}</button>
+
+      {showComp && compS && (<div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4"><div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-[#1c1f1a]">Complete Session</h3>
+          <button onClick={() => { setShowComp(false); setCompS(null); }} className="p-1.5 text-[#b0b5ae] hover:text-[#1c1f1a] rounded-lg hover:bg-[#f5f7f2] transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="bg-[#f5f7f2] rounded-xl p-4 mb-5 border border-[#eef0ea]"><p className="text-sm font-semibold text-[#1c1f1a]">{node?.title}</p>{compS.notes && <p className="text-[12px] text-[#565c52] mt-0.5">{compS.notes}</p>}</div>
+        <div className="mb-5">
+          <label className="block text-[13px] font-semibold text-[#1c1f1a] mb-2.5">How confident do you feel?</label>
+          <div className="flex gap-2">{[1, 2, 3, 4, 5].map(n => (
+            <button key={n} onClick={() => setComp(p => ({ ...p, confidence: n }))} className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${comp.confidence === n ? 'bg-[#2e5023] text-white scale-[1.05] shadow-lg shadow-[#2e5023]/15' : 'bg-[#f5f7f2] text-[#565c52] border border-[#eef0ea] hover:border-[#c8dbbe]'}`}>
+              <Star className={`w-4 h-4 mx-auto mb-0.5 ${comp.confidence === n ? 'fill-white' : ''}`} />{n}
+            </button>
+          ))}</div>
+          <p className="text-[11px] text-[#b0b5ae] mt-1.5 text-center">{CONF_LABELS[comp.confidence]}</p>
+        </div>
+        <div className="mb-4">
+          <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5">Notes</label>
+          <textarea value={comp.notes} onChange={e => { if (e.target.value.length <= 50) setComp(p => ({ ...p, notes: e.target.value })); }} rows={2} maxLength={50} className="w-full px-4 py-2.5 border border-[#eef0ea] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none" placeholder="What did you practice?" />
+          <span className="text-[10px] text-[#b0b5ae] float-right mt-0.5">{comp.notes.length}/50</span>
+        </div>
+        <div className="mb-4">
+          <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-500" />Blockers</label>
+          <textarea value={comp.blockers} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({ ...p, blockers: e.target.value })); }} rows={2} maxLength={200} className="w-full px-4 py-2.5 border border-[#eef0ea] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none" placeholder="Any challenges?" />
+          <span className="text-[10px] text-[#b0b5ae] float-right mt-0.5">{comp.blockers.length}/200</span>
+        </div>
+        <div className="mb-6">
+          <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5 flex items-center gap-1.5"><ArrowRight className="w-3.5 h-3.5 text-[#2e5023]" />Next step</label>
+          <textarea value={comp.nextStep} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({ ...p, nextStep: e.target.value })); }} rows={2} maxLength={200} className="w-full px-4 py-2.5 border border-[#eef0ea] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none" placeholder="What's next?" />
+          <span className="text-[10px] text-[#b0b5ae] float-right mt-0.5">{comp.nextStep.length}/200</span>
+        </div>
+        <button onClick={submitComp} disabled={sub} className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-lg shadow-emerald-600/15">{sub ? 'Saving...' : 'Save Practice Log'}</button>
       </div></div>)}
+
     </div>
   );
 }

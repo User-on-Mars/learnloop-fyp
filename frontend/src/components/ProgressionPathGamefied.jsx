@@ -275,78 +275,70 @@ export default function ProgressionPathGamefied() {
   const icon = currentSkill.icon || 'Map';
 
   return (
-    <div className="flex min-h-screen bg-site-bg relative overflow-hidden">
-      {/* Pixel Art Background Pattern */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-30"
-        style={{
-          backgroundImage: `
-            repeating-linear-gradient(0deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 11px),
-            repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 11px)
-          `,
-          backgroundSize: '11px 11px'
-        }}
-      />
-      
-      {/* Decorative Pixel Art Background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.35]">
-        {/* Trees - distributed vertically */}
-        <svg className="absolute top-[5%] left-[5%]" width="28" height="44" viewBox="0 0 7 11"><rect x="3" y="7" width="1" height="4" fill="#6B4226"/><rect x="1" y="3" width="5" height="4" fill="#2e5023"/><rect x="2" y="1" width="3" height="2" fill="#4f7942"/></svg>
-        <svg className="absolute top-[20%] right-[6%]" width="36" height="52" viewBox="0 0 9 13"><rect x="3" y="9" width="3" height="4" fill="#8B5E3C"/><rect x="1" y="4" width="7" height="5" fill="#2e5023"/><rect x="2" y="1" width="5" height="3" fill="#4f7942"/></svg>
-        <svg className="absolute top-[40%] left-[3%]" width="32" height="48" viewBox="0 0 8 12"><rect x="3" y="8" width="2" height="4" fill="#6B4226"/><rect x="1" y="4" width="6" height="4" fill="#2e5023"/><rect x="2" y="2" width="4" height="2" fill="#4f7942"/></svg>
-        <svg className="absolute top-[60%] right-[4%]" width="28" height="44" viewBox="0 0 7 11"><rect x="3" y="7" width="1" height="4" fill="#6B4226"/><rect x="1" y="3" width="5" height="4" fill="#2e5023"/><rect x="2" y="1" width="3" height="2" fill="#4f7942"/></svg>
-        <svg className="absolute top-[80%] left-[6%]" width="36" height="52" viewBox="0 0 9 13"><rect x="4" y="9" width="2" height="4" fill="#8B5E3C"/><rect x="1" y="4" width="7" height="5" fill="#2e5023"/><rect x="2" y="1" width="5" height="3" fill="#4f7942"/></svg>
-        <svg className="absolute top-[90%] right-[8%]" width="32" height="48" viewBox="0 0 8 12"><rect x="3" y="8" width="2" height="4" fill="#6B4226"/><rect x="1" y="4" width="6" height="4" fill="#2e5023"/><rect x="2" y="2" width="4" height="2" fill="#4f7942"/></svg>
-        {/* Flowers - distributed */}
-        <svg className="absolute top-[10%] left-[15%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#FF69B4"/><rect x="2" y="1" width="1" height="1" fill="#FF69B4"/><rect x="1" y="0" width="1" height="1" fill="#FF69B4"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
-        <svg className="absolute top-[25%] right-[18%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#FF6347"/><rect x="2" y="1" width="1" height="1" fill="#FF6347"/><rect x="1" y="0" width="1" height="1" fill="#FF6347"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
-        <svg className="absolute top-[45%] left-[10%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#DA70D6"/><rect x="2" y="1" width="1" height="1" fill="#DA70D6"/><rect x="1" y="0" width="1" height="1" fill="#DA70D6"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
-        <svg className="absolute top-[55%] right-[15%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#87CEEB"/><rect x="2" y="1" width="1" height="1" fill="#87CEEB"/><rect x="1" y="0" width="1" height="1" fill="#87CEEB"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
-        <svg className="absolute top-[70%] left-[12%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#FFB6C1"/><rect x="2" y="1" width="1" height="1" fill="#FFB6C1"/><rect x="1" y="0" width="1" height="1" fill="#FFB6C1"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
-        <svg className="absolute top-[85%] right-[20%]" width="16" height="20" viewBox="0 0 4 5"><rect x="1" y="3" width="1" height="2" fill="#4f7942"/><rect x="0" y="1" width="1" height="1" fill="#FFA500"/><rect x="2" y="1" width="1" height="1" fill="#FFA500"/><rect x="1" y="0" width="1" height="1" fill="#FFA500"/><rect x="1" y="1" width="1" height="1" fill="#FFD700"/></svg>
-        {/* Grass - along edges */}
-        <svg className="absolute top-[15%] left-[1%]" width="32" height="10" viewBox="0 0 8 3"><rect x="0" y="2" width="8" height="1" fill="#4f7942"/><rect x="1" y="0" width="1" height="2" fill="#2e5023"/><rect x="4" y="1" width="1" height="1" fill="#4f7942"/><rect x="6" y="0" width="1" height="1" fill="#2e5023"/></svg>
-        <svg className="absolute top-[35%] right-[2%]" width="28" height="10" viewBox="0 0 7 3"><rect x="0" y="2" width="7" height="1" fill="#4f7942"/><rect x="2" y="0" width="1" height="2" fill="#2e5023"/><rect x="5" y="1" width="1" height="1" fill="#4f7942"/></svg>
-        <svg className="absolute top-[65%] left-[2%]" width="24" height="10" viewBox="0 0 6 3"><rect x="0" y="2" width="6" height="1" fill="#4f7942"/><rect x="1" y="0" width="1" height="2" fill="#2e5023"/><rect x="4" y="1" width="1" height="1" fill="#4f7942"/></svg>
-        <svg className="absolute top-[95%] right-[3%]" width="32" height="10" viewBox="0 0 8 3"><rect x="0" y="2" width="8" height="1" fill="#4f7942"/><rect x="3" y="0" width="1" height="2" fill="#2e5023"/><rect x="6" y="1" width="1" height="1" fill="#4f7942"/></svg>
-        {/* Animals - scattered */}
-        <svg className="absolute top-[30%] left-[8%]" width="20" height="16" viewBox="0 0 5 4"><rect x="1" y="1" width="3" height="2" fill="#4682B4"/><rect x="0" y="1" width="1" height="1" fill="#4682B4"/><rect x="4" y="0" width="1" height="1" fill="#4682B4"/><rect x="4" y="2" width="1" height="1" fill="#FFD700"/><rect x="2" y="1" width="1" height="1" fill="#fff"/></svg>
-        <svg className="absolute top-[50%] right-[10%]" width="20" height="16" viewBox="0 0 5 4"><rect x="2" y="0" width="1" height="4" fill="#333"/><rect x="0" y="0" width="2" height="2" fill="#FF69B4"/><rect x="3" y="0" width="2" height="2" fill="#FF69B4"/><rect x="0" y="2" width="2" height="1" fill="#DA70D6"/><rect x="3" y="2" width="2" height="1" fill="#DA70D6"/></svg>
-        <svg className="absolute top-[75%] right-[25%]" width="20" height="24" viewBox="0 0 5 6"><rect x="1" y="0" width="1" height="1" fill="#D2B48C"/><rect x="3" y="0" width="1" height="1" fill="#D2B48C"/><rect x="0" y="1" width="5" height="3" fill="#D2B48C"/><rect x="1" y="2" width="1" height="1" fill="#333"/><rect x="3" y="2" width="1" height="1" fill="#333"/><rect x="1" y="4" width="1" height="2" fill="#D2B48C"/><rect x="3" y="4" width="1" height="2" fill="#D2B48C"/></svg>
-        {/* Mushrooms */}
-        <svg className="absolute top-[18%] right-[12%]" width="14" height="18" viewBox="0 0 4 5"><rect x="1" y="3" width="2" height="2" fill="#F5F5DC"/><rect x="0" y="1" width="4" height="2" fill="#FF4500"/><rect x="1" y="1" width="1" height="1" fill="#fff"/></svg>
-        <svg className="absolute top-[68%] left-[14%]" width="14" height="18" viewBox="0 0 4 5"><rect x="1" y="3" width="2" height="2" fill="#F5F5DC"/><rect x="0" y="1" width="4" height="2" fill="#FF4500"/><rect x="2" y="1" width="1" height="1" fill="#fff"/></svg>
-        {/* Clouds */}
-        <svg className="absolute top-[3%] left-[30%]" width="48" height="20" viewBox="0 0 12 5"><rect x="2" y="2" width="8" height="3" fill="#fff"/><rect x="1" y="3" width="10" height="2" fill="#fff"/><rect x="3" y="0" width="3" height="2" fill="#fff"/><rect x="7" y="1" width="2" height="1" fill="#fff"/></svg>
-        <svg className="absolute top-[2%] right-[25%]" width="40" height="16" viewBox="0 0 10 4"><rect x="1" y="2" width="8" height="2" fill="#fff"/><rect x="2" y="0" width="3" height="2" fill="#fff"/><rect x="6" y="1" width="2" height="1" fill="#fff"/></svg>
+    <div className="min-h-screen bg-[#eef0ea] relative overflow-hidden">
+      {/* Dot grid */}
+      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #c8cec0 0.7px, transparent 0.7px)', backgroundSize: '20px 20px', opacity: 0.4 }} />
+
+      {/* Decorative elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Stylized trees */}
+        <svg className="absolute top-[5%] left-[4%] opacity-20" width="40" height="56" viewBox="0 0 40 56"><rect x="17" y="36" width="6" height="20" rx="2" fill="#6B4226"/><ellipse cx="20" cy="28" rx="16" ry="18" fill="#2e5023"/><ellipse cx="20" cy="18" rx="12" ry="14" fill="#4f7942"/></svg>
+        <svg className="absolute top-[22%] right-[5%] opacity-15" width="48" height="64" viewBox="0 0 48 64"><rect x="20" y="42" width="8" height="22" rx="3" fill="#8B5E3C"/><ellipse cx="24" cy="32" rx="20" ry="22" fill="#2e5023"/><ellipse cx="24" cy="20" rx="14" ry="16" fill="#4f7942"/></svg>
+        <svg className="absolute top-[45%] left-[3%] opacity-18" width="36" height="50" viewBox="0 0 36 50"><rect x="15" y="32" width="6" height="18" rx="2" fill="#6B4226"/><ellipse cx="18" cy="24" rx="14" ry="16" fill="#2e5023"/><ellipse cx="18" cy="16" rx="10" ry="12" fill="#4f7942"/></svg>
+        <svg className="absolute top-[65%] right-[4%] opacity-15" width="40" height="56" viewBox="0 0 40 56"><rect x="17" y="36" width="6" height="20" rx="2" fill="#6B4226"/><ellipse cx="20" cy="28" rx="16" ry="18" fill="#2e5023"/><ellipse cx="20" cy="18" rx="12" ry="14" fill="#4f7942"/></svg>
+        <svg className="absolute top-[85%] left-[6%] opacity-20" width="44" height="60" viewBox="0 0 44 60"><rect x="18" y="40" width="8" height="20" rx="3" fill="#8B5E3C"/><ellipse cx="22" cy="30" rx="18" ry="20" fill="#2e5023"/><ellipse cx="22" cy="20" rx="13" ry="15" fill="#4f7942"/></svg>
+
+        {/* Bushes / shrubs */}
+        <svg className="absolute top-[15%] left-[12%] opacity-15" width="32" height="20" viewBox="0 0 32 20"><ellipse cx="16" cy="14" rx="16" ry="6" fill="#4f7942"/><ellipse cx="10" cy="10" rx="10" ry="8" fill="#2e5023"/><ellipse cx="22" cy="10" rx="10" ry="8" fill="#2e5023"/></svg>
+        <svg className="absolute top-[38%] right-[10%] opacity-12" width="28" height="18" viewBox="0 0 28 18"><ellipse cx="14" cy="12" rx="14" ry="6" fill="#4f7942"/><ellipse cx="9" cy="8" rx="9" ry="7" fill="#2e5023"/><ellipse cx="19" cy="8" rx="9" ry="7" fill="#2e5023"/></svg>
+        <svg className="absolute top-[58%] left-[10%] opacity-14" width="30" height="18" viewBox="0 0 30 18"><ellipse cx="15" cy="12" rx="15" ry="6" fill="#4f7942"/><ellipse cx="10" cy="8" rx="10" ry="7" fill="#2e5023"/><ellipse cx="20" cy="8" rx="10" ry="7" fill="#2e5023"/></svg>
+        <svg className="absolute top-[78%] right-[8%] opacity-12" width="26" height="16" viewBox="0 0 26 16"><ellipse cx="13" cy="10" rx="13" ry="6" fill="#4f7942"/><ellipse cx="8" cy="7" rx="8" ry="6" fill="#2e5023"/><ellipse cx="18" cy="7" rx="8" ry="6" fill="#2e5023"/></svg>
+
+        {/* Small flowers */}
+        <svg className="absolute top-[10%] left-[18%] opacity-25" width="12" height="16" viewBox="0 0 12 16"><rect x="5" y="8" width="2" height="8" rx="1" fill="#4f7942"/><circle cx="6" cy="5" r="3" fill="#f9a8d4"/><circle cx="6" cy="5" r="1.5" fill="#fbbf24"/></svg>
+        <svg className="absolute top-[28%] right-[16%] opacity-20" width="12" height="16" viewBox="0 0 12 16"><rect x="5" y="8" width="2" height="8" rx="1" fill="#4f7942"/><circle cx="6" cy="5" r="3" fill="#fca5a5"/><circle cx="6" cy="5" r="1.5" fill="#fbbf24"/></svg>
+        <svg className="absolute top-[50%] left-[15%] opacity-22" width="12" height="16" viewBox="0 0 12 16"><rect x="5" y="8" width="2" height="8" rx="1" fill="#4f7942"/><circle cx="6" cy="5" r="3" fill="#c4b5fd"/><circle cx="6" cy="5" r="1.5" fill="#fbbf24"/></svg>
+        <svg className="absolute top-[70%] right-[14%] opacity-20" width="12" height="16" viewBox="0 0 12 16"><rect x="5" y="8" width="2" height="8" rx="1" fill="#4f7942"/><circle cx="6" cy="5" r="3" fill="#93c5fd"/><circle cx="6" cy="5" r="1.5" fill="#fbbf24"/></svg>
+        <svg className="absolute top-[90%] left-[14%] opacity-22" width="12" height="16" viewBox="0 0 12 16"><rect x="5" y="8" width="2" height="8" rx="1" fill="#4f7942"/><circle cx="6" cy="5" r="3" fill="#fdba74"/><circle cx="6" cy="5" r="1.5" fill="#fbbf24"/></svg>
+
+        {/* Sparkle stars */}
+        <svg className="absolute top-[8%] right-[20%] opacity-20" width="16" height="16" viewBox="0 0 16 16"><path d="M8 0L9.5 6.5L16 8L9.5 9.5L8 16L6.5 9.5L0 8L6.5 6.5Z" fill="#fbbf24"/></svg>
+        <svg className="absolute top-[35%] left-[8%] opacity-15" width="12" height="12" viewBox="0 0 12 12"><path d="M6 0L7 5L12 6L7 7L6 12L5 7L0 6L5 5Z" fill="#fbbf24"/></svg>
+        <svg className="absolute top-[55%] right-[6%] opacity-18" width="14" height="14" viewBox="0 0 14 14"><path d="M7 0L8.5 5.5L14 7L8.5 8.5L7 14L5.5 8.5L0 7L5.5 5.5Z" fill="#fbbf24"/></svg>
+        <svg className="absolute top-[75%] left-[6%] opacity-15" width="10" height="10" viewBox="0 0 10 10"><path d="M5 0L6 4L10 5L6 6L5 10L4 6L0 5L4 4Z" fill="#fbbf24"/></svg>
+
+        {/* Grass patches */}
+        <svg className="absolute top-[20%] left-[1%] opacity-20" width="40" height="12" viewBox="0 0 40 12"><path d="M2 12L5 4L8 12M12 12L16 2L20 12M24 12L27 6L30 12M34 12L37 3L40 12" stroke="#2e5023" strokeWidth="1.5" fill="none"/></svg>
+        <svg className="absolute top-[42%] right-[1%] opacity-18" width="36" height="12" viewBox="0 0 36 12"><path d="M2 12L5 5L8 12M12 12L15 3L18 12M22 12L25 6L28 12M32 12L34 4L36 12" stroke="#4f7942" strokeWidth="1.5" fill="none"/></svg>
+        <svg className="absolute top-[62%] left-[1%] opacity-16" width="32" height="10" viewBox="0 0 32 10"><path d="M2 10L4 4L6 10M10 10L13 2L16 10M20 10L22 5L24 10M28 10L30 3L32 10" stroke="#2e5023" strokeWidth="1.5" fill="none"/></svg>
+        <svg className="absolute top-[82%] right-[2%] opacity-18" width="38" height="12" viewBox="0 0 38 12"><path d="M2 12L5 4L8 12M14 12L17 2L20 12M26 12L29 5L32 12" stroke="#4f7942" strokeWidth="1.5" fill="none"/></svg>
       </div>
-        {/* Trees */}
-        <svg className="absolute bottom-8 left-[8%]" width="32" height="48" viewBox="0 0 8 12"><rect x="3" y="8" width="2" height="4" fill="#6B4226"/><rect x="1" y="4" width="6" height="4" fill="#2e5023"/><rect x="2" y="2" width="4" height="2" fill="#2e5023"/><rect x="3" y="0" width="2" height="2" fill="#4f7942"/></svg>
+
       {/* Main Content */}
-      <div className={`flex-1 py-4 sm:py-8 px-3 sm:px-4 transition-all duration-300 relative z-10 ${isSidebarOpen ? 'mr-0 lg:mr-80' : 'mr-0'}`}>
+      <div className={`py-4 sm:py-8 px-3 sm:px-4 transition-all duration-300 relative z-10 ${isSidebarOpen ? 'lg:mr-80' : ''}`}>
         <div className="max-w-3xl mx-auto">
           <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => navigate('/skills')}
-              className="px-4 sm:px-6 py-2.5 rounded-lg font-medium transition bg-[#2e5023] text-white hover:bg-[#1f3518] active:opacity-90 text-sm sm:text-base min-h-[44px] shadow-lg border-2 border-[#1f3518]"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm bg-white text-[#2e5023] border border-[#d4e8cc] hover:bg-[#edf5e9] transition-all shadow-sm"
             >
-              Back to Skills
+              <ChevronLeft className="w-4 h-4" /> Back to Skills
             </button>
           </div>
 
           {/* Compact Header */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl border-4 border-site-accent p-4 mb-4 shadow-lg overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#e2e6dc] p-5 mb-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
-                <span className="shrink-0" aria-hidden>
-                  <SkillIcon name={icon} size={28} className="text-site-accent" />
-                </span>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate min-w-0">{currentSkill.name}</h1>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: currentSkill.color || '#2e5023' }}>
+                  <SkillIcon name={icon} size={22} className="text-white" />
+                </div>
+                <h1 className="text-xl sm:text-2xl font-bold text-[#1c1f1a] truncate min-w-0">{currentSkill.name}</h1>
               </div>
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="p-2 text-gray-400 hover:text-site-accent hover:bg-site-soft rounded-lg transition-colors lg:hidden"
+                className="p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors lg:hidden"
                 aria-label="Toggle details"
               >
                 {isSidebarOpen ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
@@ -355,21 +347,21 @@ export default function ProgressionPathGamefied() {
           </div>
 
           {/* Progress Bar */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg border-4 border-site-accent p-4 mb-6 shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs sm:text-sm font-bold text-gray-700">Progress</span>
-              <span className="text-xs sm:text-sm font-bold text-gray-900">
+          <div className="bg-white rounded-2xl border border-[#e2e6dc] p-5 mb-6 shadow-sm">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-[12px] font-semibold text-[#565c52]">Progress</span>
+              <span className="text-[12px] font-bold text-[#1c1f1a]">
                 {completedCount} / {totalNodes} nodes
               </span>
             </div>
-            <div className="w-full bg-gray-300 rounded-full h-3 border-2 border-gray-400">
+            <div className="w-full bg-[#e8ece3] rounded-full h-2.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-full rounded-full transition-all duration-500 border-r-2 border-yellow-600"
-                style={{ width: `${completionPercentage}%` }}
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${completionPercentage}%`, backgroundColor: currentSkill.color || '#2e5023' }}
               />
             </div>
-            <div className="text-right mt-1">
-              <span className="text-xs font-bold text-gray-600">{completionPercentage}%</span>
+            <div className="text-right mt-1.5">
+              <span className="text-[11px] font-bold" style={{ color: currentSkill.color || '#2e5023' }}>{completionPercentage}%</span>
             </div>
           </div>
 
@@ -377,12 +369,9 @@ export default function ProgressionPathGamefied() {
           <div className="relative pb-12">
             {(() => {
               const filtered = nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start'));
-              const allDone = filtered.length > 0 && filtered.every(n => n.status === 'Completed');
-              const items = [...filtered];
 
               return filtered.map((node, index) => {
                 const isCompleted = node.status === 'Completed';
-                // First node should always be accessible even if backend says Locked (old data)
                 const isUnlocked = node.status === 'Unlocked' || node.status === 'In_Progress' || (index === 0 && node.status === 'Locked');
                 const isFirst = index === 0;
                 const isLeft = index % 2 === 0;
@@ -396,12 +385,9 @@ export default function ProgressionPathGamefied() {
 
                 return (
                   <div key={node._id} className="flex flex-col items-center">
-                    {/* Vertical connector line — always centered */}
                     {index > 0 && (
                       <div className={`w-1 h-10 rounded-full ${prevCompleted ? 'bg-green-400' : 'bg-gray-200'}`} />
                     )}
-
-                    {/* Node — alternates left/right */}
                     <div className={`w-full flex ${isLeft ? 'justify-start pl-6 sm:pl-16' : 'justify-end pr-6 sm:pr-16'}`}>
                       <div className="flex flex-col items-center cursor-pointer" onClick={() => handleNodeClick(node, index)}>
                         <div className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-[3px] flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105 ${outerCls}`}>
@@ -423,22 +409,60 @@ export default function ProgressionPathGamefied() {
             })()}
           </div>
 
-          {/* Goal Card - separate from nodes */}
+          {/* Goal Card */}
           {currentSkill.goal && (() => {
             const uNodes = nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start'));
             const allDone = uNodes.length > 0 && uNodes.every(n => n.status === 'Completed');
             const lastCompleted = uNodes.length > 0 && uNodes[uNodes.length - 1].status === 'Completed';
             return (
               <div className="flex flex-col items-center mt-0 mb-8">
-                {/* Connector to goal */}
                 <div className={`w-1 h-12 rounded-full ${lastCompleted ? 'bg-yellow-400' : 'bg-gray-200'}`} />
-                <div className={`relative w-full max-w-sm p-6 rounded-2xl text-center transition-all duration-500 ${allDone ? 'bg-gradient-to-br from-yellow-100 via-amber-50 to-yellow-100 border-2 border-yellow-400 shadow-xl shadow-yellow-200/50' : 'bg-white/80 border-2 border-dashed border-gray-300'}`}>
-                  {allDone && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-yellow-400 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow">Achieved</div>}
-                  <Trophy className={`w-10 h-10 mx-auto mb-2 ${allDone ? 'text-yellow-500' : 'text-gray-300'}`} />
-                  <p className={`text-lg font-bold mb-1 ${allDone ? 'text-yellow-700' : 'text-gray-400'}`}>{allDone ? '🎉 Goal Complete!' : 'Goal'}</p>
-                  <p className={`text-sm ${allDone ? 'text-yellow-600' : 'text-gray-400'}`}>{currentSkill.goal}</p>
-                  {!allDone && <p className="text-[10px] text-gray-400 mt-2">Complete all {uNodes.length} nodes to unlock</p>}
-                </div>
+
+                {allDone ? (
+                  /* Achieved — rewarding */
+                  <div className="relative w-full max-w-md">
+                    <div className="bg-white rounded-2xl border-2 border-yellow-300 p-8 text-center shadow-lg">
+                      {/* Badge */}
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-yellow-400 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">
+                        Goal Achieved
+                      </div>
+
+                      {/* Trophy circle */}
+                      <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-yellow-50 border-2 border-yellow-300 flex items-center justify-center">
+                        <Trophy className="w-10 h-10 text-yellow-500" />
+                      </div>
+
+                      <h3 className="text-xl font-bold text-[#1c1f1a] mb-1">{currentSkill.goal}</h3>
+                      <p className="text-sm text-[#565c52] mb-5">You completed all {uNodes.length} nodes. Great work!</p>
+
+                      {/* Stats */}
+                      <div className="inline-flex items-center gap-5 bg-[#f8faf6] rounded-xl px-6 py-3 border border-[#e2e6dc]">
+                        <div className="text-center">
+                          <p className="text-lg font-bold text-[#1c1f1a]">{uNodes.length}</p>
+                          <p className="text-[10px] text-[#9aa094] font-medium">Nodes</p>
+                        </div>
+                        <div className="w-px h-8 bg-[#e2e6dc]" />
+                        <div className="text-center">
+                          <p className="text-lg font-bold text-emerald-600">100%</p>
+                          <p className="text-[10px] text-[#9aa094] font-medium">Complete</p>
+                        </div>
+                        <div className="w-px h-8 bg-[#e2e6dc]" />
+                        <div className="text-center">
+                          <p className="text-lg font-bold text-yellow-500">★</p>
+                          <p className="text-[10px] text-[#9aa094] font-medium">Mastered</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Locked */
+                  <div className="relative w-full max-w-sm p-6 rounded-2xl text-center bg-white/80 border-2 border-dashed border-gray-300">
+                    <Trophy className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                    <p className="text-lg font-bold mb-1 text-gray-400">Goal</p>
+                    <p className="text-sm text-gray-400">{currentSkill.goal}</p>
+                    <p className="text-[10px] text-gray-400 mt-2">Complete all {uNodes.length} nodes to unlock</p>
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -453,21 +477,21 @@ export default function ProgressionPathGamefied() {
 
       {/* Right Sidebar - Details Panel */}
       <div
-        className={`fixed lg:fixed top-0 right-0 h-full bg-white border-l-4 border-site-accent shadow-xl transition-transform duration-300 z-40 ${
+        className={`fixed lg:fixed top-16 right-0 h-[calc(100vh-4rem)] bg-white border-l border-[#e2e6dc] shadow-lg transition-transform duration-300 z-20 ${
           isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
         } w-80 flex flex-col`}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4 border-b-4 border-site-accent bg-gradient-to-r from-green-100 to-emerald-100">
-          <h2 className="text-lg font-bold text-gray-900">Details</h2>
+        <div className="flex items-center justify-between p-4 border-b border-[#e2e6dc] bg-[#f8faf6]">
+          <h2 className="text-[15px] font-bold text-[#1c1f1a]">Details</h2>
           <div className="flex items-center gap-1">
             {isEditing ? (
               <>
-                <button onClick={handleSaveEdit} disabled={isSaving || !editForm.name.trim()} className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors disabled:opacity-50" title="Save"><Check className="w-5 h-5" /></button>
+                <button onClick={handleSaveEdit} disabled={isSaving || !editForm.name.trim()} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50" title="Save"><Check className="w-5 h-5" /></button>
                 <button onClick={() => setShowCancelConfirm(true)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Cancel"><X className="w-5 h-5" /></button>
               </>
             ) : !isTemplateMap ? (
-              <button onClick={handleEditClick} className="p-2 text-gray-400 hover:text-site-accent hover:bg-white rounded-lg transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>
+              <button onClick={handleEditClick} className="p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>
             ) : null}
           </div>
         </div>
@@ -764,10 +788,10 @@ export default function ProgressionPathGamefied() {
       {/* Toggle sidebar button - always visible at same position */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`fixed top-4 p-2.5 bg-white border-2 border-site-accent rounded-full shadow-lg hover:shadow-xl transition-all z-50 hover:bg-site-soft ${isSidebarOpen ? 'right-[20.5rem]' : 'right-4'}`}
+        className={`fixed top-20 p-2 bg-white border border-[#e2e6dc] rounded-xl shadow-md hover:shadow-lg transition-all z-20 hover:bg-[#edf5e9] ${isSidebarOpen ? 'right-[20.5rem]' : 'right-4'}`}
         aria-label={isSidebarOpen ? 'Close details' : 'Open details'}
       >
-        {isSidebarOpen ? <ChevronRight className="w-5 h-5 text-site-accent" /> : <ChevronLeft className="w-5 h-5 text-site-accent" />}
+        {isSidebarOpen ? <ChevronRight className="w-5 h-5 text-[#2e5023]" /> : <ChevronLeft className="w-5 h-5 text-[#2e5023]" />}
       </button>
 
       {/* Cancel Edit Confirmation */}
