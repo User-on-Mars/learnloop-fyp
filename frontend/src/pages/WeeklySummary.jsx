@@ -1,12 +1,13 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
 import {
-  Clock, TrendingUp, TrendingDown, Award, Target,
-  ChevronLeft, ChevronRight, ChevronDown, FileText, Flame, Zap, BookOpen,
+  Clock, TrendingUp, TrendingDown, Award, Target, Calendar,
+  ChevronLeft, ChevronRight, FileText, Flame, Zap, 
+  BookOpen, Sparkles, BarChart3, Star, Trophy, ArrowUpRight, ArrowDownRight
 } from "lucide-react";
 import { practiceAPI, skillsAPI } from "../api/client";
 import client from "../api/client";
 import Sidebar from "../components/Sidebar";
+import FilterDropdown from "../components/FilterDropdown";
 
 function getWeekStart(date) {
   const d = new Date(date);
@@ -41,7 +42,6 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const SKILLS_PER_PAGE = 5;
 
 export default function WeeklySummary() {
-  const navigate = useNavigate();
   const [weekOffset, setWeekOffset] = useState(0);
   const [practices, setPractices] = useState([]);
   const [reflections, setReflections] = useState([]);
@@ -162,14 +162,50 @@ export default function WeeklySummary() {
   const avgConf = confPractices.length > 0 ? (confPractices.reduce((s, p) => s + p.confidence, 0) / confPractices.length).toFixed(1) : null;
 
   const getInsight = () => {
-    if (totalSessions === 0) return { icon: BookOpen, text: "No sessions recorded this week. Even a short session helps build momentum.", color: "text-site-muted" };
+    // No sessions this week
+    if (totalSessions === 0) {
+      return { icon: BookOpen, text: "No sessions recorded this week. Even a short session helps build momentum.", color: "text-[#9aa094]" };
+    }
+    
     const timeDiff = totalMinutes - prevMinutes;
-    if (activeDays >= 6) return { icon: Zap, text: `${activeDays} days active — excellent consistency this week.`, color: "text-green-600" };
-    if (activeDays >= 4) return { icon: TrendingUp, text: `${activeDays} active days${timeDiff > 0 ? `, ${fmtMin(timeDiff)} more than the previous week` : ""}. Strong progress.`, color: "text-green-600" };
-    if (timeDiff > 0) return { icon: TrendingUp, text: `${fmtMin(timeDiff)} more practice time compared to the previous week.`, color: "text-green-600" };
-    if (timeDiff < 0 && prevMinutes > 0) return { icon: TrendingDown, text: `Practice time decreased by ${fmtMin(Math.abs(timeDiff))} compared to the previous week.`, color: "text-amber-600" };
-    if (activeDays <= 2) return { icon: Target, text: `${activeDays} active day${activeDays !== 1 ? "s" : ""} this week. Consistency helps — aim for 3+ days.`, color: "text-amber-600" };
-    return { icon: TrendingUp, text: `${totalSessions} sessions across ${activeDays} days. Solid week.`, color: "text-site-accent" };
+    const sessionDiff = totalSessions - prevSessions;
+    
+    // Excellent consistency (6-7 days active)
+    if (activeDays >= 6) {
+      return { icon: Zap, text: `Amazing! ${activeDays} days active this week — you're building great habits.`, color: "text-green-600" };
+    }
+    
+    // Good consistency (4-5 days active)
+    if (activeDays >= 4) {
+      const extra = timeDiff > 0 ? ` That's ${fmtMin(timeDiff)} more than last week!` : "";
+      return { icon: TrendingUp, text: `${activeDays} active days with ${totalSessions} sessions.${extra} Strong progress!`, color: "text-green-600" };
+    }
+    
+    // Moderate activity (3 days)
+    if (activeDays === 3) {
+      if (timeDiff > 0) {
+        return { icon: TrendingUp, text: `${fmtMin(timeDiff)} more practice time than last week. Keep building momentum!`, color: "text-green-600" };
+      }
+      return { icon: Target, text: `${totalSessions} sessions across ${activeDays} days. Try adding one more day next week!`, color: "text-teal-600" };
+    }
+    
+    // Low activity but improved from last week
+    if (timeDiff > 0 && prevMinutes > 0) {
+      return { icon: TrendingUp, text: `${fmtMin(timeDiff)} more practice time compared to last week. You're improving!`, color: "text-green-600" };
+    }
+    
+    // Decreased from last week
+    if (timeDiff < 0 && prevMinutes > 0) {
+      return { icon: TrendingDown, text: `Practice time decreased by ${fmtMin(Math.abs(timeDiff))} from last week. Let's get back on track!`, color: "text-amber-600" };
+    }
+    
+    // Low activity (1-2 days)
+    if (activeDays <= 2) {
+      return { icon: Target, text: `${activeDays} active day${activeDays !== 1 ? "s" : ""} this week. Consistency is key — aim for 3+ days.`, color: "text-amber-600" };
+    }
+    
+    // Default positive message
+    return { icon: TrendingUp, text: `${totalSessions} session${totalSessions !== 1 ? "s" : ""} across ${activeDays} days. Solid week!`, color: "text-teal-600" };
   };
   const insight = getInsight();
   const InsightIcon = insight.icon;
@@ -186,33 +222,64 @@ export default function WeeklySummary() {
   }, [maxWeeksBack]);
 
   return (
-    <div className="flex min-h-screen bg-site-bg">
+    <div className="flex min-h-screen bg-[#f8faf6]">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-site-ink">Weekly Summary</h1>
-            <p className="text-site-muted mt-1">Review your learning progress week by week</p>
-          </div>
-
-          {/* Week Navigator */}
-          <div className="bg-site-surface rounded-xl border border-site-border shadow-sm mb-6">
-            <div className="flex items-center justify-between px-4 py-4">
-              <button onClick={() => setWeekOffset(p => Math.max(p - 1, -maxWeeksBack))} disabled={weekOffset <= -maxWeeksBack} className={`p-2.5 rounded-lg transition-colors ${weekOffset <= -maxWeeksBack ? "text-site-faint cursor-not-allowed opacity-30" : "hover:bg-site-bg text-site-muted hover:text-site-ink"}`} aria-label="Previous week">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <div className="text-center">
-                <p className="text-xs font-medium text-site-accent mb-0.5">{weekLabel(weekOffset)}</p>
-                <p className="text-lg font-bold text-site-ink">{formatWeekRange(weekStart)}</p>
+      <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
+        <div className="px-4 sm:px-6 py-6 lg:py-8">
+          
+          {/* Hero Header */}
+          <div className="relative bg-gradient-to-br from-teal-50 via-white to-cyan-50 rounded-2xl border border-teal-100 p-6 sm:p-8 mb-6 shadow-sm">
+            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-teal-200 opacity-20 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-cyan-200 opacity-20 blur-3xl pointer-events-none" />
+            
+            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                    <BarChart3 className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a]">Weekly Summary</h1>
+                    <p className="text-sm text-teal-600 font-medium">Track Your Progress</p>
+                  </div>
+                </div>
+                <p className="text-[#565c52] text-[15px] leading-relaxed max-w-xl">
+                  Review your learning journey week by week. See your practice time, sessions, and growth trends.
+                </p>
               </div>
-              <button onClick={() => setWeekOffset(p => Math.min(p + 1, 0))} disabled={isCurrentWeek} className={`p-2.5 rounded-lg transition-colors ${isCurrentWeek ? "text-site-faint cursor-not-allowed opacity-30" : "hover:bg-site-bg text-site-muted hover:text-site-ink"}`} aria-label="Next week">
-                <ChevronRight className="w-5 h-5" />
-              </button>
+
+              {/* Week Navigator */}
+              <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-xl border border-teal-100 p-2 shadow-sm">
+                <button 
+                  onClick={() => setWeekOffset(p => Math.max(p - 1, -maxWeeksBack))} 
+                  disabled={weekOffset <= -maxWeeksBack} 
+                  className={`p-2 rounded-lg transition-all ${weekOffset <= -maxWeeksBack ? "text-[#d0d5ca] cursor-not-allowed" : "hover:bg-teal-50 text-[#565c52] hover:text-teal-600"}`}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="text-center min-w-[140px]">
+                  <p className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">{weekLabel(weekOffset)}</p>
+                  <p className="text-sm font-bold text-[#1c1f1a]">{formatWeekRange(weekStart)}</p>
+                </div>
+                <button 
+                  onClick={() => setWeekOffset(p => Math.min(p + 1, 0))} 
+                  disabled={isCurrentWeek} 
+                  className={`p-2 rounded-lg transition-all ${isCurrentWeek ? "text-[#d0d5ca] cursor-not-allowed" : "hover:bg-teal-50 text-[#565c52] hover:text-teal-600"}`}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            {/* Week selector dropdown */}
+
+            {/* Week Dropdown */}
             {weekOptions.length > 1 && (
-              <div className="px-4 pb-3">
-                <WeekDropdown options={weekOptions} value={weekOffset} onChange={setWeekOffset} />
+              <div className="relative mt-4 pt-4 border-t border-teal-100 z-50">
+                <FilterDropdown 
+                  value={weekOffset} 
+                  onChange={setWeekOffset}
+                  options={weekOptions.map(o => ({ value: o.offset, label: `${o.label} — ${o.range}` }))}
+                  minWidth={200}
+                />
               </div>
             )}
           </div>
@@ -220,127 +287,268 @@ export default function WeeklySummary() {
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-site-accent mx-auto mb-3" />
-                <p className="text-site-muted text-sm">Loading summary...</p>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center mx-auto mb-3 animate-pulse">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-[#9aa094] text-sm">Loading your summary...</p>
               </div>
             </div>
           ) : (
             <>
-              {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <StatCard icon={Clock} label="Total Time" value={fmtMin(totalMinutes)} prev={prevMinutes > 0 ? fmtMin(prevMinutes) : null} />
-                <StatCard icon={Target} label="Sessions" value={totalSessions} prev={prevSessions > 0 ? prevSessions : null} />
-                <StatCard icon={FileText} label="Reflections" value={totalReflections} />
-                <StatCard icon={Flame} label="Days Active" value={`${activeDays}/7`} />
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <StatCard 
+                  icon={Clock} 
+                  label="Total Time" 
+                  value={fmtMin(totalMinutes)} 
+                  prev={prevMinutes} 
+                  prevLabel={fmtMin(prevMinutes)}
+                  color="teal"
+                />
+                <StatCard 
+                  icon={Target} 
+                  label="Sessions" 
+                  value={totalSessions} 
+                  prev={prevSessions}
+                  prevLabel={prevSessions}
+                  color="cyan"
+                />
+                <StatCard 
+                  icon={FileText} 
+                  label="Reflections" 
+                  value={totalReflections}
+                  color="emerald"
+                />
+                <StatCard 
+                  icon={Flame} 
+                  label="Days Active" 
+                  value={`${activeDays}/7`}
+                  color="orange"
+                  showProgress
+                  progress={(activeDays / 7) * 100}
+                />
               </div>
 
-              {/* Insight */}
-              <div className={`rounded-xl border p-4 mb-6 shadow-sm flex items-start gap-3 ${
-                totalSessions === 0 ? "bg-site-surface border-site-border" : insight.color.includes("green") ? "bg-green-50 border-green-200" : insight.color.includes("amber") ? "bg-amber-50 border-amber-200" : "bg-site-surface border-site-border"
+              {/* Insight Card */}
+              <div className={`rounded-2xl border-2 p-5 mb-6 shadow-sm ${
+                totalSessions === 0 
+                  ? "bg-[#f8faf6] border-[#e2e6dc]" 
+                  : insight.color.includes("green") 
+                  ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200" 
+                  : insight.color.includes("amber") 
+                  ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200" 
+                  : "bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200"
               }`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  insight.color.includes("green") ? "bg-green-100" : insight.color.includes("amber") ? "bg-amber-100" : "bg-site-soft"
-                }`}>
-                  <InsightIcon className={`w-5 h-5 ${insight.color}`} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-site-ink mb-0.5">Weekly Insight</p>
-                  <p className={`text-sm ${insight.color}`}>{insight.text}</p>
+                <div className="flex items-start gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    insight.color.includes("green") 
+                      ? "bg-gradient-to-br from-emerald-500 to-teal-500" 
+                      : insight.color.includes("amber") 
+                      ? "bg-gradient-to-br from-amber-500 to-orange-500" 
+                      : "bg-gradient-to-br from-teal-500 to-cyan-500"
+                  }`}>
+                    <InsightIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="w-4 h-4 text-teal-500" />
+                      <p className="text-sm font-bold text-[#1c1f1a]">Weekly Insight</p>
+                    </div>
+                    <p className="text-[15px] text-[#565c52] leading-relaxed">{insight.text}</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Most Practiced Skill Map + Avg Confidence */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                {topSkillMap && (
-                  <div className="bg-site-surface rounded-xl border border-site-border p-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center">
-                        <Award className="w-5 h-5 text-site-accent" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] text-site-faint uppercase tracking-wide">Most Practiced Skill Map</p>
-                        <p className="text-base font-bold text-site-ink truncate">{topSkillMap[0]}</p>
-                        <p className="text-xs text-site-muted">{topSkillMap[1].sessions} session{topSkillMap[1].sessions !== 1 ? "s" : ""} · {fmtMin(topSkillMap[1].minutes)}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {avgConf && (
-                  <div className="bg-site-surface rounded-xl border border-site-border p-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center">
-                        <span className="text-lg">⭐</span>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-site-faint uppercase tracking-wide">Avg Confidence</p>
-                        <p className="text-base font-bold text-site-ink">{avgConf} / 5</p>
-                        <p className="text-xs text-site-muted">across {confPractices.length} rated session{confPractices.length !== 1 ? "s" : ""}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Daily Breakdown */}
-              <div className="bg-site-surface rounded-xl border border-site-border p-5 mb-6 shadow-sm">
-                <h3 className="text-sm font-semibold text-site-ink mb-4">Daily Breakdown</h3>
-                <div className="grid grid-cols-7 gap-2">
-                  {DAYS.map((day, i) => {
-                    const mins = dailyMinutes[i];
-                    const sess = dailySessions[i];
-                    const intensity = mins > 0 ? Math.max(0.25, mins / maxDaily) : 0;
-                    const dayDate = new Date(weekStart);
-                    dayDate.setDate(dayDate.getDate() + i);
-                    const isToday = dayDate.toDateString() === new Date().toDateString();
-                    return (
-                      <div key={day} className="flex flex-col items-center gap-1">
-                        <span className={`text-xs ${isToday ? "font-bold text-site-accent" : "text-site-faint"}`}>{day}</span>
-                        <div
-                          className={`w-full aspect-square rounded-xl border flex flex-col items-center justify-center transition-colors ${isToday ? "border-site-accent border-2" : "border-site-border"}`}
-                          style={{ backgroundColor: mins > 0 ? `rgba(46, 80, 35, ${intensity})` : undefined }}
-                        >
-                          {mins > 0 ? (
-                            <>
-                              <span className="text-sm font-bold text-white">{fmtMin(mins)}</span>
-                              <span className="text-[9px] text-white/70">{sess} session{sess !== 1 ? "s" : ""}</span>
-                            </>
-                          ) : (
-                            <span className="text-xs text-site-faint">–</span>
-                          )}
+              {/* Two Column Layout */}
+              <div className="grid lg:grid-cols-2 gap-6 mb-6">
+                {/* Most Practiced + Avg Confidence */}
+                <div className="flex flex-col gap-4">
+                  {topSkillMap && (
+                    <div className="bg-white rounded-2xl border border-[#e2e6dc] p-5 shadow-sm flex-1">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                          <Trophy className="w-7 h-7 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">Most Practiced</p>
+                          <p className="text-lg font-bold text-[#1c1f1a] truncate">{topSkillMap[0]}</p>
+                          <p className="text-sm text-[#9aa094]">
+                            {topSkillMap[1].sessions} session{topSkillMap[1].sessions !== 1 ? "s" : ""} · {fmtMin(topSkillMap[1].minutes)}
+                          </p>
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
+                  
+                  {avgConf && (
+                    <div className="bg-white rounded-2xl border border-[#e2e6dc] p-5 shadow-sm flex-1">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                          <Star className="w-7 h-7 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] font-bold text-yellow-600 uppercase tracking-wider mb-1">Avg Confidence</p>
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-2xl font-bold text-[#1c1f1a]">{avgConf}</p>
+                            <p className="text-sm text-[#9aa094]">/ 5</p>
+                          </div>
+                          <p className="text-sm text-[#9aa094]">{confPractices.length} rated session{confPractices.length !== 1 ? "s" : ""}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!topSkillMap && !avgConf && (
+                    <div className="bg-[#f8faf6] rounded-2xl border border-[#e2e6dc] p-8 text-center flex-1 flex flex-col items-center justify-center">
+                      <BookOpen className="w-10 h-10 text-[#d0d5ca] mb-3" />
+                      <p className="text-sm text-[#9aa094]">No practice data for this week</p>
+                    </div>
+                  )}
+
+                  {/* Only one card exists - show Weekly Tips */}
+                  {((topSkillMap && !avgConf) || (!topSkillMap && avgConf)) && (
+                    <div className="bg-white rounded-2xl border border-[#e2e6dc] p-5 flex-1 shadow-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                          <Zap className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-[#1c1f1a]">Quick Tips</p>
+                          <p className="text-[10px] text-[#9aa094]">Boost your learning</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2.5">
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-[10px] font-bold text-emerald-600">1</span>
+                          </div>
+                          <p className="text-xs text-[#565c52]">Practice daily for at least 15 minutes to build consistency</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-[10px] font-bold text-amber-600">2</span>
+                          </div>
+                          <p className="text-xs text-[#565c52]">Rate your confidence after each session to track progress</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-[10px] font-bold text-blue-600">3</span>
+                          </div>
+                          <p className="text-xs text-[#565c52]">Write reflections to reinforce what you've learned</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Daily Breakdown */}
+                <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden shadow-sm flex flex-col">
+                  <div className="px-5 py-4 border-b border-[#e8ece3] flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-[#1c1f1a]">Daily Breakdown</h3>
+                      <p className="text-[11px] text-[#9aa094]">Your activity this week</p>
+                    </div>
+                  </div>
+                  <div className="p-5 flex-1 flex items-center">
+                    <div className="grid grid-cols-7 gap-2 w-full">
+                      {DAYS.map((day, i) => {
+                        const mins = dailyMinutes[i];
+                        const sess = dailySessions[i];
+                        const intensity = mins > 0 ? Math.max(0.3, mins / maxDaily) : 0;
+                        const dayDate = new Date(weekStart);
+                        dayDate.setDate(dayDate.getDate() + i);
+                        const isToday = dayDate.toDateString() === new Date().toDateString();
+                        return (
+                          <div key={day} className="flex flex-col items-center gap-1.5">
+                            <span className={`text-[10px] font-medium ${isToday ? "text-teal-600" : "text-[#9aa094]"}`}>{day}</span>
+                            <div
+                              className={`w-full aspect-square rounded-xl flex flex-col items-center justify-center transition-all ${
+                                isToday ? "ring-2 ring-teal-400 ring-offset-2" : ""
+                              } ${mins > 0 ? "" : "bg-[#f5f7f2] border border-[#e8ece3]"}`}
+                              style={{ 
+                                backgroundColor: mins > 0 ? `rgba(20, 184, 166, ${intensity})` : undefined 
+                              }}
+                            >
+                              {mins > 0 ? (
+                                <>
+                                  <span className="text-[11px] font-bold text-white">{fmtMin(mins)}</span>
+                                  <span className="text-[8px] text-white/80">{sess}x</span>
+                                </>
+                              ) : (
+                                <span className="text-[10px] text-[#d0d5ca]">—</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Skill Maps Practiced — paginated */}
+              {/* Skill Maps Practiced */}
               {sortedSkillMaps.length > 0 && (
-                <div className="bg-site-surface rounded-xl border border-site-border p-5 mb-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-site-ink">Skill Maps Practiced ({sortedSkillMaps.length})</h3>
+                <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 border-b border-[#e8ece3] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+                        <Award className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-[#1c1f1a]">Skill Maps Practiced</h3>
+                        <p className="text-[11px] text-[#9aa094]">{sortedSkillMaps.length} skill map{sortedSkillMaps.length !== 1 ? "s" : ""} this week</p>
+                      </div>
+                    </div>
                     {skillTotalPages > 1 && (
-                      <div className="flex items-center gap-1.5">
-                        <button onClick={() => setSkillPage(p => Math.max(1, p - 1))} disabled={skillPage === 1} className="p-1 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                        <span className="text-xs text-site-muted">{skillPage}/{skillTotalPages}</span>
-                        <button onClick={() => setSkillPage(p => Math.min(skillTotalPages, p + 1))} disabled={skillPage >= skillTotalPages} className="p-1 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronRight className="w-3.5 h-3.5" /></button>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => setSkillPage(p => Math.max(1, p - 1))} 
+                          disabled={skillPage === 1} 
+                          className="p-1.5 rounded-lg border border-[#e2e6dc] text-[#9aa094] hover:bg-[#f8faf6] disabled:opacity-30 transition-all"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs text-[#9aa094] font-medium">{skillPage}/{skillTotalPages}</span>
+                        <button 
+                          onClick={() => setSkillPage(p => Math.min(skillTotalPages, p + 1))} 
+                          disabled={skillPage >= skillTotalPages} 
+                          className="p-1.5 rounded-lg border border-[#e2e6dc] text-[#9aa094] hover:bg-[#f8faf6] disabled:opacity-30 transition-all"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
                       </div>
                     )}
                   </div>
-                  <div className="space-y-3">
+                  <div className="p-5 space-y-3">
                     {pagedSkillMaps.map(([name, data], idx) => {
                       const pct = Math.round((data.minutes / totalMinutes) * 100);
                       const rank = (skillPage - 1) * SKILLS_PER_PAGE + idx + 1;
+                      const isTop = rank <= 3;
                       return (
-                        <div key={name} className="flex items-center gap-3">
-                          <span className="text-xs text-site-faint w-5 text-right">{rank}</span>
+                        <div key={name} className={`flex items-center gap-4 p-3 rounded-xl transition-all ${isTop ? "bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100" : "bg-[#f8faf6]"}`}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            rank === 1 ? "bg-gradient-to-br from-amber-400 to-orange-500" :
+                            rank === 2 ? "bg-gradient-to-br from-gray-300 to-gray-400" :
+                            rank === 3 ? "bg-gradient-to-br from-orange-400 to-amber-600" :
+                            "bg-[#e8ece3]"
+                          }`}>
+                            <span className={`text-xs font-bold ${rank <= 3 ? "text-white" : "text-[#9aa094]"}`}>#{rank}</span>
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium text-site-ink truncate">{name}</span>
-                              <span className="text-xs text-site-faint whitespace-nowrap ml-2">{data.sessions} session{data.sessions !== 1 ? "s" : ""} · {fmtMin(data.minutes)}</span>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-sm font-semibold text-[#1c1f1a] truncate">{name}</span>
+                              <span className="text-xs text-[#9aa094] whitespace-nowrap ml-2">
+                                {data.sessions} session{data.sessions !== 1 ? "s" : ""} · {fmtMin(data.minutes)}
+                              </span>
                             </div>
-                            <div className="h-1.5 bg-site-bg rounded-full overflow-hidden border border-site-border">
-                              <div className="h-full bg-site-accent rounded-full transition-all duration-500" style={{ width: `${Math.max(pct, 3)}%` }} />
+                            <div className="h-2 bg-white rounded-full overflow-hidden border border-[#e8ece3]">
+                              <div 
+                                className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all duration-500" 
+                                style={{ width: `${Math.max(pct, 5)}%` }} 
+                              />
                             </div>
                           </div>
                         </div>
@@ -357,62 +565,42 @@ export default function WeeklySummary() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, prev }) {
+function StatCard({ icon: Icon, label, value, prev, prevLabel, color = "teal", showProgress, progress }) {
+  const colorMap = {
+    teal: { bg: "bg-gradient-to-br from-teal-500 to-cyan-500", shadow: "shadow-teal-500/20", light: "bg-teal-50", text: "text-teal-600" },
+    cyan: { bg: "bg-gradient-to-br from-cyan-500 to-blue-500", shadow: "shadow-cyan-500/20", light: "bg-cyan-50", text: "text-cyan-600" },
+    emerald: { bg: "bg-gradient-to-br from-emerald-500 to-teal-500", shadow: "shadow-emerald-500/20", light: "bg-emerald-50", text: "text-emerald-600" },
+    orange: { bg: "bg-gradient-to-br from-orange-500 to-amber-500", shadow: "shadow-orange-500/20", light: "bg-orange-50", text: "text-orange-600" },
+  };
+  const colors = colorMap[color] || colorMap.teal;
+  
+  const diff = prev !== undefined && prev !== null ? (typeof value === 'number' ? value - prev : 0) : null;
+  const showTrend = diff !== null && diff !== 0;
+
   return (
-    <div className="bg-site-surface rounded-xl border border-site-border p-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-site-soft flex items-center justify-center flex-shrink-0">
-          <Icon className="w-4 h-4 text-site-accent" />
+    <div className="bg-white rounded-2xl border border-[#e2e6dc] p-4 shadow-sm">
+      <div className="flex items-start justify-between mb-3">
+        <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center shadow-lg ${colors.shadow}`}>
+          <Icon className="w-5 h-5 text-white" />
         </div>
-        <div className="min-w-0">
-          <p className="text-lg font-bold text-site-ink">{value}</p>
-          <p className="text-xs text-site-faint">{label}</p>
-          {prev !== null && prev !== undefined && (
-            <p className="text-[10px] text-site-muted">Previous week: {prev}</p>
-          )}
-        </div>
+        {showTrend && (
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+            diff > 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
+          }`}>
+            {diff > 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+            {Math.abs(diff)}
+          </div>
+        )}
       </div>
-    </div>
-  );
-}
-
-
-function WeekDropdown({ options, value, onChange }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => o.offset === value);
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-xs border border-site-border bg-site-bg text-site-ink hover:border-site-accent outline-none cursor-pointer"
-      >
-        <span>{selected ? `${selected.label} — ${selected.range}` : "Select week"}</span>
-        <ChevronDown className={`w-4 h-4 text-site-faint transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 max-h-60 overflow-y-auto bg-site-surface border border-site-border rounded-lg shadow-lg z-30">
-          {options.map(o => (
-            <button
-              key={o.offset}
-              type="button"
-              onClick={() => { onChange(o.offset); setOpen(false); }}
-              className={`w-full text-left px-3 py-1.5 text-xs transition-colors whitespace-nowrap ${
-                value === o.offset
-                  ? "bg-site-soft text-site-accent font-medium"
-                  : "text-site-ink hover:bg-green-50 hover:text-green-700"
-              }`}
-            >
-              {o.label} — {o.range}
-            </button>
-          ))}
+      <p className="text-2xl font-bold text-[#1c1f1a] mb-0.5">{value}</p>
+      <p className="text-xs text-[#9aa094]">{label}</p>
+      {showProgress && (
+        <div className="mt-2 h-1.5 bg-[#f5f7f2] rounded-full overflow-hidden">
+          <div className={`h-full ${colors.bg} rounded-full transition-all duration-500`} style={{ width: `${progress}%` }} />
         </div>
+      )}
+      {prevLabel !== undefined && prevLabel !== null && prev > 0 && (
+        <p className="text-[10px] text-[#9aa094] mt-1">Last week: {prevLabel}</p>
       )}
     </div>
   );

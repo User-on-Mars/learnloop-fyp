@@ -8,7 +8,7 @@ import { useSubscription } from "../context/SubscriptionContext";
 import LogoMark from "./LogoMark";
 import { Avatar } from "./Avatar";
 import NotificationBell from "./NotificationBell";
-import { Search, Menu, Plus, PenLine } from "lucide-react";
+import { Menu, Plus, PenLine } from "lucide-react";
 
 /* ─── Icon components (unchanged) ─── */
 const HomeIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>);
@@ -82,15 +82,6 @@ export default function Sidebar() {
 
         {/* Spacer */}
         <div className="flex-1" />
-
-        {/* Search — compact, right-aligned */}
-        <div className="w-48 lg:w-56">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b0b5ae]" />
-            <input type="text" placeholder="Search..."
-              className="w-full pl-8 pr-3 py-1.5 bg-[#f5f7f2] border border-[#dde1d6] rounded-lg text-[13px] text-site-ink placeholder:text-[#b0b5ae] focus:outline-none focus:border-[#2e5023]/40 focus:bg-white transition-colors" />
-          </div>
-        </div>
 
         {/* Right actions */}
         <div className="flex items-center gap-1.5">

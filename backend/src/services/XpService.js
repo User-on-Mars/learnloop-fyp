@@ -186,7 +186,7 @@ class XpService {
    */
   static async getProfile(userId) {
     const profile = await UserXpProfile.findOne({ userId });
-    const { currentStreak } = await StreakService.getStreak(userId);
+    const { currentStreak, longestStreak } = await StreakService.getStreak(userId);
     const settings = await XpSettings.getSettings();
 
     const totalXp = profile?.totalXp ?? 0;
@@ -247,6 +247,7 @@ class XpService {
       totalXp,
       weeklyXp,
       currentStreak,
+      longestStreak,
       leagueTier,
       weeklyRank,
       streakMultiplierActive: activeMultiplier > 1,

@@ -33,6 +33,7 @@ export const authAPI = {
   syncProfile: (data: any) => client.post('/auth/sync-profile', data),
   updateAvatar: (email: string, avatar: string | null) => client.post('/auth/update-avatar', { email, avatar }),
   getAvatar: (email: string) => client.get('/auth/avatar', { params: { email } }),
+  deleteAccount: () => client.delete('/auth/delete-account'),
 }
 
 // ============ PRACTICE API ============

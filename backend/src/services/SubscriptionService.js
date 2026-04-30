@@ -95,7 +95,8 @@ class SubscriptionService {
       limits,
       usage,
       currentPeriodEnd: sub.currentPeriodEnd,
-      canceledAt: sub.canceledAt
+      canceledAt: sub.canceledAt,
+      source: sub.externalId?.startsWith('weekly_reward') ? 'reward' : sub.externalId ? 'paid' : null,
     };
   }
 

@@ -11,11 +11,12 @@ const UserSchema = new mongoose.Schema({
   },
   accountStatus: {
     type: String,
-    enum: ['active', 'suspended', 'banned'],
+    enum: ['active', 'suspended', 'banned', 'deleted'],
     default: 'active'
   },
   suspendedAt: { type: Date, default: null },
   bannedAt: { type: Date, default: null },
+  deletedAt: { type: Date, default: null },
   statusReason: { type: String, default: '', maxlength: 500 },
   lastLoginAt: { type: Date, default: null },
   firebaseUid: { type: String, default: null },

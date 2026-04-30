@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Clock, ChevronRight, ChevronLeft, ChevronDown, Zap, Award, Target,
   Flame, Trophy, Play, MapPin, TrendingUp,
-  Sparkles, ArrowUpRight, BarChart3,
+  Sparkles, ArrowUpRight, BarChart3, LayoutDashboard,
 } from "lucide-react";
 import { practiceAPI, skillsAPI, xpAPI } from "../api/client.ts";
 import client from "../api/client.ts";
@@ -19,14 +19,14 @@ function DashboardSkeleton() {
   return (
     <>
       <Sidebar />
-      <div className="pt-16 md:pl-14 min-h-screen bg-[#eef0ea]">
-        <div className="px-4 sm:px-6 py-4 space-y-3">
-          <div className="h-12 rounded-xl bg-white/60 animate-pulse" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <div className="h-52 rounded-xl bg-white/60 animate-pulse" />
-            <div className="h-52 rounded-xl bg-white/60 animate-pulse" />
+      <div className="pt-16 md:pl-14 min-h-screen bg-[#f8faf6]">
+        <div className="px-4 sm:px-6 py-6 space-y-4">
+          <div className="h-44 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="h-52 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
+            <div className="h-52 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
           </div>
-          <div className="h-64 rounded-xl bg-white/60 animate-pulse" />
+          <div className="h-64 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
         </div>
       </div>
     </>
@@ -154,7 +154,7 @@ export default function Dashboard() {
     return (
       <>
         <Sidebar />
-        <div className="pt-16 md:pl-14 min-h-screen bg-[#eef0ea] flex items-center justify-center">
+        <div className="pt-16 md:pl-14 min-h-screen bg-[#f8faf6] flex items-center justify-center">
           <div className="bg-red-50 text-red-700 p-5 rounded-xl text-sm border border-red-200 max-w-sm text-center">
             <p className="font-semibold mb-1.5">{error}</p>
             <button onClick={fetchDashboard} className="text-red-500 hover:text-red-700 underline text-xs font-medium">Try again</button>
@@ -167,25 +167,81 @@ export default function Dashboard() {
   return (
     <>
       <Sidebar />
-      <div className="pt-16 md:pl-14 min-h-screen bg-[#eef0ea]">
-        <div className="px-4 sm:px-6 py-4 space-y-3">
+      <div className="pt-16 md:pl-14 min-h-screen bg-[#f8faf6]">
+        <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
 
-          {/* ═══ 1. Greeting bar ═══ */}
-          <div className="px-1 pt-4 pb-5 mb-6 flex items-center justify-between border-b border-[#dde1d6]">
-            <div>
-              <h1 className="text-xl font-bold text-site-ink leading-tight">{greeting}, {displayName}</h1>
-              <p className="text-sm text-site-muted mt-0.5">Here's your learning overview</p>
+          {/* Hero Greeting */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-sky-50 via-white to-blue-50 rounded-2xl border border-sky-100 p-6 sm:p-8">
+            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-sky-200 opacity-15 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-blue-200 opacity-10 blur-2xl pointer-events-none" />
+
+            <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-600 to-blue-600 flex items-center justify-center shadow-sm">
+                    <LayoutDashboard className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a]">{greeting}, {displayName}</h1>
+                    <p className="text-sm text-sky-600 font-medium">Your Learning Dashboard</p>
+                  </div>
+                </div>
+                <p className="text-[#565c52] text-[15px] leading-relaxed max-w-xl">
+                  Here's your learning overview. Track progress, review sessions, and keep building your skills.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button onClick={() => navigate("/log-practice")}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-xl text-[13px] font-semibold hover:from-sky-700 hover:to-blue-700 transition-all shadow-lg shadow-sky-500/20 active:scale-[0.97]">
+                  <Play className="w-4 h-4" /> Log Practice
+                </button>
+                <button onClick={() => navigate("/roomspace")}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#565c52] rounded-xl text-[13px] font-semibold hover:bg-[#f5f7f2] transition-colors border border-[#e2e6dc]">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                  RoomSpace
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2.5">
-              <button onClick={() => navigate("/log-practice")}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#2e5023] rounded-lg text-[13px] font-semibold hover:bg-[#f5f7f2] transition-colors border border-[#d4dbc9] active:scale-[0.97]">
-                <Play className="w-4 h-4" /> Log Practice
-              </button>
-              <button onClick={() => navigate("/roomspace")}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#2e5023] rounded-lg text-[13px] font-semibold hover:bg-[#f5f7f2] transition-colors border border-[#d4dbc9]">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                RoomSpace
-              </button>
+
+            {/* Quick XP Stats */}
+            <div className="relative grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-sky-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-sky-600" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{totalXp.toLocaleString()}</p>
+                  <p className="text-[11px] text-[#9aa094] mt-0.5">Total XP</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{weeklyXp.toLocaleString()}</p>
+                  <p className="text-[11px] text-[#9aa094] mt-0.5">Weekly XP</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                  <Flame className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{streak}d</p>
+                  <p className="text-[11px] text-[#9aa094] mt-0.5">Streak</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{tier}</p>
+                  <p className="text-[11px] text-[#9aa094] mt-0.5">League</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -243,37 +299,30 @@ export default function Dashboard() {
           </div>
 
           {/* ═══ 3. Tabbed section ═══ */}
-          <h2 className="text-xl font-bold text-site-ink mt-2">My Learning</h2>
 
-          {/* ── Filter Card (separate) ── */}
+          {/* Tab Switcher */}
           <div className="bg-white rounded-2xl border border-[#e2e6dc]">
-            {/* Tabs row */}
-            <div className="px-6 pt-5 flex items-center justify-between">
-              <div className="flex gap-6">
+            <div className="px-4 py-3">
+              <div className="flex bg-[#f5f7f2] rounded-xl p-1 border border-[#e8ebe4]">
                 {[
                   { id: 'skills', label: 'Skill Maps', count: unlockedSkills.length },
                   { id: 'reflections', label: 'Reflections', count: reflections.length },
                   { id: 'sessions', label: 'Sessions', count: practices.length },
                 ].map(tab => (
                   <button key={tab.id} onClick={() => { setActiveTab(tab.id); setMapPage(1); setStatusFilter('all'); setMoodFilter('all'); setSessionTypeFilter('all'); }}
-                    className={`pb-3.5 text-[13px] font-semibold border-b-2 transition-colors ${
-                      activeTab === tab.id ? 'border-[#2e5023] text-[#2e5023]' : 'border-transparent text-[#9aa094] hover:text-[#565c52]'
+                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                      activeTab === tab.id
+                        ? 'bg-white text-[#1c1f1a] shadow-sm'
+                        : 'text-[#9aa094] hover:text-[#565c52]'
                     }`}>
-                    {tab.label} <span className="text-[11px] font-normal text-site-faint ml-0.5">({tab.count})</span>
+                    {tab.label} <span className="text-[10px] opacity-60">({tab.count})</span>
                   </button>
                 ))}
               </div>
-              <span className="text-[11px] text-site-faint pb-3.5">
-                {(() => {
-                  const list = activeTab === 'skills' ? filteredSkills : activeTab === 'reflections' ? filteredReflections : filteredSessions;
-                  if (list.length === 0) return '';
-                  return `Showing ${(mapPage - 1) * MAPS_PER_PAGE + 1} - ${Math.min(mapPage * MAPS_PER_PAGE, list.length)} of ${list.length}`;
-                })()}
-              </span>
             </div>
 
             {/* Filter row */}
-            <div className="px-6 py-4 flex items-center gap-3 border-t border-[#e2e6dc] bg-[#f8faf6]">
+            <div className="px-6 py-3 flex items-center gap-3 border-t border-[#e2e6dc] bg-[#f8faf6] rounded-b-2xl">
               {/* Skills filter */}
               {activeTab === 'skills' && (
                 <>
@@ -333,7 +382,7 @@ export default function Dashboard() {
               )}
 
               <button onClick={() => setMapPage(1)}
-                className="px-5 py-2 bg-[#2e5023] text-white text-[12px] font-bold rounded-xl hover:bg-[#4f7942] shadow-sm shadow-[#2e5023]/15 transition-all active:scale-[0.97]">
+                className="px-5 py-2 bg-gradient-to-r from-sky-600 to-blue-600 text-white text-[12px] font-bold rounded-xl hover:from-sky-700 hover:to-blue-700 shadow-sm transition-all active:scale-[0.97]">
                 Filter
               </button>
             </div>
@@ -349,7 +398,7 @@ export default function Dashboard() {
                     <MapPin className="w-7 h-7 text-gray-300 mx-auto mb-2" />
                     <p className="text-sm text-site-muted">{statusFilter !== 'all' ? 'No matching skill maps' : 'No skill maps yet'}</p>
                     {statusFilter === 'all' && (
-                      <button onClick={() => navigate("/skills")} className="inline-flex items-center gap-1 text-xs text-[#2e5023] font-bold hover:underline mt-2">
+                      <button onClick={() => navigate("/skills")} className="inline-flex items-center gap-1 text-xs text-sky-600 font-bold hover:underline mt-2">
                         Create skill map <ArrowUpRight className="w-3 h-3" />
                       </button>
                     )}
@@ -380,7 +429,7 @@ export default function Dashboard() {
                                 style={{ backgroundColor: color + '15', borderColor: color + '25', color }}>
                                 <SkillIcon name={skill.icon || 'Map'} size={16} />
                               </div>
-                              <span className="text-[13px] font-semibold text-site-ink truncate group-hover:text-[#2e5023] transition-colors">{skill.name}</span>
+                            <span className="text-[13px] font-semibold text-site-ink truncate group-hover:text-sky-600 transition-colors">{skill.name}</span>
                             </div>
                             <span className="col-span-2 text-center text-[12px] text-site-muted">{done}/{total}</span>
                             <div className="col-span-3 flex items-center gap-2">
@@ -420,7 +469,7 @@ export default function Dashboard() {
                     <Award className="w-6 h-6 text-gray-300 mx-auto mb-2" />
                     <p className="text-xs text-site-muted">{moodFilter !== 'all' ? 'No matching reflections' : 'No reflections yet'}</p>
                     {moodFilter === 'all' && (
-                      <button onClick={() => navigate("/reflect")} className="inline-flex items-center gap-1 text-xs text-[#2e5023] font-bold hover:underline mt-2">
+                      <button onClick={() => navigate("/reflect")} className="inline-flex items-center gap-1 text-xs text-sky-600 font-bold hover:underline mt-2">
                         Write a reflection <ArrowUpRight className="w-3 h-3" />
                       </button>
                     )}
@@ -443,7 +492,7 @@ export default function Dashboard() {
                             className="grid grid-cols-12 gap-3 items-center px-3 py-3.5 hover:bg-[#f8faf6] cursor-pointer transition-colors group">
                             <span className="col-span-1 text-[12px] text-site-faint font-medium">{(mapPage-1)*MAPS_PER_PAGE + i + 1}</span>
                             <div className="col-span-4 min-w-0">
-                              <p className="text-[13px] font-semibold text-site-ink truncate group-hover:text-[#2e5023] transition-colors">{r.title || 'Untitled'}</p>
+                              <p className="text-[13px] font-semibold text-site-ink truncate group-hover:text-sky-600 transition-colors">{r.title || 'Untitled'}</p>
                               <p className="text-[11px] text-site-faint truncate">{r.content?.slice(0, 50)}{r.content?.length > 50 ? '...' : ''}</p>
                             </div>
                             <div className="col-span-2 flex justify-center">
@@ -453,7 +502,7 @@ export default function Dashboard() {
                             </div>
                             <span className="col-span-3 text-[12px] text-site-faint">{new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                             <div className="col-span-2 text-right">
-                              <span className="inline-flex px-3 py-1 bg-[#2e5023] text-white text-[10px] font-bold rounded-lg">View</span>
+                              <span className="inline-flex px-3 py-1 bg-sky-600 text-white text-[10px] font-bold rounded-lg">View</span>
                             </div>
                           </div>
                         );
@@ -492,7 +541,7 @@ export default function Dashboard() {
                             <div className="w-8 h-8 rounded-lg bg-[#f0f2eb] flex items-center justify-center flex-shrink-0">
                               <span className="text-[#2e5023] text-[11px] font-bold">{p.skillName?.charAt(0).toUpperCase()}</span>
                             </div>
-                            <span className="text-[13px] font-semibold text-site-ink truncate group-hover:text-[#2e5023] transition-colors">{p.skillName}</span>
+                            <span className="text-[13px] font-semibold text-site-ink truncate group-hover:text-sky-600 transition-colors">{p.skillName}</span>
                           </div>
                           <div className="col-span-2 text-center">
                             <span className={`inline-flex px-1.5 py-0.5 text-[9px] font-bold rounded ${isSkillMap ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -502,7 +551,7 @@ export default function Dashboard() {
                           <span className="col-span-2 text-center text-[12px] text-site-muted">{p.minutesPracticed}min</span>
                           <span className="col-span-2 text-[12px] text-site-faint">{timeAgo(p.date)}</span>
                           <div className="col-span-2 text-right">
-                            <span className="inline-flex px-3 py-1 bg-[#2e5023] text-white text-[10px] font-bold rounded-lg">View Details</span>
+                            <span className="inline-flex px-3 py-1 bg-sky-600 text-white text-[10px] font-bold rounded-lg">View Details</span>
                           </div>
                         </div>
                         );

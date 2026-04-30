@@ -14,6 +14,9 @@ import {
   X,
   CheckCircle,
   ChevronRight,
+  TrendingUp,
+  Map,
+  Sparkles,
 } from "lucide-react";
 import { roomsAPI, invitationsAPI, skillsAPI } from "../api/client.ts";
 import { auth } from "../firebase";
@@ -21,6 +24,7 @@ import Sidebar from "../components/Sidebar";
 import RoomLeaderboard from "../components/RoomLeaderboard";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import { SkillIcon } from "../components/IconPicker";
+import { getIconComponent } from "../utils/iconLibrary";
 import { useToast } from "../context/ToastContext";
 import { useApiError } from "../hooks/useApiError";
 import { useSubscription } from "../context/SubscriptionContext";
@@ -242,98 +246,52 @@ export default function RoomDetail() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex min-h-screen bg-site-bg">
+      <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Back Button Skeleton */}
-            <div className="h-6 w-32 bg-gray-200 rounded-md animate-pulse mb-6" />
-
-            {/* Room Header Skeleton */}
-            <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6 mb-6 animate-pulse">
-              <div className="flex items-start justify-between mb-4">
+        <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
+          <div className="px-4 sm:px-6 py-6">
+            {/* Back Button */}
+            <div className="h-10 w-40 bg-white rounded-xl animate-pulse mb-6" />
+            
+            {/* Hero Header Skeleton */}
+            <div className="bg-white rounded-2xl border border-[#e2e6dc] p-6 mb-6 animate-pulse">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-[#e8ece3] rounded-xl" />
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-8 w-48 bg-gray-200 rounded-md" />
-                    <div className="h-6 w-16 bg-gray-200 rounded-md" />
-                  </div>
-                  <div className="h-4 w-64 bg-gray-200 rounded-md mb-3" />
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gray-200 rounded" />
-                    <div className="h-4 w-20 bg-gray-200 rounded" />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg" />
-                  <div className="w-20 h-10 bg-gray-200 rounded-lg" />
+                  <div className="h-7 w-48 bg-[#e8ece3] rounded-lg mb-2" />
+                  <div className="h-4 w-64 bg-[#e8ece3] rounded mb-3" />
+                  <div className="h-4 w-24 bg-[#e8ece3] rounded" />
                 </div>
               </div>
             </div>
 
-            {/* Leaderboard Skeleton */}
-            <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6 mb-6 animate-pulse">
-              <div className="h-6 w-32 bg-gray-200 rounded-md mb-4" />
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-4 p-4 rounded-lg bg-site-bg"
-                  >
-                    <div className="w-8 h-8 bg-gray-200 rounded-full" />
-                    <div className="w-10 h-10 bg-gray-200 rounded-full" />
-                    <div className="flex-1">
-                      <div className="h-4 w-32 bg-gray-200 rounded mb-2" />
-                      <div className="h-3 w-24 bg-gray-200 rounded" />
-                    </div>
-                    <div className="h-6 w-16 bg-gray-200 rounded" />
+            {/* Content Grid Skeleton */}
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-white rounded-2xl border border-[#e2e6dc] p-6 animate-pulse">
+                  <div className="h-6 w-32 bg-[#e8ece3] rounded mb-4" />
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 bg-[#f5f7f2] rounded-xl" />
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Skill Maps Skeleton */}
-            <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6 mb-6 animate-pulse">
-              <div className="flex items-center justify-between mb-4">
-                <div className="h-6 w-24 bg-gray-200 rounded-md" />
-                <div className="h-8 w-28 bg-gray-200 rounded-lg" />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="p-4 rounded-lg border border-site-border"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="h-5 w-32 bg-gray-200 rounded mb-1" />
-                        <div className="h-4 w-16 bg-gray-200 rounded" />
-                      </div>
-                      <div className="w-4 h-4 bg-gray-200 rounded" />
-                    </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-[#e2e6dc] p-6 animate-pulse">
+                  <div className="h-6 w-28 bg-[#e8ece3] rounded mb-4" />
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="h-32 bg-[#f5f7f2] rounded-xl" />
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-
-            {/* Members Skeleton */}
-            <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6 animate-pulse">
-              <div className="h-6 w-20 bg-gray-200 rounded-md mb-4" />
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-3 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full" />
-                      <div>
-                        <div className="h-4 w-24 bg-gray-200 rounded mb-1" />
-                        <div className="h-3 w-16 bg-gray-200 rounded" />
-                      </div>
-                    </div>
-                    <div className="w-8 h-8 bg-gray-200 rounded-lg" />
-                  </div>
-                ))}
+              <div className="bg-white rounded-2xl border border-[#e2e6dc] p-6 animate-pulse">
+                <div className="h-6 w-24 bg-[#e8ece3] rounded mb-4" />
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-14 bg-[#f5f7f2] rounded-xl" />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -346,21 +304,21 @@ export default function RoomDetail() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex min-h-screen bg-site-bg">
+      <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
+          <div className="px-4 sm:px-6 py-6">
             <button
               onClick={() => navigate("/roomspace")}
-              className="flex items-center gap-2 text-site-muted hover:text-site-ink mb-6"
+              className="flex items-center gap-2 text-[#9aa094] hover:text-[#1c1f1a] mb-6"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to RoomSpace
             </button>
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-site-accent mx-auto mb-4" />
-                <p className="text-site-muted">Loading room...</p>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2e5023] mx-auto mb-4" />
+                <p className="text-[#9aa094]">Loading room...</p>
               </div>
             </div>
           </div>
@@ -372,18 +330,18 @@ export default function RoomDetail() {
   // Error state
   if (error) {
     return (
-      <div className="flex min-h-screen bg-site-bg">
+      <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
+          <div className="px-4 sm:px-6 py-6">
             <button
               onClick={() => navigate("/roomspace")}
-              className="flex items-center gap-2 text-site-muted hover:text-site-ink mb-4"
+              className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-[#c8cec0] hover:text-[#1c1f1a] transition-all mb-6 shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to RoomSpace
+              <span className="text-sm font-medium">Back to RoomSpace</span>
             </button>
-            <div className="bg-red-50 border border-red-300 text-red-700 p-6 rounded-lg">
+            <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl">
               <div className="flex items-start gap-3">
                 <div className="flex-1">
                   <h3 className="font-semibold mb-2">Unable to Load Room</h3>
@@ -391,15 +349,9 @@ export default function RoomDetail() {
                   <div className="flex gap-3">
                     <button
                       onClick={fetchRoomData}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                      className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors"
                     >
                       Try Again
-                    </button>
-                    <button
-                      onClick={() => navigate("/roomspace")}
-                      className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
-                    >
-                      Back to RoomSpace
                     </button>
                   </div>
                 </div>
@@ -414,30 +366,20 @@ export default function RoomDetail() {
   // If no room data after loading, show error
   if (!room) {
     return (
-      <div className="flex min-h-screen bg-site-bg">
+      <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
+          <div className="px-4 sm:px-6 py-6">
             <button
               onClick={() => navigate("/roomspace")}
-              className="flex items-center gap-2 text-site-muted hover:text-site-ink mb-4"
+              className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-[#c8cec0] hover:text-[#1c1f1a] transition-all mb-6 shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to RoomSpace
+              <span className="text-sm font-medium">Back to RoomSpace</span>
             </button>
-            <div className="bg-red-50 border border-red-300 text-red-700 p-6 rounded-lg">
-              <div className="flex items-start gap-3">
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-2">Room Not Found</h3>
-                  <p className="text-sm mb-4">This room does not exist or you don't have access to it.</p>
-                  <button
-                    onClick={() => navigate("/roomspace")}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
-                  >
-                    Back to RoomSpace
-                  </button>
-                </div>
-              </div>
+            <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl">
+              <h3 className="font-semibold mb-2">Room Not Found</h3>
+              <p className="text-sm">This room does not exist or you don't have access to it.</p>
             </div>
           </div>
         </main>
@@ -445,52 +387,85 @@ export default function RoomDetail() {
     );
   }
 
+  const themeColor = room.color || '#ec4899';
+  const RoomIcon = getIconComponent(room.icon) || Users;
+
   return (
-    <div className="flex min-h-screen bg-site-bg">
+    <div className="flex min-h-screen bg-[#f8faf6]">
       <Sidebar />
 
-      <main className="flex-1 overflow-y-auto w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Back Button */}
+      <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
+        <div className="px-4 sm:px-6 py-6">
+          
+          {/* ═══ Back Button ═══ */}
           <button
             onClick={() => navigate("/roomspace")}
-            className="flex items-center gap-2 text-site-muted hover:text-site-ink mb-6 transition-colors"
+            className="group flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-pink-300 hover:text-pink-600 transition-all mb-6 shadow-sm"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to RoomSpace
+            <div 
+              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+              style={{ backgroundColor: `${themeColor}15` }}
+            >
+              <ArrowLeft className="w-4 h-4" style={{ color: themeColor }} />
+            </div>
+            <span className="text-sm font-medium">Back to RoomSpace</span>
           </button>
 
-          {/* Room Header */}
-          <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6 mb-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold text-site-ink break-words">{room.name}</h1>
-                  {isOwner && (
-                    <span className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-600 rounded-md text-xs font-medium">
-                      <Crown className="w-3 h-3" />
-                      Owner
-                    </span>
-                  )}
+          {/* ═══ Hero Header ═══ */}
+          <div 
+            className="relative overflow-hidden rounded-2xl border p-6 sm:p-8 mb-6"
+            style={{ 
+              background: `linear-gradient(135deg, ${themeColor}08 0%, ${themeColor}15 100%)`,
+              borderColor: `${themeColor}30`
+            }}
+          >
+            {/* Decorative elements */}
+            <div 
+              className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-20 blur-3xl pointer-events-none"
+              style={{ backgroundColor: themeColor }}
+            />
+            
+            <div className="relative flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div 
+                  className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0"
+                  style={{ 
+                    backgroundColor: themeColor,
+                    boxShadow: `0 8px 24px -4px ${themeColor}40`
+                  }}
+                >
+                  <RoomIcon className="w-8 h-8 text-white" />
                 </div>
-                {room.description && (
-                  <p className="text-site-muted break-words overflow-hidden">{room.description}</p>
-                )}
-                <div className="flex items-center gap-2 mt-3">
-                  <Users className="w-4 h-4 text-site-muted" />
-                  <span className="text-sm text-site-muted">
-                    {members.length} {members.length === 1 ? "member" : "members"}
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a]">{room.name}</h1>
+                    {isOwner && (
+                      <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">
+                        <Crown className="w-3 h-3" />
+                        Owner
+                      </span>
+                    )}
+                  </div>
+                  {room.description && (
+                    <p className="text-[#565c52] text-[15px] leading-relaxed mb-3">{room.description}</p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" style={{ color: themeColor }} />
+                    <span className="text-sm text-[#565c52]">
+                      {members.length} {members.length === 1 ? "member" : "members"}
+                      {maxMembers !== Infinity && <span className="text-[#9aa094]"> / {maxMembers}</span>}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {isOwner ? (
                   <>
                     <button
                       onClick={() => setShowEditModal(true)}
-                      className="p-2 text-site-muted hover:text-site-ink hover:bg-site-bg rounded-lg transition-colors"
+                      className="p-2.5 text-[#9aa094] hover:text-[#1c1f1a] hover:bg-white rounded-xl transition-all border border-transparent hover:border-[#e2e6dc]"
                       title="Edit room"
                     >
                       <Settings className="w-5 h-5" />
@@ -498,19 +473,23 @@ export default function RoomDetail() {
                     <button
                       onClick={() => setShowInviteModal(true)}
                       disabled={isRoomFull}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg ${
                         isRoomFull
-                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                          : 'bg-site-accent text-white hover:bg-site-accent-hover'
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                          : 'text-white hover:opacity-90'
                       }`}
-                      title={isRoomFull ? `Room is full (${members.length}/${maxMembers === Infinity ? '∞' : maxMembers} members)` : 'Invite a member'}
+                      style={!isRoomFull ? { 
+                        backgroundColor: themeColor,
+                        boxShadow: `0 4px 14px -2px ${themeColor}50`
+                      } : {}}
+                      title={isRoomFull ? `Room is full` : 'Invite a member'}
                     >
                       <UserPlus className="w-4 h-4" />
-                      {isRoomFull ? 'Room Full' : 'Invite'}
+                      {isRoomFull ? 'Full' : 'Invite'}
                     </button>
                     <button
                       onClick={showDeleteRoomConfirm}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-200"
                       title="Delete room"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -519,7 +498,7 @@ export default function RoomDetail() {
                 ) : (
                   <button
                     onClick={showLeaveRoomConfirm}
-                    className="flex items-center gap-2 px-4 py-2 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg transition-colors text-sm"
+                    className="flex items-center gap-2 px-4 py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-medium hover:bg-white hover:border-red-200 hover:text-red-600 transition-all text-sm"
                   >
                     <LogOut className="w-4 h-4" />
                     Leave Room
@@ -529,100 +508,141 @@ export default function RoomDetail() {
             </div>
           </div>
 
-          {/* Leaderboard Section */}
-          <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6 mb-6">
-            <h2 className="text-lg font-semibold text-site-ink mb-4">Leaderboard</h2>
-            <RoomLeaderboard roomId={roomId} currentUserId={currentUserId} />
-          </div>
-
-          {/* Skill Maps Section */}
-          <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-site-ink">Skill Maps</h2>
-                {skillMaps.length > 0 && (
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    skillMaps.length >= 6
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-site-soft text-site-muted'
-                  }`}>
-                    {skillMaps.length}/6
+          {/* ═══ Content Grid ═══ */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            
+            {/* Left Column - Leaderboard & Skill Maps */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Leaderboard Section */}
+              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden">
+                <div className="px-6 py-4 border-b border-[#e8ece3] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-[#1c1f1a]">Leaderboard</h2>
+                      <p className="text-xs text-[#9aa094]">{members.length} member{members.length !== 1 ? 's' : ''} competing</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-[#9aa094] flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    Live Rankings
                   </span>
-                )}
-              </div>
-              {isOwner && (
-                <button
-                  onClick={() => setShowAddSkillMapModal(true)}
-                  disabled={skillMaps.length >= 6}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg font-medium transition-colors ${
-                    skillMaps.length >= 6
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-site-accent text-white hover:bg-site-accent-hover'
-                  }`}
-                  title={skillMaps.length >= 6 ? 'Maximum of 6 skill maps reached' : 'Add a skill map'}
-                >
-                  Add Skill Map
-                </button>
-              )}
-            </div>
-
-            {skillMaps.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-site-soft rounded-full flex items-center justify-center mx-auto mb-4">
-                  <BookOpen className="w-8 h-8 text-site-accent" />
                 </div>
-                <h3 className="text-lg font-semibold text-site-ink mb-2">No skill maps yet</h3>
-                {isOwner ? (
-                  <>
-                    <p className="text-site-muted mb-4 max-w-sm mx-auto">
-                      Add skill maps to give your team something to practice and compete on
-                    </p>
+                <div className="p-6">
+                  <RoomLeaderboard roomId={roomId} currentUserId={currentUserId} />
+                </div>
+              </div>
+
+              {/* Skill Maps Section */}
+              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden">
+                <div className="px-6 py-4 border-b border-[#e8ece3] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+                      <Map className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-[#1c1f1a]">Skill Maps</h2>
+                      {skillMaps.length > 0 && (
+                        <p className="text-xs text-[#9aa094]">{skillMaps.length}/6 maps added</p>
+                      )}
+                    </div>
+                  </div>
+                  {isOwner && (
                     <button
                       onClick={() => setShowAddSkillMapModal(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors"
+                      disabled={skillMaps.length >= 6}
+                      className={`flex items-center gap-2 px-4 py-2 text-sm rounded-xl font-semibold transition-all ${
+                        skillMaps.length >= 6
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-[#2e5023] text-white hover:bg-[#3a6b2e] shadow-md shadow-[#2e5023]/20'
+                      }`}
                     >
-                      Add Your First Skill Map
+                      <Plus className="w-4 h-4" />
+                      Add Skill Map
                     </button>
-                  </>
-                ) : (
-                  <p className="text-site-muted max-w-sm mx-auto">
-                    The room owner hasn't added any skill maps yet. Check back later!
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {skillMaps.map((skillMap) => (
-                  <SkillMapCard
-                    key={skillMap._id}
-                    skillMap={skillMap}
-                    isOwner={isOwner}
-                    onRemove={() => showRemoveSkillMapConfirm(skillMap)}
-                    onClick={() => navigate(`/roomspace/${roomId}/skill-maps/${skillMap._id}`)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+                  )}
+                </div>
 
-          {/* Members Section */}
-          <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-site-ink">Members</h2>
-              <span className="text-sm text-site-muted">
-                {members.length}{maxMembers !== Infinity ? `/${maxMembers}` : ''} members
-              </span>
+                <div className="p-6">
+                  {skillMaps.length === 0 ? (
+                    <div className="text-center py-10">
+                      <div className="w-16 h-16 bg-[#f5f7f2] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <BookOpen className="w-8 h-8 text-[#c8cec0]" />
+                      </div>
+                      <h3 className="text-base font-bold text-[#1c1f1a] mb-2">No skill maps yet</h3>
+                      {isOwner ? (
+                        <>
+                          <p className="text-sm text-[#9aa094] mb-4 max-w-sm mx-auto">
+                            Add skill maps to give your team something to practice and compete on
+                          </p>
+                          <button
+                            onClick={() => setShowAddSkillMapModal(true)}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#3a6b2e] transition-all shadow-md"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Your First Skill Map
+                          </button>
+                        </>
+                      ) : (
+                        <p className="text-sm text-[#9aa094] max-w-sm mx-auto">
+                          The room owner hasn't added any skill maps yet
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {skillMaps.map((skillMap) => (
+                        <SkillMapCard
+                          key={skillMap._id}
+                          skillMap={skillMap}
+                          isOwner={isOwner}
+                          onRemove={() => showRemoveSkillMapConfirm(skillMap)}
+                          onClick={() => navigate(`/roomspace/${roomId}/skill-maps/${skillMap._id}`)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              {members.map((member) => (
-                <MemberCard
-                  key={member.userId}
-                  member={member}
-                  isOwner={isOwner}
-                  currentUserId={currentUserId}
-                  onKick={() => showKickMemberConfirm(member)}
-                />
-              ))}
+
+            {/* Right Column - Members */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden sticky top-24">
+                <div className="px-6 py-4 border-b border-[#e8ece3] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-9 h-9 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: `${themeColor}15` }}
+                    >
+                      <Users className="w-5 h-5" style={{ color: themeColor }} />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-[#1c1f1a]">Members</h2>
+                      <p className="text-xs text-[#9aa094]">
+                        {members.length}{maxMembers !== Infinity ? `/${maxMembers}` : ''} members
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="space-y-2">
+                    {members.map((member) => (
+                      <MemberCard
+                        key={member.userId}
+                        member={member}
+                        isOwner={isOwner}
+                        currentUserId={currentUserId}
+                        onKick={() => showKickMemberConfirm(member)}
+                        themeColor={themeColor}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -678,7 +698,6 @@ export default function RoomDetail() {
 /* Skill Map Card Component */
 function SkillMapCard({ skillMap: rsm, isOwner, onRemove, onClick }) {
   // Data is now embedded directly in the room skill map record
-  // Fall back to nested skillMap for backward compat with old records
   const name = rsm.name || rsm.skillMap?.name || "Untitled";
   const icon = rsm.icon || rsm.skillMap?.icon || "Map";
   const color = rsm.color || rsm.skillMap?.color || "#2e5023";
@@ -690,72 +709,72 @@ function SkillMapCard({ skillMap: rsm, isOwner, onRemove, onClick }) {
 
   return (
     <div
-      className="group relative bg-white rounded-xl p-5 cursor-pointer transition-all duration-200 hover:shadow-xl border"
-      style={{
-        borderColor: isCompleted || isInProgress ? themeColor : '#e5e7eb',
-        borderWidth: isCompleted || isInProgress ? '2px' : '1px'
-      }}
+      className="group relative bg-[#f8faf6] rounded-xl p-5 cursor-pointer transition-all duration-200 border border-[#e2e6dc] hover:shadow-lg hover:border-[#c8cec0] hover:-translate-y-0.5"
       onClick={onClick}
     >
       {/* Header with icon, title, and actions */}
       <div className="flex items-start gap-3 mb-4">
         <div
-          className="w-14 h-14 rounded-xl flex items-center justify-center shadow-sm text-white shrink-0"
+          className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm text-white shrink-0"
           style={{ backgroundColor: themeColor }}
         >
-          <SkillIcon name={icon} size={26} />
+          <SkillIcon name={icon} size={22} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-gray-900 truncate mb-1">
+          <h3 className="text-[15px] font-bold text-[#1c1f1a] truncate group-hover:text-[#2e5023] transition-colors">
             {name}
           </h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-[12px] text-[#9aa094]">
             {rsm.completedCount || 0}/{nodeCount} nodes
           </p>
         </div>
 
-        {/* Action buttons - always visible */}
+        {/* Action buttons */}
         {isOwner && (
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
-              title="Remove from room"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#c8cec0] hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+            title="Remove from room"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         )}
       </div>
 
       {/* Progress section */}
       <div className="space-y-2 mb-4">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Progress</span>
-          <span className="text-base font-bold" style={{ color: themeColor }}>
+          <span className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider">Progress</span>
+          <span className="text-[14px] font-bold" style={{ color: themeColor }}>
             {Math.round(progress)}%
           </span>
         </div>
-        <div className="relative h-2.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="relative h-2 bg-[#e8ece3] rounded-full overflow-hidden">
           <div
-            className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
-            style={{
-              width: `${progress}%`,
-              background: `linear-gradient(to right, ${themeColor}, ${themeColor}dd)`
-            }}
+            className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
+            style={{ width: `${progress}%`, backgroundColor: themeColor }}
           />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        <span className="text-xs font-medium" style={{ color: themeColor }}>
-          {isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Not Started'}
-        </span>
-        <div className="flex items-center gap-1 text-sm font-medium text-gray-400 hover:text-site-accent transition-colors">
-          <span>View</span>
-          <ChevronRight className="w-4 h-4" />
+      <div className="flex items-center justify-between pt-3 border-t border-[#e2e6dc]">
+        {isCompleted ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-200">
+            <Sparkles className="w-3 h-3" /> Completed
+          </span>
+        ) : isInProgress ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full border border-amber-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> In Progress
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full border border-gray-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Not Started
+          </span>
+        )}
+        <div className="flex items-center gap-1 text-[12px] font-medium text-[#9aa094] group-hover:text-[#2e5023] transition-colors">
+          View <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
         </div>
       </div>
     </div>
@@ -763,26 +782,29 @@ function SkillMapCard({ skillMap: rsm, isOwner, onRemove, onClick }) {
 }
 
 /* Member Card Component */
-function MemberCard({ member, isOwner, currentUserId, onKick }) {
+function MemberCard({ member, isOwner, currentUserId, onKick, themeColor }) {
   const isSelf = member.userId === currentUserId;
   const memberIsOwner = member.role === "owner";
   const displayName = member.user?.name || member.username || "Unknown User";
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-site-bg transition-colors">
+    <div className="flex items-center justify-between p-3 rounded-xl hover:bg-[#f8faf6] transition-colors group">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-site-soft flex items-center justify-center">
-          <span className="text-site-accent font-semibold">
+        <div 
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ backgroundColor: `${themeColor || '#ec4899'}20` }}
+        >
+          <span className="font-bold text-sm" style={{ color: themeColor || '#ec4899' }}>
             {displayName.charAt(0).toUpperCase()}
           </span>
         </div>
         <div>
-          <p className="text-sm font-medium text-site-ink">
+          <p className="text-sm font-semibold text-[#1c1f1a]">
             {displayName}
-            {isSelf && <span className="text-site-muted ml-1">(You)</span>}
+            {isSelf && <span className="text-[#9aa094] font-normal ml-1">(You)</span>}
           </p>
           {memberIsOwner && (
-            <span className="flex items-center gap-1 text-xs text-amber-600">
+            <span className="flex items-center gap-1 text-[11px] text-amber-600 font-medium">
               <Crown className="w-3 h-3" />
               Owner
             </span>
@@ -793,7 +815,7 @@ function MemberCard({ member, isOwner, currentUserId, onKick }) {
       {isOwner && !memberIsOwner && !isSelf && (
         <button
           onClick={onKick}
-          className="p-2 text-site-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          className="p-2 text-[#c8cec0] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
           title="Remove member"
         >
           <UserMinus className="w-4 h-4" />
@@ -803,7 +825,7 @@ function MemberCard({ member, isOwner, currentUserId, onKick }) {
   );
 }
 
-/* Edit Room Modal */
+/* Edit Room Modal - Redesigned */
 function EditRoomModal({ room, onClose, onSuccess }) {
   const [name, setName] = useState(room.name);
   const [description, setDescription] = useState(room.description || "");
@@ -814,6 +836,8 @@ function EditRoomModal({ room, onClose, onSuccess }) {
 
   const { showSuccess } = useToast();
   const { handleApiError } = useApiError();
+
+  const themeColor = room.color || '#ec4899';
 
   const handleNameChange = (e) => {
     const newName = e.target.value;
@@ -892,13 +916,37 @@ function EditRoomModal({ room, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-md p-6 border border-site-border">
-        <h2 className="text-xl font-bold text-site-ink mb-4">Edit Room</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        
+        {/* Header with gradient */}
+        <div 
+          className="px-6 py-4"
+          style={{ background: `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)` }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <Settings className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Edit Room</h2>
+                <p className="text-white/70 text-xs">Update room details</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-site-ink mb-2">
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
               Room Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -907,19 +955,28 @@ function EditRoomModal({ room, onClose, onSuccess }) {
               onChange={handleNameChange}
               maxLength={20}
               className={`
-                w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-site-accent focus:border-transparent
-                ${nameError ? 'border-red-300 bg-red-50' : 'border-site-border'}
+                w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all text-sm
+                ${nameError 
+                  ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-2 focus:ring-red-400/15' 
+                  : 'border-[#e2e6dc] focus:border-pink-400 focus:ring-2 focus:ring-pink-400/15'
+                }
               `}
             />
-            {nameError && (
-              <p className="text-red-600 text-xs mt-1">{nameError}</p>
-            )}
-            <p className="text-xs text-site-faint mt-1">{name.length}/20 characters</p>
+            <div className="flex justify-between mt-1.5">
+              {nameError ? (
+                <p className="text-red-600 text-xs">{nameError}</p>
+              ) : (
+                <span />
+              )}
+              <span className={`text-[11px] ${name.length > 20 ? 'text-red-500' : 'text-[#9aa094]'}`}>
+                {name.length}/20
+              </span>
+            </div>
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-site-ink mb-2">
-              Description (optional)
+            <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
+              Description <span className="text-[#9aa094] font-normal">(optional)</span>
             </label>
             <textarea
               value={description}
@@ -927,20 +984,26 @@ function EditRoomModal({ room, onClose, onSuccess }) {
               maxLength={200}
               rows={3}
               className={`
-                w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-site-accent focus:border-transparent resize-none
-                ${descriptionError ? 'border-red-300 bg-red-50' : 'border-site-border'}
+                w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all text-sm resize-none
+                ${descriptionError 
+                  ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-2 focus:ring-red-400/15' 
+                  : 'border-[#e2e6dc] focus:border-pink-400 focus:ring-2 focus:ring-pink-400/15'
+                }
               `}
             />
-            {descriptionError && (
-              <p className="text-red-600 text-xs mt-1">{descriptionError}</p>
-            )}
-            <p className="text-xs text-site-faint mt-1">
-              {description.length}/200 characters
-            </p>
+            <div className="flex justify-between mt-1.5">
+              {descriptionError ? (
+                <p className="text-red-600 text-xs">{descriptionError}</p>
+              ) : (
+                <span />
+              )}
+              <span className="text-[11px] text-[#9aa094]">{description.length}/200</span>
+            </div>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-lg text-sm">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-start gap-2">
+              <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
               {error}
             </div>
           )}
@@ -950,16 +1013,31 @@ function EditRoomModal({ room, onClose, onSuccess }) {
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg transition-colors disabled:opacity-50"
+              className="flex-1 py-3 border-2 border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f8faf6] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
+              <X className="w-4 h-4" />
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors disabled:opacity-50"
+              className="flex-1 py-3 text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-50 shadow-lg flex items-center justify-center gap-2"
+              style={{ 
+                background: `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`,
+                boxShadow: `0 4px 14px -2px ${themeColor}40`
+              }}
             >
-              {isSubmitting ? "Saving..." : "Save Changes"}
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Save Changes
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -968,7 +1046,7 @@ function EditRoomModal({ room, onClose, onSuccess }) {
   );
 }
 
-/* Add Skill Map Modal */
+/* Add Skill Map Modal - Redesigned */
 function AddSkillMapModal({ roomId, existingSkillMapIds, onClose, onSuccess }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("templates"); // "templates" | "my-maps"
@@ -1061,94 +1139,144 @@ function AddSkillMapModal({ roomId, existingSkillMapIds, onClose, onSuccess }) {
     }
   };
 
+  // Get selected item details for header
+  const selectedItem = activeTab === "templates" ? selectedTemplate : userSkillMaps.find(sm => sm._id === selectedId);
+  const selectedColor = selectedItem?.color || (activeTab === "templates" ? "#10b981" : "#3b82f6");
+  const selectedName = activeTab === "templates" ? selectedTemplate?.title : selectedItem?.name;
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col border border-site-border overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-site-border">
-          <h2 className="text-lg font-bold text-site-ink">Add Skill Map</h2>
-          <button onClick={onClose} disabled={isSubmitting} className="p-1.5 text-site-muted hover:text-site-ink rounded-lg transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+        
+        {/* ── Header with Gradient ── */}
+        <div 
+          className="px-6 py-4 flex-shrink-0"
+          style={{ 
+            background: activeTab === "templates" 
+              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+              : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <Map className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Add Skill Map</h2>
+                <p className="text-white/70 text-xs">
+                  {selectedName ? `Selected: ${selectedName}` : 'Choose a skill map to add'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-site-border px-5">
-          <button
-            onClick={() => { setActiveTab("templates"); setSelectedId(null); setSelectedTemplate(null); setError(""); }}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              activeTab === "templates"
-                ? "border-site-accent text-site-accent"
-                : "border-transparent text-site-muted hover:text-site-ink"
-            }`}
-          >
-            Templates
-          </button>
-          <button
-            onClick={() => { setActiveTab("my-maps"); setSelectedId(null); setSelectedTemplate(null); setError(""); }}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              activeTab === "my-maps"
-                ? "border-site-accent text-site-accent"
-                : "border-transparent text-site-muted hover:text-site-ink"
-            }`}
-          >
-            My Skill Maps
-            {userSkillMaps.length > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 bg-site-soft text-site-accent text-xs rounded-full font-semibold">
-                {userSkillMaps.length}
-              </span>
-            )}
-          </button>
+        {/* ── Tab Switcher ── */}
+        <div className="px-6 py-3 bg-[#f8faf6] border-b border-[#e2e6dc]">
+          <div className="flex bg-[#e8ece3] rounded-xl p-1">
+            <button
+              onClick={() => { setActiveTab("templates"); setSelectedId(null); setSelectedTemplate(null); setError(""); }}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === "templates"
+                  ? "bg-white text-emerald-600 shadow-sm"
+                  : "text-[#9aa094] hover:text-[#565c52]"
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Templates
+            </button>
+            <button
+              onClick={() => { setActiveTab("my-maps"); setSelectedId(null); setSelectedTemplate(null); setError(""); }}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === "my-maps"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-[#9aa094] hover:text-[#565c52]"
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              My Maps
+              {userSkillMaps.length > 0 && (
+                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 text-[10px] rounded-full font-bold">
+                  {userSkillMaps.length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
+        {/* ── Content ── */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
           {error && (
-            <div className="mb-3 p-3 bg-red-50 border border-red-300 text-red-700 rounded-lg text-sm">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-start gap-2">
+              <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
               {error}
             </div>
           )}
 
           {isLoading ? (
-            <div className="py-12 text-center">
-              <div className="w-6 h-6 border-2 border-site-accent border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-              <p className="text-sm text-site-muted">Loading...</p>
+            <div className="py-16 text-center">
+              <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-[#9aa094]">Loading skill maps...</p>
             </div>
           ) : activeTab === "templates" ? (
             templates.length === 0 ? (
-              <div className="py-12 text-center">
-                <BookOpen className="w-10 h-10 text-site-border mx-auto mb-3" />
-                <p className="text-sm text-site-muted">No templates available</p>
+              <div className="py-16 text-center">
+                <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="w-8 h-8 text-emerald-300" />
+                </div>
+                <h3 className="text-base font-bold text-[#1c1f1a] mb-1">No templates available</h3>
+                <p className="text-sm text-[#9aa094]">Check back later for new templates</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {templates.map((t) => {
                   const tId = t._id || t.id;
                   const isSelected = selectedTemplate && (selectedTemplate._id || selectedTemplate.id) === tId;
+                  const templateColor = t.color || "#10b981";
                   return (
                     <button
                       key={tId}
                       type="button"
                       onClick={() => setSelectedTemplate(t)}
                       disabled={isSubmitting}
-                      className={`text-left rounded-xl border p-4 transition-all group disabled:opacity-50 ${
+                      className={`relative text-left rounded-xl border-2 p-4 transition-all group disabled:opacity-50 ${
                         isSelected
-                          ? 'border-site-accent bg-site-soft shadow-md'
-                          : 'border-site-border bg-white hover:border-site-accent hover:shadow-md'
+                          ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-500/10'
+                          : 'border-[#e2e6dc] bg-[#f8faf6] hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5'
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-9 h-9 rounded-lg bg-site-soft border border-site-border flex items-center justify-center shrink-0">
-                          <SkillIcon name={t.icon} size={18} className="text-site-accent" />
+                      {/* Selection checkmark */}
+                      {isSelected && (
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                          <CheckCircle className="w-4 h-4 text-white" />
                         </div>
-                        <span className="text-sm font-semibold text-site-ink group-hover:text-site-accent transition-colors truncate">
-                          {t.title}
-                        </span>
+                      )}
+                      
+                      <div className="flex items-start gap-3 mb-3">
+                        <div 
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm text-white shrink-0"
+                          style={{ backgroundColor: templateColor }}
+                        >
+                          <SkillIcon name={t.icon} size={18} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-bold text-[#1c1f1a] group-hover:text-emerald-600 transition-colors line-clamp-1">
+                            {t.title}
+                          </span>
+                          <p className="text-[11px] text-[#9aa094] mt-0.5">{t.nodes?.length || 0} nodes</p>
+                        </div>
                       </div>
                       {t.description && (
-                        <p className="text-xs text-site-muted line-clamp-2 mb-2 break-words">{t.description}</p>
+                        <p className="text-xs text-[#565c52] line-clamp-2 leading-relaxed">{t.description}</p>
                       )}
-                      <span className="text-xs text-site-faint">{t.nodes?.length || 0} nodes</span>
                     </button>
                   );
                 })}
@@ -1156,81 +1284,118 @@ function AddSkillMapModal({ roomId, existingSkillMapIds, onClose, onSuccess }) {
             )
           ) : (
             userSkillMaps.length === 0 ? (
-              <div className="py-12 text-center">
-                <BookOpen className="w-10 h-10 text-site-border mx-auto mb-3" />
-                <p className="text-sm text-site-muted mb-1">No skill maps available</p>
-                <p className="text-xs text-site-faint">All your maps are already in this room, or you haven't created any yet.</p>
+              <div className="py-16 text-center">
+                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <BookOpen className="w-8 h-8 text-blue-300" />
+                </div>
+                <h3 className="text-base font-bold text-[#1c1f1a] mb-1">No skill maps available</h3>
+                <p className="text-sm text-[#9aa094] max-w-xs mx-auto">
+                  All your maps are already in this room, or you haven't created any yet.
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                {userSkillMaps.map((sm) => (
-                  <button
-                    key={sm._id}
-                    type="button"
-                    onClick={() => setSelectedId(sm._id)}
-                    className={`text-left rounded-xl border p-4 transition-all group ${
-                      selectedId === sm._id
-                        ? 'border-site-accent bg-site-soft shadow-md'
-                        : 'border-site-border bg-white hover:border-site-accent hover:shadow-md'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-9 h-9 rounded-lg bg-site-soft border border-site-border flex items-center justify-center shrink-0">
-                        <SkillIcon name={sm.icon} size={18} className="text-site-accent" />
+                {userSkillMaps.map((sm) => {
+                  const isSelected = selectedId === sm._id;
+                  const mapColor = sm.color || "#3b82f6";
+                  return (
+                    <button
+                      key={sm._id}
+                      type="button"
+                      onClick={() => setSelectedId(sm._id)}
+                      className={`relative text-left rounded-xl border-2 p-4 transition-all group ${
+                        isSelected
+                          ? 'border-blue-400 bg-blue-50 shadow-lg shadow-blue-500/10'
+                          : 'border-[#e2e6dc] bg-[#f8faf6] hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5'
+                      }`}
+                    >
+                      {/* Selection checkmark */}
+                      {isSelected && (
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                          <CheckCircle className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                      
+                      <div className="flex items-start gap-3 mb-3">
+                        <div 
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm text-white shrink-0"
+                          style={{ backgroundColor: mapColor }}
+                        >
+                          <SkillIcon name={sm.icon} size={18} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-bold text-[#1c1f1a] group-hover:text-blue-600 transition-colors line-clamp-1">
+                            {sm.name}
+                          </span>
+                          <p className="text-[11px] text-[#9aa094] mt-0.5">{sm.nodeCount || sm.nodes?.length || 0} nodes</p>
+                        </div>
                       </div>
-                      <span className="text-sm font-semibold text-site-ink group-hover:text-site-accent transition-colors truncate">
-                        {sm.name}
-                      </span>
-                    </div>
-                    {sm.description && (
-                      <p className="text-xs text-site-muted line-clamp-2 mb-2 break-words">{sm.description}</p>
-                    )}
-                    <span className="text-xs text-site-faint">{sm.nodeCount || sm.nodes?.length || 0} nodes</span>
-                  </button>
-                ))}
+                      {sm.description && (
+                        <p className="text-xs text-[#565c52] line-clamp-2 leading-relaxed">{sm.description}</p>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )
           )}
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-site-border px-5 py-3 bg-site-bg/30">
-          {(activeTab === "my-maps" && selectedId) || (activeTab === "templates" && selectedTemplate) ? (
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
+        {/* ── Footer ── */}
+        <div className="flex-shrink-0 px-6 py-4 bg-[#f8faf6] border-t border-[#e2e6dc]">
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1 py-3 border-2 border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <X className="w-4 h-4" />
+              Cancel
+            </button>
+            
+            {(activeTab === "my-maps" && selectedId) || (activeTab === "templates" && selectedTemplate) ? (
               <button
                 onClick={activeTab === "templates" ? () => handleImportTemplate(selectedTemplate) : handleAddExisting}
-                disabled={isSubmitting || (activeTab === "my-maps" && !selectedId) || (activeTab === "templates" && !selectedTemplate)}
-                className="flex-1 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors disabled:opacity-50"
+                disabled={isSubmitting}
+                className={`flex-1 py-3 text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-50 shadow-lg flex items-center justify-center gap-2 ${
+                  activeTab === "templates"
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25'
+                    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-blue-500/25'
+                }`}
               >
-                {isSubmitting ? "Adding..." : "Add to Room"}
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Add to Room
+                  </>
+                )}
               </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                navigate("/skills?create=scratch");
-              }}
-              className="w-full py-2.5 text-sm font-medium text-site-ink border-2 border-site-border rounded-lg hover:border-site-accent hover:text-site-accent transition-colors"
-            >
-              Or create from scratch
-            </button>
-          )}
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  navigate("/skills?create=scratch");
+                }}
+                className="flex-1 py-3 border-2 border-[#2e5023] text-[#2e5023] rounded-xl font-semibold text-sm hover:bg-[#2e5023] hover:text-white transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create New
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* Invite Modal */
+/* Invite Modal - Redesigned */
 function InviteModal({ roomId, onClose }) {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1317,70 +1482,109 @@ function InviteModal({ roomId, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-md p-6 border border-site-border">
-        <h2 className="text-xl font-bold text-site-ink mb-4">Invite Member</h2>
-
-        {success ? (
-          <div className="text-center py-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        
+        {/* Header with gradient */}
+        <div className="px-6 py-4 bg-gradient-to-r from-pink-500 to-rose-500">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <UserPlus className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Invite Member</h2>
+                <p className="text-white/70 text-xs">Add someone to your room</p>
+              </div>
             </div>
-            <p className="text-site-ink font-medium mb-2">Invitation Sent!</p>
-            <p className="text-sm text-site-muted">
-              The user will receive an email and in-app notification
-            </p>
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-site-ink mb-2">
-                Email Address <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={handleEmailChange}
-                placeholder="friend@example.com"
-                className={`
-                  w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-site-accent focus:border-transparent
-                  ${emailError ? 'border-red-300 bg-red-50' : 'border-site-border'}
-                `}
-                disabled={isSubmitting}
-              />
-              {emailError && (
-                <p className="text-red-600 text-xs mt-1">{emailError}</p>
-              )}
-              <p className="text-xs text-site-faint mt-1">
-                The user must have a registered account
+        </div>
+
+        <div className="p-6">
+          {success ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-bold text-[#1c1f1a] mb-2">Invitation Sent!</h3>
+              <p className="text-sm text-[#9aa094]">
+                The user will receive an email and in-app notification
               </p>
             </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-700 rounded-lg text-sm">
-                {error}
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  placeholder="friend@example.com"
+                  className={`
+                    w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all text-sm
+                    ${emailError 
+                      ? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-2 focus:ring-red-400/15' 
+                      : 'border-[#e2e6dc] focus:border-pink-400 focus:ring-2 focus:ring-pink-400/15'
+                    }
+                  `}
+                  disabled={isSubmitting}
+                />
+                {emailError ? (
+                  <p className="text-red-600 text-xs mt-1.5">{emailError}</p>
+                ) : (
+                  <p className="text-xs text-[#9aa094] mt-1.5">
+                    The user must have a registered account
+                  </p>
+                )}
               </div>
-            )}
 
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover transition-colors disabled:opacity-50"
-              >
-                {isSubmitting ? "Sending..." : "Send Invitation"}
-              </button>
-            </div>
-          </form>
-        )}
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-start gap-2">
+                  <X className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 border-2 border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f8faf6] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-semibold text-sm hover:from-pink-600 hover:to-rose-600 transition-all disabled:opacity-50 shadow-lg shadow-pink-500/25 flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      Send Invitation
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

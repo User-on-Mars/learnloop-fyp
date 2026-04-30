@@ -10,9 +10,10 @@ import { auth } from '../firebase';
 import {
   Lock, CheckCircle, Rocket, Play, Pause, RotateCcw,
   Star, AlertTriangle, ArrowRight, X, ArrowLeft,
-  Clock, Target, ChevronLeft, ChevronRight, PenLine, Unlock,
-  Zap, BookOpen, Trophy,
+  Clock, Target, ChevronLeft, ChevronRight, PenLine,
+  Zap, BookOpen, Trophy, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { SkillIcon } from '../components/IconPicker';
 
 const CONF_LABELS = ['', 'Not confident', 'Slightly', 'Moderate', 'Confident', 'Very confident'];
 const PER_PAGE = 5;
@@ -43,6 +44,7 @@ export default function NodeDetailPage() {
   const [page, setPage] = useState(1);
   const [showRemove, setShowRemove] = useState(false);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
+  const [expandedHist, setExpandedHist] = useState(null);
   const [tplTimer, setTplTimer] = useState(0);
   const [tplRunning, setTplRunning] = useState(false);
   const [tplCompleting, setTplCompleting] = useState(false);
@@ -139,6 +141,10 @@ export default function NodeDetailPage() {
 
   const removeActive = () => { if (activeS) { removeSession(activeS.id); setShowRemove(false); } };
 
+  /* ── Derived stats for redesigned layout ── */
+  const totalSec = hist.reduce((s, p) => s + (p.timerSeconds || p.minutesPracticed * 60 || 0), 0);
+  const avgSessionMin = hist.length > 0 ? Math.round(totalSec / hist.length / 60) : 0;
+
   if (loading && !node) return (
     <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
       <div className="text-center">
@@ -152,245 +158,377 @@ export default function NodeDetailPage() {
   const totalNodes = uNodes.length;
 
   return (
-    <div className="fixed inset-0 bg-white z-40 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#f8faf6] z-40 flex flex-col overflow-hidden">
 
-      {/* ── Top bar ── */}
-      <header className="flex items-center justify-between px-5 sm:px-8 h-14 border-b border-[#eef0ea] flex-shrink-0">
-        <button onClick={goBack} className="flex items-center gap-2 text-[13px] text-[#565c52] hover:text-[#2e5023] font-medium transition-colors -ml-1">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">{currentSkill?.name || 'Back'}</span>
+      {/* ── Top bar - Beautiful & Visible ── */}
+      <header className="flex items-center justify-between px-4 sm:px-6 lg:px-10 py-3 border-b border-[#e8ebe4] flex-shrink-0 bg-white">
+        {/* Back button with skill map icon */}
+        <button 
+          onClick={goBack} 
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#f8faf6] to-[#f0f4ed] hover:from-[#edf5e9] hover:to-[#e5f0e0] border border-[#d4e8cc] hover:border-[#b8d4a8] text-[#2e5023] font-semibold text-[13px] transition-all shadow-sm hover:shadow group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          <div 
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-white shadow-sm"
+            style={{ backgroundColor: currentSkill?.color || '#2e5023' }}
+          >
+            <SkillIcon name={currentSkill?.icon || 'Map'} size={14} />
+          </div>
+          <span className="font-bold">{currentSkill?.name || 'Back'}</span>
         </button>
+
+        {/* Node counter - Cute pill design */}
         {nodeIdx >= 0 && totalNodes > 0 && (
-          <span className="text-[11px] text-[#b0b5ae] font-medium">Node {nodeIdx + 1} of {totalNodes}</span>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#f8faf6] to-[#f0f4ed] border border-[#e2e6dc] shadow-sm">
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalNodes }, (_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    i < nodeIdx ? 'bg-emerald-400' : 
+                    i === nodeIdx ? 'bg-[#2e5023] ring-2 ring-[#2e5023]/20 scale-125' : 
+                    'bg-[#d4d8ce]'
+                  }`}
+                  style={i === nodeIdx ? { backgroundColor: currentSkill?.color || '#2e5023' } : i < nodeIdx ? {} : {}}
+                />
+              ))}
+            </div>
+            <div className="h-4 w-px bg-[#e2e6dc]" />
+            <span className="text-[12px] font-bold" style={{ color: currentSkill?.color || '#2e5023' }}>
+              Node {nodeIdx + 1}
+            </span>
+            <span className="text-[12px] text-[#9aa094]">of {totalNodes}</span>
+          </div>
         )}
       </header>
 
       {/* ── Scrollable content ── */}
       <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
 
-        {/* ═══ HERO SECTION ═══ */}
-        <div className={`relative overflow-hidden ${isCompleted ? 'bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30' : activeS ? 'bg-gradient-to-br from-[#edf5e9] via-white to-[#f0faf0]' : 'bg-gradient-to-br from-[#f5f7f2] via-white to-[#fafbf8]'}`}>
-          {/* Decorative circles */}
-          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-[#2e5023] opacity-[0.03]" />
-          <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-[#2e5023] opacity-[0.02]" />
+          {/* ═══ ALERTS ═══ */}
+          {ok && <div className="mb-4 flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-[13px] font-medium"><Zap className="w-4 h-4" />{ok}</div>}
+          {err && <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-xl text-[13px] font-medium"><AlertTriangle className="w-4 h-4" />{err}</div>}
+          {isLocked && <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2.5 rounded-xl text-[13px] font-medium"><Lock className="w-4 h-4" />Complete the previous node to unlock this one.</div>}
 
-          <div className="max-w-2xl mx-auto px-5 sm:px-8 pt-10 pb-8">
-            {/* Alerts */}
-            {ok && <div className="mb-4 flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-[13px] font-medium"><Zap className="w-4 h-4" />{ok}</div>}
-            {err && <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-xl text-[13px] font-medium"><AlertTriangle className="w-4 h-4" />{err}</div>}
-            {isLocked && <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2.5 rounded-xl text-[13px] font-medium"><Lock className="w-4 h-4" />Complete the previous node to unlock this one.</div>}
+          {/* ═══ TWO COLUMN LAYOUT ═══ */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-            {/* Node identity */}
-            <div className="flex items-start gap-4 mb-6">
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ${isCompleted ? 'bg-emerald-500 shadow-emerald-500/20' : isLocked ? 'bg-gray-400 shadow-gray-400/20' : 'bg-[#2e5023] shadow-[#2e5023]/20'}`}>
-                {isFirst && !isCompleted ? <Rocket className="w-7 h-7 text-white" /> : isCompleted ? <CheckCircle className="w-7 h-7 text-white" /> : isLocked ? <Lock className="w-7 h-7 text-white" /> : <Unlock className="w-7 h-7 text-white" />}
-              </div>
-              <div className="flex-1 min-w-0 pt-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a] leading-tight mb-2">{node?.title}</h1>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full ${isCompleted ? 'bg-emerald-100 text-emerald-700' : isLocked ? 'bg-amber-100 text-amber-700' : hist.length > 0 ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-                    {isCompleted ? <CheckCircle className="w-3 h-3" /> : isLocked ? <Lock className="w-3 h-3" /> : hist.length > 0 ? <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> : null}
-                    {dispStatus}
-                  </span>
-                  <span className="text-[11px] text-[#b0b5ae]">in {currentSkill?.name || 'Skill Map'}</span>
-                </div>
-              </div>
-            </div>
+            {/* ── LEFT COLUMN: Node Info + Actions ── */}
+            <div className="lg:col-span-5 space-y-5">
 
-            {/* Description */}
-            <div className="mb-8">
-              {editDesc ? (
-                <div>
-                  <textarea value={descIn} onChange={e => setDescIn(e.target.value)} rows={3} maxLength={2000} autoFocus className="w-full px-4 py-3 border border-[#d4e8cc] rounded-xl text-sm text-[#1c1f1a] focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none bg-white/80 backdrop-blur-sm" placeholder="Describe what to learn in this node..." />
-                  <div className="flex gap-2 mt-2">
-                    <button onClick={saveDesc} className="px-5 py-2 bg-[#2e5023] text-white text-[12px] font-semibold rounded-lg hover:bg-[#3d6b30] transition-colors">Save</button>
-                    <button onClick={() => { setEditDesc(false); setDescIn(nodeDetails?.node?.description || ''); }} className="px-5 py-2 text-[12px] text-[#565c52] hover:text-[#1c1f1a] font-medium transition-colors">Cancel</button>
+              {/* Node Identity Card */}
+              <div className={`rounded-2xl border overflow-hidden ${isCompleted ? 'bg-gradient-to-br from-emerald-50 to-white border-emerald-200' : 'bg-white border-[#e8ebe4]'}`}>
+                <div className="p-6">
+                  <div className="flex items-start gap-4 mb-5">
+                    <div 
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg"
+                      style={{ 
+                        backgroundColor: isCompleted ? '#10b981' : isLocked ? '#9ca3af' : (currentSkill?.color || '#2e5023'),
+                        boxShadow: `0 10px 15px -3px ${isCompleted ? 'rgba(16, 185, 129, 0.2)' : isLocked ? 'rgba(156, 163, 175, 0.2)' : (currentSkill?.color || '#2e5023') + '33'}`
+                      }}
+                    >
+                      {isFirst && !isCompleted ? (
+                        <Rocket className="w-7 h-7 text-white" />
+                      ) : isCompleted ? (
+                        <CheckCircle className="w-7 h-7 text-white" />
+                      ) : isLocked ? (
+                        <Lock className="w-7 h-7 text-white" />
+                      ) : (
+                        <SkillIcon name={currentSkill?.icon || 'Target'} size={26} className="text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 pt-1">
+                      <h1 className="text-xl sm:text-2xl font-bold text-[#1c1f1a] leading-tight mb-2">{node?.title}</h1>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span 
+                          className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full ${
+                            isCompleted ? 'bg-emerald-100 text-emerald-700' : 
+                            isLocked ? 'bg-amber-100 text-amber-700' : 
+                            hist.length > 0 ? 'bg-blue-50 text-blue-600' : 
+                            'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {isCompleted ? <CheckCircle className="w-3 h-3" /> : isLocked ? <Lock className="w-3 h-3" /> : hist.length > 0 ? <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> : null}
+                          {dispStatus}
+                        </span>
+                        <span className="text-[11px] text-[#b0b5ae] flex items-center gap-1">
+                          in 
+                          <span 
+                            className="font-semibold"
+                            style={{ color: currentSkill?.color || '#2e5023' }}
+                          >
+                            {currentSkill?.name || 'Skill Map'}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="group">
-                  <p className="text-[15px] text-[#565c52] leading-relaxed">
-                    {nodeDetails?.node?.description || <span className="italic text-[#c8cec0]">No description yet — add one to remember what this node is about</span>}
-                  </p>
-                  <button onClick={() => setEditDesc(true)} className="mt-1.5 text-[#2e5023] text-[12px] font-medium hover:underline inline-flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity"><PenLine className="w-3 h-3" />Edit description</button>
-                </div>
-              )}
-            </div>
 
-            {/* Action buttons */}
-            {!isLocked && (
-              <div className="flex items-center gap-3 flex-wrap">
-                {isUnlocked && !isCompleted && !activeS && (
-                  <button onClick={() => setShowPractice(true)} className="flex items-center gap-2 px-6 py-3 bg-[#2e5023] text-white text-sm font-semibold rounded-xl hover:bg-[#3d6b30] transition-all shadow-lg shadow-[#2e5023]/15 active:scale-[0.97]">
-                    <Play className="w-4 h-4" />Start Practice Session
-                  </button>
-                )}
-                {isUnlocked && !isCompleted && hist.length > 0 && !activeS && (
-                  <button onClick={() => setShowMark(true)} className="flex items-center gap-2 px-6 py-3 text-[#2e5023] text-sm font-semibold rounded-xl border-2 border-[#c8dbbe] hover:bg-[#edf5e9] transition-colors">
-                    <CheckCircle className="w-4 h-4" />Mark as Complete
-                  </button>
-                )}
-                {isCompleted && (
-                  <div className="flex items-center gap-2 px-5 py-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <Trophy className="w-5 h-5 text-emerald-600" />
-                    <span className="text-sm font-semibold text-emerald-700">Node completed — great work!</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ═══ MAIN CONTENT ═══ */}
-        <div className="max-w-2xl mx-auto px-5 sm:px-8 py-8 space-y-8">
-
-          {/* ── Active Session Timer ── */}
-          {activeS && (
-            <section className={`rounded-2xl border-2 overflow-hidden ${activeS.isRunning ? 'border-emerald-300' : 'border-[#e8ebe4]'}`}>
-              <div className={`px-6 py-3 flex items-center justify-between ${activeS.isRunning ? 'bg-emerald-50' : 'bg-[#fafbf8]'}`}>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${activeS.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
-                  <span className="text-[13px] font-semibold text-[#1c1f1a]">{activeS.notes || 'Practice Session'}</span>
-                </div>
-                <button onClick={() => setShowRemove(true)} className="text-[12px] text-[#b0b5ae] hover:text-red-500 font-medium transition-colors">Discard</button>
-              </div>
-              <div className="bg-white px-6 py-10 flex flex-col items-center">
-                <p className={`text-7xl sm:text-8xl font-bold font-mono tracking-tighter leading-none ${activeS.isRunning ? 'text-emerald-600' : 'text-[#1c1f1a]'}`}>{formatTimer(activeS.timer)}</p>
-                {activeS.isCountdown && (
-                  <div className="w-full max-w-sm mt-6 h-2 bg-[#f0f2ec] rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${activeS.isRunning ? 'bg-emerald-500' : 'bg-[#2e5023]'}`} style={{ width: `${getProgress(activeS)}%` }} />
-                  </div>
-                )}
-              </div>
-              <div className="bg-[#fafbf8] border-t border-[#f0f2ec] px-6 py-4 flex gap-2">
-                <button onClick={() => toggleSession(activeS.id)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.97] ${activeS.isRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{activeS.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{activeS.isRunning ? 'Pause' : 'Resume'}</button>
-                <button onClick={() => resetSession(activeS.id)} className="px-4 py-3 border border-[#e8ebe4] text-[#565c52] rounded-xl hover:bg-white transition-colors"><RotateCcw className="w-4 h-4" /></button>
-                <button onClick={() => openComp(activeS)} disabled={(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60; })()} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">{(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60 ? `${60 - e}s left` : 'Complete & Log'; })()}</button>
-              </div>
-            </section>
-          )}
-
-          {/* ── Stats ── */}
-          <section>
-            <h2 className="text-xs font-bold text-[#9aa094] uppercase tracking-wider mb-3">Progress</h2>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50', ring: 'ring-blue-100', val: timeStr, label: 'Total Time' },
-                { icon: Target, color: 'text-violet-500', bg: 'bg-violet-50', ring: 'ring-violet-100', val: String(hist.length), label: 'Sessions' },
-                { icon: Star, color: 'text-amber-500', bg: 'bg-amber-50', ring: 'ring-amber-100', val: avgConf, label: 'Confidence' },
-              ].map(s => (
-                <div key={s.label} className="bg-white rounded-2xl border border-[#eef0ea] p-5 text-center hover:shadow-md hover:shadow-black/[0.03] transition-shadow">
-                  <div className={`w-10 h-10 rounded-xl ${s.bg} ring-4 ${s.ring} flex items-center justify-center mx-auto mb-3`}>
-                    <s.icon className={`w-5 h-5 ${s.color}`} />
-                  </div>
-                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{s.val}</p>
-                  <p className="text-[11px] text-[#9aa094] font-medium">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* ── Template Sessions ── */}
-          {hasTPL && !activeS && (
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-bold text-[#9aa094] uppercase tracking-wider flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" />Practice Sessions</h2>
-                <div className="flex items-center gap-1.5">
-                  <div className="flex gap-0.5">{node.sessionDefinitions.map((_, i) => <div key={i} className={`w-2 h-2 rounded-full ${doneTPL.includes(i) ? 'bg-emerald-500' : i === curTPLIdx ? 'bg-[#2e5023]' : 'bg-[#e8ebe4]'}`} />)}</div>
-                  <span className="text-[11px] font-semibold text-[#565c52] ml-1">{doneTPL.length}/{node.sessionDefinitions.length}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                {isLocked ? null : node.sessionDefinitions.map((sd, i) => {
-                  const isDone = doneTPL.includes(i);
-                  const isCur = i === curTPLIdx;
-                  const isLk = !isDone && !isCur;
-                  return (
-                    <div key={i} className={`rounded-2xl border p-5 transition-all ${isDone ? 'border-emerald-200 bg-emerald-50/40' : isCur ? 'border-[#2e5023] bg-white shadow-md shadow-[#2e5023]/5' : 'border-[#eef0ea] bg-[#fafbf8] opacity-50'}`}>
-                      <div className="flex items-start gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isDone ? 'bg-emerald-500' : isCur ? 'bg-[#2e5023]' : 'bg-[#d4d8ce]'}`}>
-                          {isDone ? <CheckCircle className="w-4 h-4 text-white" /> : isLk ? <Lock className="w-3.5 h-3.5 text-white" /> : <span className="text-xs font-bold text-white">{i + 1}</span>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-semibold ${isDone ? 'text-emerald-700' : isCur ? 'text-[#1c1f1a]' : 'text-[#b0b5ae]'}`}>{sd.title}</p>
-                          {sd.description && <p className={`text-[12px] mt-0.5 leading-relaxed ${isDone ? 'text-emerald-600/80' : isCur ? 'text-[#565c52]' : 'text-[#c8cec0]'}`}>{sd.description}</p>}
-                          {isDone && <p className="text-[10px] text-emerald-600 font-semibold mt-1.5">✓ Completed</p>}
-                          {isLk && <p className="text-[10px] text-[#c8cec0] mt-1">Complete previous session first</p>}
+                  {/* Description */}
+                  <div className="mb-5">
+                    {editDesc ? (
+                      <div>
+                        <textarea value={descIn} onChange={e => setDescIn(e.target.value)} rows={3} maxLength={2000} autoFocus className="w-full px-4 py-3 border border-[#d4e8cc] rounded-xl text-sm text-[#1c1f1a] focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none bg-white/80" placeholder="Describe what to learn..." />
+                        <div className="flex gap-2 mt-2">
+                          <button onClick={saveDesc} className="px-5 py-2 bg-[#2e5023] text-white text-[12px] font-semibold rounded-lg hover:bg-[#3d6b30] transition-colors">Save</button>
+                          <button onClick={() => { setEditDesc(false); setDescIn(nodeDetails?.node?.description || ''); }} className="px-5 py-2 text-[12px] text-[#565c52] hover:text-[#1c1f1a] font-medium transition-colors">Cancel</button>
                         </div>
                       </div>
-                      {isCur && !isLocked && (
-                        <div className="mt-5 pt-4 border-t border-[#eef0ea]">
-                          <p className={`text-5xl font-bold font-mono text-center py-5 rounded-2xl mb-3 tracking-tight ${tplRunning ? 'bg-emerald-50 text-emerald-600' : 'bg-[#f5f7f2] text-[#1c1f1a]'}`}>{fmtTime(tplTimer)}</p>
-                          <div className="flex gap-2">
-                            <button onClick={() => setTplRunning(r => !r)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm active:scale-[0.97] ${tplRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{tplRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{tplRunning ? 'Pause' : 'Start'}</button>
-                            <button onClick={() => { setTplTimer(0); setTplRunning(false); }} className="px-4 py-3 border border-[#eef0ea] text-[#565c52] rounded-xl hover:bg-[#f5f7f2]"><RotateCcw className="w-4 h-4" /></button>
-                          </div>
-                          <button onClick={() => completeTplSession(i)} disabled={tplTimer < 60 || tplCompleting} className="w-full mt-2 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">{tplCompleting ? 'Completing...' : tplTimer < 60 ? `${60 - tplTimer}s until 1 min` : 'Complete Session'}</button>
+                    ) : (
+                      <div className="group">
+                        <p className="text-[14px] text-[#565c52] leading-relaxed">
+                          {nodeDetails?.node?.description || <span className="italic text-[#c8cec0]">No description yet</span>}
+                        </p>
+                        <button onClick={() => setEditDesc(true)} className="mt-1.5 text-[#2e5023] text-[12px] font-medium hover:underline inline-flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity"><PenLine className="w-3 h-3" />Edit</button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action buttons */}
+                  {!isLocked && (
+                    <div className="flex flex-col gap-2">
+                      {isUnlocked && !isCompleted && !activeS && (
+                        <button onClick={() => setShowPractice(true)} className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#2e5023] text-white text-sm font-semibold rounded-xl hover:bg-[#3d6b30] transition-all shadow-lg shadow-[#2e5023]/15 active:scale-[0.98]">
+                          <Play className="w-4 h-4" />Start Practice Session
+                        </button>
+                      )}
+                      {isUnlocked && !isCompleted && hist.length > 0 && !activeS && (
+                        <button onClick={() => setShowMark(true)} className="flex items-center justify-center gap-2 w-full px-6 py-3 text-[#2e5023] text-sm font-semibold rounded-xl border-2 border-[#c8dbbe] hover:bg-[#edf5e9] transition-colors">
+                          <CheckCircle className="w-4 h-4" />Mark as Complete
+                        </button>
+                      )}
+                      {isCompleted && (
+                        <div className="flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                          <Trophy className="w-5 h-5 text-emerald-600" />
+                          <span className="text-sm font-semibold text-emerald-700">Node completed!</span>
                         </div>
                       )}
                     </div>
-                  );
-                })}
-                {isCompleted && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-5 rounded-2xl text-sm text-center font-semibold flex items-center justify-center gap-2"><Trophy className="w-4 h-4" />All sessions completed!</div>}
-              </div>
-            </section>
-          )}
-
-          {/* ── Practice History ── */}
-          {!hasTPL && (
-            <section>
-              <h2 className="text-xs font-bold text-[#9aa094] uppercase tracking-wider mb-3">Practice History</h2>
-              {hist.length === 0 ? (
-                <div className="rounded-2xl border-2 border-dashed border-[#e8ebe4] bg-[#fafbf8] p-10 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-white border border-[#eef0ea] flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <Clock className="w-7 h-7 text-[#d4d8ce]" />
-                  </div>
-                  <p className="text-[15px] font-semibold text-[#1c1f1a] mb-1">No sessions yet</p>
-                  <p className="text-[13px] text-[#9aa094] max-w-xs mx-auto">Start your first practice session to begin tracking your progress on this node.</p>
-                  {isUnlocked && !isCompleted && !activeS && (
-                    <button onClick={() => setShowPractice(true)} className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-[#2e5023] text-white text-[13px] font-semibold rounded-xl hover:bg-[#3d6b30] transition-colors shadow-md shadow-[#2e5023]/10 active:scale-[0.97]"><Play className="w-3.5 h-3.5" />Start Practicing</button>
                   )}
                 </div>
-              ) : (
-                <div className="rounded-2xl border border-[#eef0ea] bg-white overflow-hidden">
-                  {paged.map((p, i) => (
-                    <div key={p._id} className={`px-5 py-4 flex items-start gap-4 ${i > 0 ? 'border-t border-[#f5f7f2]' : ''} hover:bg-[#fafbf8] transition-colors`}>
-                      <div className="w-9 h-9 rounded-xl bg-[#f5f7f2] flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-[12px] font-bold text-[#2e5023]">{(page - 1) * PER_PAGE + i + 1}</span>
+              </div>
+              {/* ── Active Session Timer Card ── */}
+              {activeS && (
+                <div className={`rounded-2xl border-2 overflow-hidden ${activeS.isRunning ? 'border-emerald-300' : 'border-[#e8ebe4]'}`}>
+                  <div className={`px-5 py-3 flex items-center justify-between ${activeS.isRunning ? 'bg-emerald-50' : 'bg-[#fafbf8]'}`}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${activeS.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                      <span className="text-[13px] font-semibold text-[#1c1f1a]">{activeS.notes || 'Practice Session'}</span>
+                    </div>
+                    <button onClick={() => setShowRemove(true)} className="text-[12px] text-[#b0b5ae] hover:text-red-500 font-medium transition-colors">Discard</button>
+                  </div>
+                  <div className="bg-white px-5 py-8 flex flex-col items-center">
+                    <p className={`text-6xl font-bold font-mono tracking-tighter leading-none ${activeS.isRunning ? 'text-emerald-600' : 'text-[#1c1f1a]'}`}>{formatTimer(activeS.timer)}</p>
+                    {activeS.isCountdown && (
+                      <div className="w-full max-w-xs mt-5 h-2 bg-[#f0f2ec] rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${activeS.isRunning ? 'bg-emerald-500' : 'bg-[#2e5023]'}`} style={{ width: `${getProgress(activeS)}%` }} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[14px] font-semibold text-[#1c1f1a]">{p.notes || 'Session'}</span>
-                          <span className="text-[11px] text-[#b0b5ae] bg-[#f5f7f2] px-2 py-0.5 rounded-full font-medium">{p.timerSeconds ? `${Math.floor(p.timerSeconds / 60)}m ${p.timerSeconds % 60}s` : `${p.minutesPracticed}m`}</span>
-                        </div>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {p.confidence > 0 && (
-                            <div className="flex items-center gap-1">
-                              <div className="flex gap-px">{[1, 2, 3, 4, 5].map(s => <Star key={s} className={`w-3 h-3 ${s <= p.confidence ? 'text-amber-400 fill-amber-400' : 'text-[#e8ebe4]'}`} />)}</div>
-                              <span className="text-[10px] text-[#b0b5ae] ml-0.5">{CONF_LABELS[p.confidence]}</span>
+                    )}
+                  </div>
+                  <div className="bg-[#fafbf8] border-t border-[#f0f2ec] px-5 py-3 flex gap-2">
+                    <button onClick={() => toggleSession(activeS.id)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.97] ${activeS.isRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{activeS.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{activeS.isRunning ? 'Pause' : 'Resume'}</button>
+                    <button onClick={() => resetSession(activeS.id)} className="px-3 py-2.5 border border-[#e8ebe4] text-[#565c52] rounded-xl hover:bg-white transition-colors"><RotateCcw className="w-4 h-4" /></button>
+                    <button onClick={() => openComp(activeS)} disabled={(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60; })()} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">{(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60 ? `${60 - e}s left` : 'Complete'; })()}</button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* ── RIGHT COLUMN: Stats + History ── */}
+            <div className="lg:col-span-7 space-y-5">
+
+              {/* Stats Grid - 4 cards in 2x2 on mobile, 4 columns on desktop */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-white rounded-2xl border border-[#e8ebe4] p-5 hover:shadow-md hover:shadow-black/[0.03] transition-shadow">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 ring-4 ring-blue-100 flex items-center justify-center mb-3">
+                    <Clock className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{timeStr}</p>
+                  <p className="text-[11px] text-[#9aa094] font-medium">Total Time</p>
+                </div>
+                <div className="bg-white rounded-2xl border border-[#e8ebe4] p-5 hover:shadow-md hover:shadow-black/[0.03] transition-shadow">
+                  <div className="w-10 h-10 rounded-xl bg-violet-50 ring-4 ring-violet-100 flex items-center justify-center mb-3">
+                    <Target className="w-5 h-5 text-violet-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{hist.length}</p>
+                  <p className="text-[11px] text-[#9aa094] font-medium">Sessions</p>
+                </div>
+                <div className="bg-white rounded-2xl border border-[#e8ebe4] p-5 hover:shadow-md hover:shadow-black/[0.03] transition-shadow">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 ring-4 ring-amber-100 flex items-center justify-center mb-3">
+                    <Star className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{avgConf}</p>
+                  <p className="text-[11px] text-[#9aa094] font-medium">Confidence</p>
+                </div>
+                <div className="bg-white rounded-2xl border border-[#e8ebe4] p-5 hover:shadow-md hover:shadow-black/[0.03] transition-shadow">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 ring-4 ring-emerald-100 flex items-center justify-center mb-3">
+                    <Clock className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{avgSessionMin}m</p>
+                  <p className="text-[11px] text-[#9aa094] font-medium">Avg Session</p>
+                </div>
+              </div>
+
+              {/* ── Template Sessions Card ── */}
+              {hasTPL && !activeS && (
+                <div className="bg-white rounded-2xl border border-[#e8ebe4] overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f2ec]">
+                    <h2 className="text-sm font-bold text-[#1c1f1a] flex items-center gap-2"><BookOpen className="w-4 h-4 text-[#2e5023]" />Practice Sessions</h2>
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex gap-0.5">{node.sessionDefinitions.map((_, i) => <div key={i} className={`w-2 h-2 rounded-full ${doneTPL.includes(i) ? 'bg-emerald-500' : i === curTPLIdx ? 'bg-[#2e5023]' : 'bg-[#e8ebe4]'}`} />)}</div>
+                      <span className="text-[11px] font-semibold text-[#565c52] ml-1">{doneTPL.length}/{node.sessionDefinitions.length}</span>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-2 max-h-[400px] overflow-y-auto">
+                    {isLocked ? null : node.sessionDefinitions.map((sd, i) => {
+                      const isDone = doneTPL.includes(i);
+                      const isCur = i === curTPLIdx;
+                      const isLk = !isDone && !isCur;
+                      return (
+                        <div key={i} className={`rounded-xl border p-4 transition-all ${isDone ? 'border-emerald-200 bg-emerald-50/40' : isCur ? 'border-[#2e5023] bg-white shadow-md shadow-[#2e5023]/5' : 'border-[#eef0ea] bg-[#fafbf8] opacity-50'}`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isDone ? 'bg-emerald-500' : isCur ? 'bg-[#2e5023]' : 'bg-[#d4d8ce]'}`}>
+                              {isDone ? <CheckCircle className="w-3.5 h-3.5 text-white" /> : isLk ? <Lock className="w-3 h-3 text-white" /> : <span className="text-[10px] font-bold text-white">{i + 1}</span>}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-semibold ${isDone ? 'text-emerald-700' : isCur ? 'text-[#1c1f1a]' : 'text-[#b0b5ae]'}`}>{sd.title}</p>
+                              {sd.description && <p className={`text-[11px] mt-0.5 leading-relaxed ${isDone ? 'text-emerald-600/80' : isCur ? 'text-[#565c52]' : 'text-[#c8cec0]'}`}>{sd.description}</p>}
+                              {isDone && <p className="text-[10px] text-emerald-600 font-semibold mt-1">✓ Completed</p>}
+                            </div>
+                          </div>
+                          {isCur && !isLocked && (
+                            <div className="mt-4 pt-3 border-t border-[#eef0ea]">
+                              <p className={`text-4xl font-bold font-mono text-center py-4 rounded-xl mb-2 tracking-tight ${tplRunning ? 'bg-emerald-50 text-emerald-600' : 'bg-[#f5f7f2] text-[#1c1f1a]'}`}>{fmtTime(tplTimer)}</p>
+                              <div className="flex gap-2">
+                                <button onClick={() => setTplRunning(r => !r)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm active:scale-[0.97] ${tplRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{tplRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{tplRunning ? 'Pause' : 'Start'}</button>
+                                <button onClick={() => { setTplTimer(0); setTplRunning(false); }} className="px-3 py-2.5 border border-[#eef0ea] text-[#565c52] rounded-xl hover:bg-[#f5f7f2]"><RotateCcw className="w-4 h-4" /></button>
+                              </div>
+                              <button onClick={() => completeTplSession(i)} disabled={tplTimer < 60 || tplCompleting} className="w-full mt-2 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">{tplCompleting ? 'Completing...' : tplTimer < 60 ? `${60 - tplTimer}s until 1 min` : 'Complete Session'}</button>
                             </div>
                           )}
-                          {p.blockers && <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{p.blockers}</span>}
-                          {p.nextStep && <span className="text-[11px] text-[#2e5023] bg-[#edf5e9] px-2 py-0.5 rounded-lg font-medium flex items-center gap-1"><ArrowRight className="w-3 h-3" />{p.nextStep}</span>}
                         </div>
+                      );
+                    })}
+                    {isCompleted && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-xl text-sm text-center font-semibold flex items-center justify-center gap-2"><Trophy className="w-4 h-4" />All sessions completed!</div>}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Practice History Card ── */}
+              {!hasTPL && (
+                <div className="bg-white rounded-2xl border border-[#e8ebe4] overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f2ec]">
+                    <h2 className="text-sm font-bold text-[#1c1f1a]">Practice History</h2>
+                    {hist.length > 0 && <span className="text-[11px] text-[#9aa094] font-medium">{hist.length} session{hist.length !== 1 ? 's' : ''}</span>}
+                  </div>
+                  {hist.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <div className="w-14 h-14 rounded-2xl bg-[#f5f7f2] border border-[#eef0ea] flex items-center justify-center mx-auto mb-4">
+                        <Clock className="w-6 h-6 text-[#d4d8ce]" />
                       </div>
-                      <span className="text-[11px] text-[#b0b5ae] flex-shrink-0 pt-1">{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      <p className="text-[14px] font-semibold text-[#1c1f1a] mb-1">No sessions yet</p>
+                      <p className="text-[12px] text-[#9aa094] max-w-xs mx-auto mb-4">Start your first practice session to begin tracking.</p>
+                      {isUnlocked && !isCompleted && !activeS && (
+                        <button onClick={() => setShowPractice(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-[#2e5023] text-white text-[12px] font-semibold rounded-lg hover:bg-[#3d6b30] transition-colors"><Play className="w-3.5 h-3.5" />Start Practicing</button>
+                      )}
                     </div>
-                  ))}
-                  {totPages > 1 && (
-                    <div className="flex items-center justify-between px-5 py-3 border-t border-[#f5f7f2] bg-[#fafbf8]">
-                      <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="flex items-center gap-1 text-[12px] text-[#565c52] hover:text-[#1c1f1a] disabled:opacity-30 font-medium transition-colors"><ChevronLeft className="w-3.5 h-3.5" />Previous</button>
-                      <span className="text-[11px] text-[#b0b5ae]">Page {page} of {totPages}</span>
-                      <button onClick={() => setPage(p => Math.min(totPages, p + 1))} disabled={page >= totPages} className="flex items-center gap-1 text-[12px] text-[#565c52] hover:text-[#1c1f1a] disabled:opacity-30 font-medium transition-colors">Next<ChevronRight className="w-3.5 h-3.5" /></button>
-                    </div>
+                  ) : (
+                    <>
+                      <div className="divide-y divide-[#f5f7f2] max-h-[500px] overflow-y-auto">
+                        {paged.map((p, i) => {
+                          const isExpanded = expandedHist === p._id;
+                          const sessionNum = (page - 1) * PER_PAGE + i + 1;
+                          return (
+                            <div key={p._id} className="hover:bg-[#fafbf8] transition-colors">
+                              <button 
+                                onClick={() => setExpandedHist(isExpanded ? null : p._id)}
+                                className="w-full px-5 py-3.5 flex items-center gap-3 text-left"
+                              >
+                                <div className="w-8 h-8 rounded-lg bg-[#f5f7f2] flex items-center justify-center flex-shrink-0">
+                                  <span className="text-[11px] font-bold text-[#2e5023]">{sessionNum}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="text-[13px] font-semibold text-[#1c1f1a] truncate">{p.notes || 'Session'}</span>
+                                    <span className="text-[10px] text-[#b0b5ae] bg-[#f5f7f2] px-2 py-0.5 rounded-full font-medium flex-shrink-0">{p.timerSeconds ? `${Math.floor(p.timerSeconds / 60)}m` : `${p.minutesPracticed}m`}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {p.confidence > 0 && (
+                                      <div className="flex items-center gap-0.5">
+                                        {[1, 2, 3, 4, 5].map(s => <Star key={s} className={`w-2.5 h-2.5 ${s <= p.confidence ? 'text-amber-400 fill-amber-400' : 'text-[#e8ebe4]'}`} />)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className="text-[10px] text-[#b0b5ae] flex-shrink-0 mr-2">{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                {isExpanded ? <ChevronUp className="w-4 h-4 text-[#9aa094]" /> : <ChevronDown className="w-4 h-4 text-[#9aa094]" />}
+                              </button>
+                              
+                              {/* Expanded Details */}
+                              {isExpanded && (
+                                <div className="px-5 pb-4 pt-1 bg-[#fafbf8] border-t border-[#f0f2ec]">
+                                  <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <div className="bg-white rounded-xl p-3 border border-[#eef0ea]">
+                                      <p className="text-[10px] text-[#9aa094] font-medium mb-1">Duration</p>
+                                      <p className="text-sm font-semibold text-[#1c1f1a]">{p.timerSeconds ? `${Math.floor(p.timerSeconds / 60)}m ${p.timerSeconds % 60}s` : `${p.minutesPracticed} min`}</p>
+                                    </div>
+                                    <div className="bg-white rounded-xl p-3 border border-[#eef0ea]">
+                                      <p className="text-[10px] text-[#9aa094] font-medium mb-1">Confidence</p>
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="flex gap-0.5">
+                                          {[1, 2, 3, 4, 5].map(s => <Star key={s} className={`w-3.5 h-3.5 ${s <= p.confidence ? 'text-amber-400 fill-amber-400' : 'text-[#e8ebe4]'}`} />)}
+                                        </div>
+                                        <span className="text-[11px] text-[#565c52] font-medium">{CONF_LABELS[p.confidence]}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {p.notes && (
+                                    <div className="bg-white rounded-xl p-3 border border-[#eef0ea] mb-2">
+                                      <p className="text-[10px] text-[#9aa094] font-medium mb-1">Notes</p>
+                                      <p className="text-[13px] text-[#1c1f1a]">{p.notes}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {p.blockers && (
+                                    <div className="bg-amber-50 rounded-xl p-3 border border-amber-200 mb-2">
+                                      <p className="text-[10px] text-amber-600 font-medium mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Blockers</p>
+                                      <p className="text-[13px] text-amber-800">{p.blockers}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {p.nextStep && (
+                                    <div className="bg-[#edf5e9] rounded-xl p-3 border border-[#d4e8cc]">
+                                      <p className="text-[10px] text-[#2e5023] font-medium mb-1 flex items-center gap-1"><ArrowRight className="w-3 h-3" />Next Step</p>
+                                      <p className="text-[13px] text-[#2e5023]">{p.nextStep}</p>
+                                    </div>
+                                  )}
+                                  
+                                  <p className="text-[10px] text-[#b0b5ae] mt-3 text-center">
+                                    {new Date(p.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {totPages > 1 && (
+                        <div className="flex items-center justify-between px-5 py-3 border-t border-[#f5f7f2] bg-[#fafbf8]">
+                          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="flex items-center gap-1 text-[11px] text-[#565c52] hover:text-[#1c1f1a] disabled:opacity-30 font-medium transition-colors"><ChevronLeft className="w-3.5 h-3.5" />Prev</button>
+                          <span className="text-[10px] text-[#b0b5ae]">{page}/{totPages}</span>
+                          <button onClick={() => setPage(p => Math.min(totPages, p + 1))} disabled={page >= totPages} className="flex items-center gap-1 text-[11px] text-[#565c52] hover:text-[#1c1f1a] disabled:opacity-30 font-medium transition-colors">Next<ChevronRight className="w-3.5 h-3.5" /></button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
-            </section>
-          )}
 
-          {/* Bottom spacer */}
-          <div className="h-8" />
+            </div>
+          </div>
         </div>
       </div>
 

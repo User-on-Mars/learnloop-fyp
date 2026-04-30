@@ -218,57 +218,64 @@ export default function LogPractice() {
   const activeCount = activeSessions.length;
 
   return (
-    <div className="flex min-h-screen bg-[#eef0ea]">
+    <div className="flex min-h-screen bg-[#f8faf6]">
       <Sidebar />
       <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 py-6 space-y-5">
+        <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
 
-          {/* ═══ Hero header ═══ */}
-          <div className="relative overflow-hidden bg-white rounded-2xl border border-[#e2e6dc] p-6 sm:p-8">
-            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-[#a3c99a] opacity-10 blur-3xl pointer-events-none" />
+          {/* Hero Header */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-amber-50 rounded-2xl border border-orange-100 p-6 sm:p-8">
+            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-orange-200 opacity-15 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-amber-200 opacity-10 blur-2xl pointer-events-none" />
+
             <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-              <div>
-                <h1 className="text-2xl font-bold text-[#1c1f1a] flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#edf5e9] flex items-center justify-center">
-                    <Timer className="w-5 h-5 text-[#2e5023]" />
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center shadow-sm">
+                    <Timer className="w-6 h-6 text-white" />
                   </div>
-                  Practice Sessions
-                </h1>
-                <p className="text-sm text-[#565c52] mt-1.5 ml-[52px]">Track your learning with timers, notes, and confidence ratings</p>
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a]">Practice Sessions</h1>
+                    <p className="text-sm text-orange-600 font-medium">Track & Improve</p>
+                  </div>
+                </div>
+                <p className="text-[#565c52] text-[15px] leading-relaxed max-w-xl">
+                  Track your learning with timers, notes, and confidence ratings. Build consistency and watch your skills grow.
+                </p>
               </div>
               <button onClick={()=>{resetForm();setShowNew(true);}}
-                className="flex items-center gap-2 px-6 py-3 bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#4f7942] transition-all shadow-md shadow-[#2e5023]/15 active:scale-[0.97] self-start sm:self-center">
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl font-semibold text-sm hover:from-orange-700 hover:to-amber-700 transition-all shadow-lg shadow-orange-500/20 active:scale-[0.97] self-start sm:self-center">
                 <Plus className="w-4 h-4" /> New Session
               </button>
             </div>
 
-            {/* Quick stats */}
-            <div className="relative grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-[#e8ece3]">
+            {/* Quick Stats */}
+            <div className="relative grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-orange-100">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <Clock className="w-4.5 h-4.5 text-blue-600" />
+                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#1c1f1a] leading-none">{totalHrs}h {totalMins}m</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">Total practice</p>
+                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{totalHrs}h {totalMins}m</p>
+                  <p className="text-[11px] text-[#9aa094] mt-0.5">Total Practice</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <BarChart3 className="w-4.5 h-4.5 text-emerald-600" />
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#1c1f1a] leading-none">{totalLogged}</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">Sessions logged</p>
+                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{totalLogged}</p>
+                  <p className="text-[11px] text-[#9aa094] mt-0.5">Sessions Logged</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
-                  <Zap className="w-4.5 h-4.5 text-amber-600" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#1c1f1a] leading-none">{activeCount}</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">Active now</p>
+                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{activeCount}</p>
+                  <p className="text-[11px] text-[#9aa094] mt-0.5">Active Now</p>
                 </div>
               </div>
             </div>
@@ -400,8 +407,8 @@ export default function LogPractice() {
           <div>
             {/* Section header */}
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-[#edf5e9] flex items-center justify-center border border-[#d4e8cc]">
-                <History className="w-4.5 h-4.5 text-[#2e5023]" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center">
+                <History className="w-[18px] h-[18px] text-white" />
               </div>
               <div>
                 <h2 className="text-[17px] font-bold text-[#1c1f1a]">Completed Sessions</h2>
@@ -410,12 +417,12 @@ export default function LogPractice() {
             </div>
 
             {/* ── Filter Card ── */}
-            <div className="bg-white rounded-2xl border border-[#e2e6dc] mb-4">
-              <div className="px-5 py-4 bg-[#f8faf6] rounded-2xl">
-                <div className="relative mb-3">
+            <div className="bg-white rounded-2xl border border-[#e2e6dc] p-4 mb-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#c8cec0]"/>
                   <input type="text" placeholder="Search skills or notes..." value={search} onChange={e=>setSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-white text-sm text-[#1c1f1a] placeholder:text-[#c8cec0] transition-all"/>
+                    className="w-full pl-10 pr-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/15 bg-[#fafbf8] text-sm text-[#1c1f1a] placeholder:text-[#c8cec0] transition-all"/>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <FilterDropdown value={fSkill || 'all'} onChange={v => setFSkill(v === 'all' ? '' : v)}
@@ -430,9 +437,9 @@ export default function LogPractice() {
                     ]} />
                   <FilterDropdown value={fDate || 'all'} onChange={v => setFDate(v === 'all' ? '' : v)}
                     options={[{ value: 'all', label: 'All Time' }, {value:'today',label:'Today'},{value:'week',label:'This Week'},{value:'month',label:'This Month'}]} />
-                  {hasFilters && <button onClick={()=>{setSearch('');setFSkill('');setFConf('');setFDate('');}} className="px-3 py-1.5 text-xs text-red-500 font-semibold hover:bg-red-50 rounded-lg transition-colors">Clear all</button>}
+                  {hasFilters && <button onClick={()=>{setSearch('');setFSkill('');setFConf('');setFDate('');}} className="px-3 py-1.5 text-xs text-red-500 font-semibold hover:bg-red-50 rounded-lg transition-colors">Clear</button>}
                   <span className="ml-auto text-[11px] text-[#9aa094]">
-                    {filtered.length > 0 && `Showing ${(page-1)*PER_PAGE+1} – ${Math.min(page*PER_PAGE, filtered.length)} of ${filtered.length}`}
+                    {filtered.length > 0 && `${filtered.length} session${filtered.length !== 1 ? 's' : ''}`}
                   </span>
                 </div>
               </div>
@@ -442,16 +449,43 @@ export default function LogPractice() {
             <div className="bg-white rounded-2xl border border-[#e2e6dc]">
               {loading ? (
                 <div className="text-center py-16">
-                  <div className="animate-spin w-8 h-8 border-3 border-[#2e5023] border-t-transparent rounded-full mx-auto mb-4"/>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center mx-auto mb-3 animate-pulse">
+                    <Timer className="w-6 h-6 text-white" />
+                  </div>
                   <p className="text-sm text-[#9aa094]">Loading sessions...</p>
                 </div>
               ) : filtered.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="w-14 h-14 rounded-2xl bg-[#f4f7f2] flex items-center justify-center mx-auto mb-4">
-                    <FileText className="w-7 h-7 text-[#c8cec0]" />
+                <div className="overflow-hidden">
+                  <div className="p-12 text-center">
+                    <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-orange-500/10">
+                      <Timer className="w-10 h-10 text-orange-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-[#1c1f1a] mb-2">{hasFilters ? 'No matching sessions' : 'No sessions yet'}</h3>
+                    <p className="text-[#9aa094] max-w-md mx-auto mb-6 text-[15px]">{hasFilters ? 'Try adjusting your filters' : 'Start a practice session to track your learning progress.'}</p>
+                    {!hasFilters && (
+                      <button onClick={()=>{resetForm();setShowNew(true);}}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl font-semibold text-sm hover:from-orange-700 hover:to-amber-700 transition-all shadow-lg shadow-orange-500/20">
+                        <Plus className="w-4 h-4" /> Start Your First Session
+                      </button>
+                    )}
                   </div>
-                  <h3 className="text-base font-bold text-[#1c1f1a] mb-1">No sessions found</h3>
-                  <p className="text-sm text-[#9aa094]">{hasFilters ? 'Try adjusting your filters' : 'Complete a session to see it here'}</p>
+                  {!hasFilters && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 border-t border-[#e2e6dc]">
+                      {[
+                        { icon: Timer, color: 'text-orange-500', bg: 'bg-orange-50', title: 'Timed Practice', desc: 'Countdown or stopwatch modes' },
+                        { icon: Star, color: 'text-amber-500', bg: 'bg-amber-50', title: 'Rate Confidence', desc: 'Track how you feel after each session' },
+                        { icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-50', title: 'Earn XP', desc: 'Get rewarded for practicing' },
+                      ].map((feature, i) => (
+                        <div key={i} className={`p-6 text-center ${i < 2 ? 'border-b sm:border-b-0 sm:border-r border-[#e2e6dc]' : ''}`}>
+                          <div className={`w-10 h-10 ${feature.bg} rounded-xl flex items-center justify-center mx-auto mb-3`}>
+                            <feature.icon className={`w-5 h-5 ${feature.color}`} />
+                          </div>
+                          <h4 className="text-sm font-bold text-[#1c1f1a] mb-1">{feature.title}</h4>
+                          <p className="text-xs text-[#9aa094]">{feature.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -478,7 +512,7 @@ export default function LogPractice() {
                                 <span className="text-[#2e5023] font-bold text-sm">{p.skillName?.charAt(0).toUpperCase()}</span>
                               </div>
                               <div className="min-w-0">
-                                <p className="text-[13px] font-semibold text-[#1c1f1a] truncate group-hover:text-[#2e5023] transition-colors">{p.skillName}</p>
+                                <p className="text-[13px] font-semibold text-[#1c1f1a] truncate group-hover:text-orange-600 transition-colors">{p.skillName}</p>
                                 {p.tags?.length > 0 && <p className="text-[10px] text-[#c8cec0] truncate">{p.tags.join(' · ')}</p>}
                               </div>
                             </div>
@@ -576,35 +610,38 @@ export default function LogPractice() {
 
       {/* ═══ New Session Modal ═══ */}
       {showNew && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[#e2e6dc]">
-            <div className="flex items-center justify-between p-6 pb-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#edf5e9] flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-[#2e5023]" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 flex-shrink-0 bg-gradient-to-r from-orange-600 to-amber-600">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Plus className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">New Practice Session</h2>
+                    <p className="text-white/70 text-xs">Set up your timer and start</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-[#1c1f1a]">New Practice Session</h2>
-                  <p className="text-[11px] text-[#9aa094]">Set up your timer and start practicing</p>
-                </div>
+                <button onClick={()=>setShowNew(false)} className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"><X className="w-4 h-4"/></button>
               </div>
-              <button onClick={()=>setShowNew(false)} className="text-[#c8cec0] hover:text-[#1c1f1a] transition-colors"><X className="w-5 h-5"/></button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">Session Name <span className="text-xs text-[#9aa094] font-normal ml-1">({form.skillName.length}/20)</span></label>
                 <input type="text" value={form.skillName} onChange={e=>setForm(p=>({...p,skillName:e.target.value.slice(0,20)}))} placeholder="e.g. Python, Guitar" maxLength={20}
-                  className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm transition-all"/>
+                  className="w-full px-4 py-3.5 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/15 transition-all text-sm"/>
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">Timer Mode</label>
                 <div className="flex gap-2">
-                  <button onClick={()=>setCountdown(true)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${countdown?'bg-[#2e5023] text-white shadow-sm':'bg-[#f4f7f2] text-[#565c52] border border-[#e2e6dc] hover:border-[#c8cec0]'}`}>
+                  <button onClick={()=>setCountdown(true)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${countdown?'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-sm':'bg-[#f4f7f2] text-[#565c52] border border-[#e2e6dc] hover:border-[#c8cec0]'}`}>
                     <Timer className="w-4 h-4" /> Countdown
                   </button>
-                  <button onClick={()=>setCountdown(false)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${!countdown?'bg-[#2e5023] text-white shadow-sm':'bg-[#f4f7f2] text-[#565c52] border border-[#e2e6dc] hover:border-[#c8cec0]'}`}>
+                  <button onClick={()=>setCountdown(false)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${!countdown?'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-sm':'bg-[#f4f7f2] text-[#565c52] border border-[#e2e6dc] hover:border-[#c8cec0]'}`}>
                     <Clock className="w-4 h-4" /> Stopwatch
                   </button>
                 </div>
@@ -629,18 +666,18 @@ export default function LogPractice() {
                 <form onSubmit={addTagH} className="flex gap-2">
                   <input type="text" value={newTag} onChange={e=>setNewTag(e.target.value.slice(0,10))} placeholder="Add a tag" maxLength={10}
                     className="flex-1 px-3 py-2 border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm transition-all"/>
-                  <button type="submit" disabled={form.tags.length>=10} className="px-4 py-2 bg-[#2e5023] text-white rounded-xl text-sm font-semibold hover:bg-[#4f7942] disabled:opacity-40 disabled:cursor-not-allowed transition-all">Add</button>
+                  <button type="submit" disabled={form.tags.length>=10} className="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl text-sm font-semibold hover:from-orange-700 hover:to-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">Add</button>
                 </form>
                 {form.tags.length > 0 && <div className="flex flex-wrap gap-1.5 mt-2">{form.tags.map(t=><span key={t} className="flex items-center gap-1 px-2.5 py-0.5 bg-[#edf5e9] text-[#2e5023] text-xs font-medium rounded-full border border-[#d4e8cc]">{t}<button type="button" onClick={()=>setForm(p=>({...p,tags:p.tags.filter(x=>x!==t)}))} className="hover:text-red-500 transition-colors"><X className="w-3 h-3"/></button></span>)}</div>}
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button onClick={()=>tryStart(true)} disabled={!form.skillName.trim()||(countdown&&tgtH===0&&tgtM===0)}
-                  className="flex-1 py-3 bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#4f7942] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2">
+                  className="flex-1 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl font-semibold text-sm hover:from-orange-700 hover:to-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2">
                   <Play className="w-4 h-4" /> Start Now
                 </button>
                 <button onClick={()=>tryStart(false)} disabled={!form.skillName.trim()||(countdown&&tgtH===0&&tgtM===0)}
-                  className="flex-1 py-3 border border-[#e2e6dc] text-[#1c1f1a] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                  className="flex-1 py-3 border-2 border-[#e2e6dc] text-[#1c1f1a] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                   Start Later
                 </button>
               </div>
@@ -651,22 +688,25 @@ export default function LogPractice() {
 
       {/* ═══ Complete Session Modal ═══ */}
       {showComp && compSess && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[#e2e6dc]">
-            <div className="flex items-center justify-between p-6 pb-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-600" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 flex-shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Complete Session</h2>
+                    <p className="text-white/70 text-xs">{compSess.skillName} — {fmtDur(compSess)}</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-[#1c1f1a]">Complete Session</h2>
-                  <p className="text-[11px] text-[#9aa094]">Log your practice details</p>
-                </div>
+                <button onClick={()=>{setShowComp(false);setCompSess(null);}} className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"><X className="w-4 h-4"/></button>
               </div>
-              <button onClick={()=>{setShowComp(false);setCompSess(null);}} className="text-[#c8cec0] hover:text-[#1c1f1a] transition-colors"><X className="w-5 h-5"/></button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
               {/* Session summary */}
               <div className="bg-[#f4f7f2] rounded-xl p-4 border border-[#e2e6dc] flex items-center gap-4">
                 <div className="w-10 h-10 rounded-lg bg-[#edf5e9] flex items-center justify-center border border-[#d4e8cc]">
@@ -726,41 +766,77 @@ export default function LogPractice() {
 
       {/* ═══ Confirm Modals ═══ */}
       {resetConfirmId != null && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-[#e2e6dc]">
-            <h2 className="text-lg font-bold text-[#1c1f1a] mb-2">Restart timer?</h2>
-            <p className="text-sm text-[#565c52] mb-5">Your progress won't be saved. Are you sure?</p>
-            <div className="flex gap-3">
-              <button onClick={()=>setResetConfirmId(null)} className="flex-1 py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all">No</button>
-              <button onClick={()=>{resetSession(resetConfirmId);setResetConfirmId(null);}} className="flex-1 py-2.5 bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#4f7942] transition-all">Yes, Restart</button>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-[#e2e6dc]">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <RotateCcw className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Restart Timer</h2>
+                  <p className="text-white/70 text-xs">Progress will be lost</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-[#565c52] mb-5">Your progress won't be saved. Are you sure?</p>
+              <div className="flex gap-3">
+                <button onClick={()=>setResetConfirmId(null)} className="flex-1 py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all">No</button>
+                <button onClick={()=>{resetSession(resetConfirmId);setResetConfirmId(null);}} className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold text-sm hover:from-amber-600 hover:to-orange-600 transition-all">Yes, Restart</button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {removeId != null && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-[#e2e6dc]">
-            <h2 className="text-lg font-bold text-[#1c1f1a] mb-2">Remove session?</h2>
-            <p className="text-sm text-[#565c52] mb-5">This will discard the session and unsaved progress.</p>
-            <div className="flex gap-3">
-              <button onClick={()=>setRemoveId(null)} className="flex-1 py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all">Cancel</button>
-              <button onClick={()=>{removeSession(removeId);setRemoveId(null);}} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700 transition-all">Remove</button>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-[#e2e6dc]">
+            <div className="bg-gradient-to-r from-red-500 to-rose-500 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <X className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Remove Session</h2>
+                  <p className="text-white/70 text-xs">This cannot be undone</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-[#565c52] mb-5">This will discard the session and unsaved progress.</p>
+              <div className="flex gap-3">
+                <button onClick={()=>setRemoveId(null)} className="flex-1 py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all">Cancel</button>
+                <button onClick={()=>{removeSession(removeId);setRemoveId(null);}} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700 transition-all">Remove</button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {deleteId && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-[#e2e6dc]">
-            <h2 className="text-lg font-bold text-[#1c1f1a] mb-2">Delete this session?</h2>
-            <p className="text-sm text-[#565c52] mb-4">Type <span className="font-mono font-bold text-[#1c1f1a] bg-[#f4f7f2] px-1.5 py-0.5 rounded">CONFIRM</span> to delete permanently.</p>
-            <input type="text" value={delInput} onChange={e=>setDelInput(e.target.value)} placeholder="Type CONFIRM"
-              className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 bg-[#f8faf6] focus:bg-white font-mono text-sm mb-4 transition-all"/>
-            <div className="flex gap-3">
-              <button onClick={()=>{setDeleteId(null);setDelInput('');}} className="flex-1 py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all">Cancel</button>
-              <button onClick={doDelete} disabled={delInput!=='CONFIRM'} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">Delete</button>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-[#e2e6dc]">
+            <div className="bg-gradient-to-r from-red-500 to-rose-500 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Delete Session</h2>
+                  <p className="text-white/70 text-xs">Permanent action</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-[#565c52] mb-4">Type <span className="font-mono font-bold text-[#1c1f1a] bg-[#f4f7f2] px-1.5 py-0.5 rounded">CONFIRM</span> to delete permanently.</p>
+              <input type="text" value={delInput} onChange={e=>setDelInput(e.target.value)} placeholder="Type CONFIRM"
+                className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 bg-[#f8faf6] focus:bg-white font-mono text-sm mb-4 transition-all"/>
+              <div className="flex gap-3">
+                <button onClick={()=>{setDeleteId(null);setDelInput('');}} className="flex-1 py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all">Cancel</button>
+                <button onClick={doDelete} disabled={delInput!=='CONFIRM'} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">Delete</button>
+              </div>
             </div>
           </div>
         </div>

@@ -34,6 +34,7 @@ export function SkillMapProvider({ children }) {
       _id: skill_map.id,
       name: skill_map.title,
       icon: skill_map.icon,
+      color: skill_map.color,
       description: skill_map.description,
       goal: skill_map.goal,
       status: skill_map.status,

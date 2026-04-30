@@ -29,7 +29,7 @@ class StreakService {
   /**
    * Process a qualifying session completion for streak tracking.
    * Increments streak if consecutive day, resets to 1 if gap, no-ops if same day.
-   * Sets to 1 if no prior history.
+   * Sets to 1 if no prior history. Also tracks longestStreak (all-time best).
    * @param {string} userId
    * @param {Date} sessionDate
    * @returns {Promise<{ streakCount: number, isNewDay: boolean }>}
@@ -43,6 +43,7 @@ class StreakService {
       await UserStreak.create({
         userId,
         currentStreak: 1,
+        longestStreak: 1,
         lastPracticeDate: sessionDay,
         streakStartDate: sessionDay
       });
@@ -52,6 +53,7 @@ class StreakService {
     // No last practice date — treat as first session
     if (!streak.lastPracticeDate) {
       streak.currentStreak = 1;
+      streak.longestStreak = Math.max(streak.longestStreak || 0, 1);
       streak.lastPracticeDate = sessionDay;
       streak.streakStartDate = sessionDay;
       await streak.save();
@@ -68,6 +70,10 @@ class StreakService {
     // Consecutive day — increment
     if (diff === 1) {
       streak.currentStreak += 1;
+      // Update longestStreak if current exceeds it
+      if (streak.currentStreak > (streak.longestStreak || 0)) {
+        streak.longestStreak = streak.currentStreak;
+      }
       streak.lastPracticeDate = sessionDay;
       await streak.save();
       return { streakCount: streak.currentStreak, isNewDay: true };
@@ -85,12 +91,12 @@ class StreakService {
    * Get current streak info for a user.
    * Automatically resets streak to 0 if more than 1 day has passed since last practice.
    * @param {string} userId
-   * @returns {Promise<{ currentStreak: number, lastPracticeDate: Date|null }>}
+   * @returns {Promise<{ currentStreak: number, longestStreak: number, lastPracticeDate: Date|null }>}
    */
   static async getStreak(userId) {
     const streak = await UserStreak.findOne({ userId });
     if (!streak) {
-      return { currentStreak: 0, lastPracticeDate: null };
+      return { currentStreak: 0, longestStreak: 0, lastPracticeDate: null };
     }
 
     // Check if streak should be reset due to inactivity
@@ -101,12 +107,17 @@ class StreakService {
       if (daysSinceLastPractice > 1) {
         streak.currentStreak = 0;
         await streak.save();
-        return { currentStreak: 0, lastPracticeDate: streak.lastPracticeDate };
+        return { 
+          currentStreak: 0, 
+          longestStreak: streak.longestStreak || 0,
+          lastPracticeDate: streak.lastPracticeDate 
+        };
       }
     }
 
     return {
       currentStreak: streak.currentStreak,
+      longestStreak: streak.longestStreak || streak.currentStreak,
       lastPracticeDate: streak.lastPracticeDate
     };
   }

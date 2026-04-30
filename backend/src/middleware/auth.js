@@ -116,6 +116,13 @@ export async function requireAuth(req, res, next) {
       }
 
       if (dbUser) {
+        if (dbUser.accountStatus === 'deleted') {
+          console.log(`🗑️ Deleted user attempted to access: ${email}`)
+          return res.status(403).json({ 
+            message: 'This account has been deleted.',
+            accountStatus: 'deleted'
+          })
+        }
         if (dbUser.accountStatus === 'banned') {
           console.log(`🚫 Banned user attempted to access: ${email}`)
           return res.status(403).json({ 

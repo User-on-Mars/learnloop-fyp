@@ -291,6 +291,20 @@ class RoomService {
         room.description = trimmedDesc;
       }
 
+      if (updates.color !== undefined) {
+        if (updates.color.length > 20) {
+          throw new ValidationError('color', updates.color, { type: 'maxLength', max: 20 });
+        }
+        room.color = updates.color;
+      }
+
+      if (updates.icon !== undefined) {
+        if (updates.icon.length > 50) {
+          throw new ValidationError('icon', updates.icon, { type: 'maxLength', max: 50 });
+        }
+        room.icon = updates.icon;
+      }
+
       await room.save();
 
       await ErrorLoggingService.logSystemEvent('room_updated', {

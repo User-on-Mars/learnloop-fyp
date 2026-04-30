@@ -405,6 +405,7 @@ class SkillService {
         title: skill.name,
         description: skill.description || null,
         icon: skill.icon || 'Map',
+        color: skill.color || '#2e5023',
         goal: skill.goal || '',
         status: skill.status || 'active'
       },

@@ -7,6 +7,7 @@ import LeaderboardService from '../services/LeaderboardService.js'
 import crypto from 'crypto'
 import nodemailer from 'nodemailer'
 import { validateEmail } from '../utils/emailValidator.js'
+import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -239,5 +240,42 @@ router.get('/avatar', async (req, res) => {
     return res.status(400).json({ message: e.message })
   }
 })
+
+// DELETE /api/auth/delete-account - Soft delete user account (keeps data for admin)
+router.delete('/delete-account', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const email = req.user.email;
+
+    // Find user by firebaseUid or email
+    const user = await User.findOne({
+      $or: [
+        { firebaseUid: userId },
+        { email: email }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.accountStatus === 'deleted') {
+      return res.status(400).json({ message: 'Account already deleted' });
+    }
+
+    // Soft delete: mark as deleted, keep all data
+    user.accountStatus = 'deleted';
+    user.deletedAt = new Date();
+    user.statusReason = 'User requested account deletion';
+    await user.save();
+
+    console.log(`🗑️ Account soft-deleted for user: ${email} (${userId})`);
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ message: 'Failed to delete account' });
+  }
+});
 
 export default router

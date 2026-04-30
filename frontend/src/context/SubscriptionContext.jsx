@@ -51,6 +51,7 @@ export function SubscriptionProvider({ children }) {
   const isPro = subscription.tier === "pro";
   const isCanceled = !!subscription.canceledAt;
   const isFree = !isPro;
+  const isRewarded = subscription.source === "reward";
 
   /**
    * Initiate eSewa payment flow.
@@ -87,6 +88,7 @@ export function SubscriptionProvider({ children }) {
         isPro,
         isFree,
         isCanceled,
+        isRewarded,
         tier: subscription.tier,
         limits: subscription.limits,
         usage: subscription.usage,
