@@ -9,8 +9,9 @@ export default function LogoMark({ size = 40, className = "", title }) {
       src={logoImg}
       width={size}
       height={size}
-      alt={title || ""}
-      className={`shrink-0 object-contain ${className}`}
+      alt={title || "LearnLoop logo"}
+      className={`shrink-0 w-auto h-auto max-w-full object-contain ${className}`}
+      style={{ maxWidth: `${size}px`, maxHeight: `${size}px` }}
       role={title ? "img" : "presentation"}
       aria-hidden={title ? undefined : true}
     />

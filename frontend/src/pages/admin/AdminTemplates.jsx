@@ -4,6 +4,13 @@ import { auth } from '../../firebase'
 import { SkillIcon } from '../../components/IconPicker'
 import TemplateEditor from '../../components/admin/TemplateEditor'
 import TemplatePreviewModal from '../../components/admin/TemplatePreviewModal'
+import PageTransition from '../../components/admin/PageTransition'
+import ErrorState from '../../components/admin/ErrorState'
+import AnimatedList from '../../components/admin/AnimatedList'
+import { SkeletonCard } from '../../components/admin/Skeleton'
+import Modal, { ModalButton } from '../../components/Modal'
+import { motion } from 'framer-motion'
+import { staggerItem } from '../../components/admin/animations'
 
 export default function AdminTemplates() {
   const [templates, setTemplates] = useState([])
@@ -26,6 +33,7 @@ export default function AdminTemplates() {
   const fetchTemplates = async () => {
     try {
       setLoading(true)
+      setError('')
       const token = await auth.currentUser.getIdToken()
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/templates/admin/all`, {
         headers: {
@@ -42,7 +50,6 @@ export default function AdminTemplates() {
     } catch (err) {
       console.error('Error fetching templates:', err)
       setError('Failed to load templates')
-      setTimeout(() => setError(''), 5000)
     } finally {
       setLoading(false)
     }
@@ -163,8 +170,46 @@ export default function AdminTemplates() {
   const publishedTemplates = templates.filter(t => t.isPublished)
   const draftTemplates = templates.filter(t => !t.isPublished)
 
+  if (loading) {
+    return (
+      <PageTransition>
+        <div className="p-6 lg:p-8 w-full">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-site-ink">Skill Map Templates</h1>
+            <p className="text-site-muted mt-1">Create and manage templates that users can apply to start learning</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <SkeletonCard lines={2} />
+            <SkeletonCard lines={2} />
+            <SkeletonCard lines={2} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={4} />
+          </div>
+        </div>
+      </PageTransition>
+    )
+  }
+
+  if (error) {
+    return (
+      <PageTransition>
+        <div className="p-6 lg:p-8 w-full">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-site-ink">Skill Map Templates</h1>
+            <p className="text-site-muted mt-1">Create and manage templates that users can apply to start learning</p>
+          </div>
+          <ErrorState message={error} onRetry={fetchTemplates} />
+        </div>
+      </PageTransition>
+    )
+  }
+
   return (
-    <div className="p-6 lg:p-8 w-full">
+    <PageTransition>
+      <div className="p-6 lg:p-8 w-full">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-site-ink">Skill Map Templates</h1>
         <p className="text-site-muted mt-1">Create and manage templates that users can apply to start learning</p>
@@ -263,9 +308,9 @@ export default function AdminTemplates() {
                 <h2 className="text-lg font-semibold text-site-ink">Published Templates</h2>
                 <span className="text-sm text-site-faint">({publishedTemplates.length})</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {publishedTemplates.map((template) => (
-                  <div key={template._id} className="bg-site-surface rounded-xl border-2 border-green-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                  <motion.div key={template._id} variants={staggerItem} className="bg-site-surface rounded-xl border-2 border-green-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
                     <div className="p-5">
                       <div className="flex items-start gap-3 mb-3">
                         <div className="w-12 h-12 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
@@ -315,21 +360,21 @@ export default function AdminTemplates() {
                           <>
                             <button
                               onClick={() => handleEdit(template)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              className="min-w-[44px] min-h-[44px] p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Edit"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleTogglePublish(template)}
-                              className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                              className="min-w-[44px] min-h-[44px] p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                               title="Unpublish"
                             >
                               <Archive className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(template)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="min-w-[44px] min-h-[44px] p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="Delete"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -338,9 +383,9 @@ export default function AdminTemplates() {
                         )}
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </AnimatedList>
             </div>
           )}
 
@@ -352,9 +397,9 @@ export default function AdminTemplates() {
                 <h2 className="text-lg font-semibold text-site-ink">Draft Templates</h2>
                 <span className="text-sm text-site-faint">({draftTemplates.length})</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {draftTemplates.map((template) => (
-                  <div key={template._id} className="bg-site-surface rounded-xl border-2 border-amber-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                  <motion.div key={template._id} variants={staggerItem} className="bg-site-surface rounded-xl border-2 border-amber-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
                     <div className="p-5">
                       <div className="flex items-start gap-3 mb-3">
                         <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0">
@@ -393,30 +438,30 @@ export default function AdminTemplates() {
                         </button>
                         <button
                           onClick={() => handlePreview(template)}
-                          className="p-2 text-site-accent hover:bg-site-soft rounded-lg transition-colors"
+                          className="min-w-[44px] min-h-[44px] p-2 text-site-accent hover:bg-site-soft rounded-lg transition-colors"
                           title="Preview"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleEdit(template)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="min-w-[44px] min-h-[44px] p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(template)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="min-w-[44px] min-h-[44px] p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </AnimatedList>
             </div>
           )}
         </div>
@@ -446,42 +491,50 @@ export default function AdminTemplates() {
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-              <AlertCircle className="w-6 h-6 text-red-600" />
-            </div>
-            <h2 className="text-lg font-bold text-site-ink text-center mb-2">Delete Template</h2>
-            <p className="text-sm text-site-muted text-center mb-5">
-              Are you sure you want to delete "{deleteConfirm.title}"? This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                disabled={deleting}
-                className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {deleting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete'
-                )}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        maxWidth="max-w-sm"
+        showCloseButton={false}
+        preventBackdropClose={deleting}
+        footer={
+          <>
+            <ModalButton
+              variant="secondary"
+              onClick={() => setDeleteConfirm(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </ModalButton>
+            <ModalButton
+              variant="danger"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </ModalButton>
+          </>
+        }
+      >
+        {/* Icon */}
+        <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+          <AlertCircle className="w-6 h-6 text-red-600" />
         </div>
-      )}
-    </div>
+        
+        {/* Title and Message */}
+        <h2 className="text-lg font-bold text-[#1c1f1a] text-center mb-2">Delete Template</h2>
+        <p className="text-sm text-[#565c52] text-center">
+          Are you sure you want to delete "{deleteConfirm?.title}"? This action cannot be undone.
+        </p>
+      </Modal>
+      </div>
+    </PageTransition>
   )
 }

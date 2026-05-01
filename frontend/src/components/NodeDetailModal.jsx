@@ -45,12 +45,12 @@ export default function NodeDetailModal({ isOpen, onClose, nodeId }) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 z-10 px-4 sm:px-8 lg:px-12 py-4">
+      <div className="sticky top-0 bg-white border-b border-gray-200 z-10 px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Node Details</h2>
           <button
             onClick={handleClose}
-            className="p-2.5 sm:p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2.5 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close modal"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -58,8 +58,8 @@ export default function NodeDetailModal({ isOpen, onClose, nodeId }) {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-4 sm:px-8 lg:px-12 py-6">
+      {/* Content - Full width on mobile with responsive padding */}
+      <div className="w-full px-4 sm:px-6 py-6">
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-12">
@@ -113,7 +113,7 @@ export default function NodeDetailModal({ isOpen, onClose, nodeId }) {
 
             {/* Start Session Button */}
             <button
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-colors shadow-md"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 min-h-[44px] bg-site-accent text-white rounded-lg font-semibold hover:bg-site-accent-hover transition-colors shadow-md"
             >
               <Clock className="w-5 h-5" />
               Start Session

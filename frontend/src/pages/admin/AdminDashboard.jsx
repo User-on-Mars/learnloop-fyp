@@ -9,24 +9,12 @@ import {
   Legend
 } from 'chart.js'
 import { adminApi } from '../../api/adminApi'
+import PageTransition from '../../components/admin/PageTransition'
+import MetricCard from '../../components/admin/MetricCard'
+import ErrorState from '../../components/admin/ErrorState'
+import { SkeletonCard, SkeletonTable } from '../../components/admin/Skeleton'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
-
-function StatCard({ icon: Icon, label, value, sub, trend, trendColor = 'text-green-500', iconBg = 'bg-site-soft', iconColor = 'text-site-accent' }) {
-  return (
-    <div className="bg-site-surface rounded-xl border border-site-border p-5">
-      <div className="flex items-center gap-3 mb-2">
-        <div className={`p-2 rounded-lg ${iconBg}`}>
-          <Icon className={`w-5 h-5 ${iconColor}`} />
-        </div>
-        <span className="text-sm text-site-muted font-medium">{label}</span>
-      </div>
-      <p className="text-2xl font-bold text-site-ink">{value}</p>
-      {sub && <p className={`text-xs ${trendColor} mt-1`}>{sub}</p>}
-      {trend && <p className={`text-xs ${trendColor} mt-1`}>{trend}</p>}
-    </div>
-  )
-}
 
 function MiniRing({ value, max, label, sub, color }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0
@@ -110,8 +98,45 @@ export default function AdminDashboard() {
     }
   }
 
-  if (loading) return <div className="p-8 text-site-muted">Loading dashboard...</div>
-  if (error) return <div className="p-8 text-red-500">Error: {error}</div>
+  if (loading) {
+    return (
+      <PageTransition>
+        <div className="p-6 lg:p-8 max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-site-ink">Admin Dashboard</h1>
+            <p className="text-site-muted mt-1">Platform overview and key metrics</p>
+          </div>
+          <h2 className="text-xs font-semibold text-site-faint uppercase tracking-wider mb-3">Overview</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <SkeletonCard lines={2} />
+            <SkeletonCard lines={2} />
+            <SkeletonCard lines={2} />
+            <SkeletonCard lines={2} />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <SkeletonCard lines={6} />
+            <SkeletonCard lines={6} />
+          </div>
+          <SkeletonTable rows={5} columns={6} />
+        </div>
+      </PageTransition>
+    )
+  }
+
+  if (error) {
+    return (
+      <PageTransition>
+        <div className="p-6 lg:p-8 max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-site-ink">Admin Dashboard</h1>
+            <p className="text-site-muted mt-1">Platform overview and key metrics</p>
+          </div>
+          <ErrorState message={error} onRetry={loadDashboard} />
+        </div>
+      </PageTransition>
+    )
+  }
+
   if (!stats || !health) return null
 
   // ── Donut ──────────────────────────────────────────────────
@@ -143,176 +168,207 @@ export default function AdminDashboard() {
   const pagedRisk = atRiskUsers.slice((riskPage - 1) * PER_PAGE, riskPage * PER_PAGE)
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-site-ink">Admin Dashboard</h1>
-        <p className="text-site-muted mt-1">Platform overview and key metrics</p>
-      </div>
+    <PageTransition>
+      <div className="p-6 lg:p-8 max-w-7xl">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-site-ink">Admin Dashboard</h1>
+          <p className="text-site-muted mt-1">Platform overview and key metrics</p>
+        </div>
 
-      {/* Top Metrics */}
-      <h2 className="text-xs font-semibold text-site-faint uppercase tracking-wider mb-3">Overview</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Users} label="Total users" value={stats.users.total} trend={`↑ ${stats.users.newWeek} this week`} trendColor="text-green-500" />
-        <StatCard icon={Activity} label="Active today" value={stats.activity.activeSessions} trend="↑ 8% vs yesterday" trendColor="text-green-500" iconBg="bg-green-50" iconColor="text-green-600" />
-        <StatCard icon={Clock} label="Sessions today" value={stats.activity.practiceToday} trend="↓ 3% vs yesterday" trendColor="text-red-500" iconBg="bg-red-50" iconColor="text-red-600" />
-        <StatCard icon={ShieldOff} label="Banned users" value={stats.users.banned} sub="No change" iconBg="bg-red-50" iconColor="text-red-600" />
-      </div>
+        {/* Top Metrics */}
+        <h2 className="text-xs font-semibold text-site-faint uppercase tracking-wider mb-3">Overview</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <MetricCard 
+            icon={Users} 
+            label="Total users" 
+            value={stats.users.total} 
+            trend={`↑ ${stats.users.newWeek} this week`} 
+            trendColor="text-green-500" 
+          />
+          <MetricCard 
+            icon={Activity} 
+            label="Active today" 
+            value={stats.activity.activeSessions} 
+            trend="↑ 8% vs yesterday" 
+            trendColor="text-green-500" 
+            iconBg="bg-green-50" 
+            iconColor="text-green-600" 
+          />
+          <MetricCard 
+            icon={Clock} 
+            label="Sessions today" 
+            value={stats.activity.practiceToday} 
+            trend="↓ 3% vs yesterday" 
+            trendColor="text-red-500" 
+            iconBg="bg-red-50" 
+            iconColor="text-red-600" 
+          />
+          <MetricCard 
+            icon={ShieldOff} 
+            label="Banned users" 
+            value={stats.users.banned} 
+            sub="No change" 
+            iconBg="bg-red-50" 
+            iconColor="text-red-600" 
+          />
+        </div>
 
-      {/* Status Breakdown & Learning Health */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-site-surface rounded-xl border border-site-border p-6">
-          <h3 className="font-semibold text-site-ink mb-5">User status breakdown</h3>
-          <div className="flex items-center gap-6">
-            <div className="relative w-40 h-40 flex-shrink-0">
-              <Doughnut data={donutData} options={donutOptions} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-bold text-site-ink">{stats.users.total}</span>
-                <span className="text-xs text-site-muted">total</span>
+        {/* Status Breakdown & Learning Health */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6">
+            <h3 className="font-semibold text-site-ink mb-5">User status breakdown</h3>
+            <div className="flex items-center gap-6">
+              <div className="relative w-40 h-40 flex-shrink-0">
+                <Doughnut data={donutData} options={donutOptions} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-2xl font-bold text-site-ink">{stats.users.total}</span>
+                  <span className="text-xs text-site-muted">total</span>
+                </div>
+              </div>
+              <div className="flex-1 space-y-3">
+                {userStatusItems.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${item.dotClass}`} />
+                      <span className="text-sm text-site-muted">{item.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-site-ink">{item.value}</span>
+                      <span className="text-xs text-site-faint">{stats.users.total > 0 ? ((item.value / stats.users.total) * 100).toFixed(0) : 0}%</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="flex-1 space-y-3">
-              {userStatusItems.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${item.dotClass}`} />
-                    <span className="text-sm text-site-muted">{item.label}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-site-ink">{item.value}</span>
-                    <span className="text-xs text-site-faint">{stats.users.total > 0 ? ((item.value / stats.users.total) * 100).toFixed(0) : 0}%</span>
-                  </div>
-                </div>
-              ))}
+          </div>
+
+          <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6">
+            <h3 className="font-semibold text-site-ink mb-5">Learning health</h3>
+            <div className="grid grid-cols-4 gap-4">
+              {ringMetrics.map((m, idx) => <MiniRing key={idx} {...m} />)}
+            </div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-5 pt-4 border-t border-site-border">
+              <div className="flex items-center justify-between"><span className="text-xs text-site-muted">Total practice hours</span><span className="text-xs font-semibold text-site-ink">{health.totalPracticeHours}h</span></div>
+              <div className="flex items-center justify-between"><span className="text-xs text-site-muted">Total reflections</span><span className="text-xs font-semibold text-site-ink">{health.totalReflections}</span></div>
+              <div className="flex items-center justify-between"><span className="text-xs text-site-muted">Nodes done</span><span className="text-xs font-semibold text-site-ink">{health.completedNodes} / {health.totalNodes}</span></div>
+              <div className="flex items-center justify-between"><span className="text-xs text-site-muted">Reflections (7d)</span><span className="text-xs font-semibold text-site-ink">{health.recentReflections}</span></div>
             </div>
           </div>
         </div>
 
-        <div className="bg-site-surface rounded-xl border border-site-border p-6">
-          <h3 className="font-semibold text-site-ink mb-5">Learning health</h3>
-          <div className="grid grid-cols-4 gap-4">
-            {ringMetrics.map((m, idx) => <MiniRing key={idx} {...m} />)}
+        {/* At-Risk Users — Simple Table */}
+        <div className="bg-site-surface rounded-xl shadow-sm border border-site-border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-site-ink flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              At-risk users
+              {atRiskUsers.length > 0 && <span className="text-xs font-normal text-site-faint ml-1">({atRiskUsers.length})</span>}
+            </h3>
+            <span className="text-xs text-site-faint">Inactive 7+ days</span>
           </div>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-5 pt-4 border-t border-site-border">
-            <div className="flex items-center justify-between"><span className="text-xs text-site-muted">Total practice hours</span><span className="text-xs font-semibold text-site-ink">{health.totalPracticeHours}h</span></div>
-            <div className="flex items-center justify-between"><span className="text-xs text-site-muted">Total reflections</span><span className="text-xs font-semibold text-site-ink">{health.totalReflections}</span></div>
-            <div className="flex items-center justify-between"><span className="text-xs text-site-muted">Nodes done</span><span className="text-xs font-semibold text-site-ink">{health.completedNodes} / {health.totalNodes}</span></div>
-            <div className="flex items-center justify-between"><span className="text-xs text-site-muted">Reflections (7d)</span><span className="text-xs font-semibold text-site-ink">{health.recentReflections}</span></div>
-          </div>
-        </div>
-      </div>
 
-      {/* At-Risk Users — Simple Table */}
-      <div className="bg-site-surface rounded-xl border border-site-border p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-site-ink flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-amber-500" />
-            At-risk users
-            {atRiskUsers.length > 0 && <span className="text-xs font-normal text-site-faint ml-1">({atRiskUsers.length})</span>}
-          </h3>
-          <span className="text-xs text-site-faint">Inactive 7+ days</span>
-        </div>
+          {atRiskUsers.length === 0 ? (
+            <div className="text-center py-8 text-site-faint">
+              <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-400" />
+              <p className="text-sm">All users are active</p>
+            </div>
+          ) : (
+            <>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-site-border">
+                    <th className="text-left pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">User</th>
+                    <th className="text-left pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Last active</th>
+                    <th className="text-center pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Sessions</th>
+                    <th className="text-center pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Skills</th>
+                    <th className="text-left pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Risk</th>
+                    <th className="text-right pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedRisk.map(user => {
+                    const days = Math.floor((Date.now() - new Date(user.lastLoginAt).getTime()) / (1000 * 60 * 60 * 24))
+                    const riskLabel = days >= 21 ? 'Critical' : days >= 14 ? 'High' : 'Medium'
+                    const riskCls = days >= 21 ? 'bg-red-100 text-red-700' : days >= 14 ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'
+                    const status = nudging[user._id]
 
-        {atRiskUsers.length === 0 ? (
-          <div className="text-center py-8 text-site-faint">
-            <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-400" />
-            <p className="text-sm">All users are active</p>
-          </div>
-        ) : (
-          <>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-site-border">
-                  <th className="text-left pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">User</th>
-                  <th className="text-left pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Last active</th>
-                  <th className="text-center pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Sessions</th>
-                  <th className="text-center pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Skills</th>
-                  <th className="text-left pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Risk</th>
-                  <th className="text-right pb-2 font-medium text-site-faint text-xs uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagedRisk.map(user => {
-                  const days = Math.floor((Date.now() - new Date(user.lastLoginAt).getTime()) / (1000 * 60 * 60 * 24))
-                  const riskLabel = days >= 21 ? 'Critical' : days >= 14 ? 'High' : 'Medium'
-                  const riskCls = days >= 21 ? 'bg-red-100 text-red-700' : days >= 14 ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'
-                  const status = nudging[user._id]
-
-                  return (
-                    <tr key={user._id} className="border-b border-site-border/50">
-                      <td className="py-3 pr-3">
-                        <button onClick={() => navigate(`/admin/users/${user._id}`)} className="text-left hover:underline">
-                          <p className="font-medium text-site-ink">{user.name}</p>
-                          <p className="text-xs text-site-faint">{user.email}</p>
-                        </button>
-                      </td>
-                      <td className="py-3 text-red-500 text-xs">{days}d ago</td>
-                      <td className="py-3 text-center text-site-muted">{user.practiceCount || 0}</td>
-                      <td className="py-3 text-center text-site-muted">{user.skillCount || 0}</td>
-                      <td className="py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${riskCls}`}>{riskLabel}</span>
-                      </td>
-                      <td className="py-3 text-right">
-                        {status === 'sent' ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                            <CheckCircle className="w-3.5 h-3.5" /> Sent
-                          </span>
-                        ) : status && status !== 'sending' && status !== 'error' ? (
-                          <span className="text-xs text-amber-600">{status}</span>
-                        ) : (
-                          <button
-                            onClick={() => handleNudge(user._id)}
-                            disabled={status === 'sending'}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-site-accent text-white hover:bg-site-accent-hover transition-colors disabled:opacity-50"
-                          >
-                            <Mail className="w-3 h-3" />
-                            {status === 'sending' ? 'Sending...' : status === 'error' ? 'Retry' : 'Nudge'}
+                    return (
+                      <tr key={user._id} className="border-b border-site-border/50">
+                        <td className="py-3 pr-3">
+                          <button onClick={() => navigate(`/admin/users/${user._id}`)} className="text-left hover:underline">
+                            <p className="font-medium text-site-ink">{user.name}</p>
+                            <p className="text-xs text-site-faint">{user.email}</p>
                           </button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="py-3 text-red-500 text-xs">{days}d ago</td>
+                        <td className="py-3 text-center text-site-muted">{user.practiceCount || 0}</td>
+                        <td className="py-3 text-center text-site-muted">{user.skillCount || 0}</td>
+                        <td className="py-3">
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${riskCls}`}>{riskLabel}</span>
+                        </td>
+                        <td className="py-3 text-right">
+                          {status === 'sent' ? (
+                            <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                              <CheckCircle className="w-3.5 h-3.5" /> Sent
+                            </span>
+                          ) : status && status !== 'sending' && status !== 'error' ? (
+                            <span className="text-xs text-amber-600">{status}</span>
+                          ) : (
+                            <button
+                              onClick={() => handleNudge(user._id)}
+                              disabled={status === 'sending'}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-site-accent text-white hover:bg-site-accent-hover transition-colors disabled:opacity-50"
+                            >
+                              <Mail className="w-3 h-3" />
+                              {status === 'sending' ? 'Sending...' : status === 'error' ? 'Retry' : 'Nudge'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
 
-            {/* Pagination */}
-            {totalRiskPages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-site-border">
-                <span className="text-xs text-site-faint">
-                  {(riskPage - 1) * PER_PAGE + 1}–{Math.min(riskPage * PER_PAGE, atRiskUsers.length)} of {atRiskUsers.length}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setRiskPage(p => Math.max(1, p - 1))}
-                    disabled={riskPage === 1}
-                    className="p-1 rounded border border-site-border disabled:opacity-30 hover:bg-site-bg transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  {Array.from({ length: totalRiskPages }, (_, i) => i + 1).map(p => (
+              {/* Pagination */}
+              {totalRiskPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-site-border">
+                  <span className="text-xs text-site-faint">
+                    {(riskPage - 1) * PER_PAGE + 1}–{Math.min(riskPage * PER_PAGE, atRiskUsers.length)} of {atRiskUsers.length}
+                  </span>
+                  <div className="flex items-center gap-1">
                     <button
-                      key={p}
-                      onClick={() => setRiskPage(p)}
-                      className={`min-w-[28px] h-7 text-xs rounded font-medium transition-colors ${
-                        riskPage === p ? 'bg-site-accent text-white' : 'border border-site-border text-site-ink hover:bg-site-bg'
-                      }`}
+                      onClick={() => setRiskPage(p => Math.max(1, p - 1))}
+                      disabled={riskPage === 1}
+                      className="p-1 rounded border border-site-border disabled:opacity-30 hover:bg-site-bg transition-colors"
                     >
-                      {p}
+                      <ChevronLeft className="w-4 h-4" />
                     </button>
-                  ))}
-                  <button
-                    onClick={() => setRiskPage(p => Math.min(totalRiskPages, p + 1))}
-                    disabled={riskPage === totalRiskPages}
-                    className="p-1 rounded border border-site-border disabled:opacity-30 hover:bg-site-bg transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                    {Array.from({ length: totalRiskPages }, (_, i) => i + 1).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setRiskPage(p)}
+                        className={`min-w-[28px] h-7 text-xs rounded font-medium transition-colors ${
+                          riskPage === p ? 'bg-site-accent text-white' : 'border border-site-border text-site-ink hover:bg-site-bg'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setRiskPage(p => Math.min(totalRiskPages, p + 1))}
+                      disabled={riskPage === totalRiskPages}
+                      className="p-1 rounded border border-site-border disabled:opacity-30 hover:bg-site-bg transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </PageTransition>
   )
 }

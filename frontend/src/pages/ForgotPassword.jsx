@@ -70,7 +70,7 @@ export default function ForgotPassword() {
 
       {/* Main */}
       <div className="relative z-10 flex-1 flex items-center">
-        <div className="w-full max-w-7xl mx-auto px-5 py-12 sm:py-16 flex flex-col md:flex-row items-center gap-10 lg:gap-16">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-5 py-8 sm:py-12 md:py-16 flex flex-col md:flex-row items-center gap-8 sm:gap-10 lg:gap-16">
 
           {/* Left — copy */}
           <div className="hidden md:block md:w-[45%] lg:w-1/2 md:pl-6 lg:pl-10">
@@ -121,7 +121,7 @@ export default function ForgotPassword() {
                 </div>
 
                 {/* Form content */}
-                <div className="relative z-10 p-7 sm:p-8">
+                <div className="relative z-10 p-5 sm:p-7 md:p-8">
 
                   {sent ? (
                     /* ── Success state ── */
@@ -129,7 +129,7 @@ export default function ForgotPassword() {
                       <div className="w-16 h-16 rounded-full bg-[#edf5e9] flex items-center justify-center mx-auto mb-5">
                         <CheckCircle className="w-8 h-8 text-[#4f7942]" />
                       </div>
-                      <h1 className="font-[var(--font-display)] text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-2">
+                      <h1 className="font-[var(--font-display)] text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#1c1f1a] tracking-tight mb-2">
                         Check your email
                       </h1>
                       <p className="text-sm text-[#3d4a38] font-medium mb-2 leading-relaxed">
@@ -142,7 +142,7 @@ export default function ForgotPassword() {
                       <button
                         type="button"
                         onClick={() => { setSent(false); setEmail(""); }}
-                        className="group w-full relative flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-[15px] font-bold transition-all overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 hover:scale-[1.01] active:scale-[0.99]"
+                        className="group w-full relative flex items-center justify-center gap-2.5 py-3.5 min-h-[44px] rounded-xl text-[15px] font-bold transition-all overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 hover:scale-[1.01] active:scale-[0.99]"
                       >
                         <span className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.08] to-white/[0.15] pointer-events-none" />
                         <Mail className="relative z-10" size={18} />
@@ -155,10 +155,10 @@ export default function ForgotPassword() {
                   ) : (
                     /* ── Form state ── */
                     <>
-                      <h1 className="md:hidden font-[var(--font-display)] text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-1">
+                      <h1 className="md:hidden font-[var(--font-display)] text-xl sm:text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-1">
                         Reset password
                       </h1>
-                      <h1 className="hidden md:block font-[var(--font-display)] text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-1.5">
+                      <h1 className="hidden md:block font-[var(--font-display)] text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#1c1f1a] tracking-tight mb-1.5">
                         Reset your password
                       </h1>
                       <p className="text-sm text-[#3d4a38] font-medium mb-6">
@@ -176,13 +176,13 @@ export default function ForgotPassword() {
                             id="forgot-email" type="email" value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required placeholder="you@example.com"
-                            className="w-full px-4 py-3 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
+                            className="w-full px-4 py-3 min-h-[44px] bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                             autoComplete="email"
                           />
                         </div>
 
                         <button type="submit" disabled={loading}
-                          className="group w-full relative flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-[15px] font-bold transition-all disabled:opacity-50 overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 hover:scale-[1.01] active:scale-[0.99]"
+                          className="group w-full relative flex items-center justify-center gap-2.5 py-3.5 min-h-[44px] rounded-xl text-[15px] font-bold transition-all disabled:opacity-50 overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 hover:scale-[1.01] active:scale-[0.99]"
                         >
                           <span className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.08] to-white/[0.15] pointer-events-none" />
                           {loading

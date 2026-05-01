@@ -365,7 +365,8 @@ export default function RoomLeaderboard({ roomId, currentUserId }) {
                   <img
                     src={entry.avatar}
                     alt={entry.username}
-                    className="w-10 h-10 rounded-full border-2 border-site-border"
+                    className="w-10 h-10 rounded-full border-2 border-site-border w-auto h-auto object-cover"
+                    loading="lazy"
                   />
                 ) : (
                   <div

@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
-import { AlertCircle, RotateCcw, Save, X, Download, Zap, Trophy, Shield, Database, Mail } from 'lucide-react'
+import { AlertCircle, RotateCcw, Save, Download, Zap, Trophy, Shield, Database, Mail } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { adminApi } from '../../api/adminApi'
+import PageTransition from '../../components/admin/PageTransition'
+import ErrorState from '../../components/admin/ErrorState'
+import AnimatedList from '../../components/admin/AnimatedList'
+import { SkeletonCard } from '../../components/admin/Skeleton'
+import { staggerItem } from '../../components/admin/animations'
 
 function SettingRow({ label, desc, children }) {
   return (
@@ -29,15 +35,18 @@ function DisplayVal({ value, color = 'text-site-accent' }) {
   return <span className={`font-semibold text-sm ${color}`}>{value}</span>
 }
 
-function SectionCard({ icon: Icon, iconBg, iconColor, title, desc, children }) {
+function SectionCard({ icon: Icon, iconBg, iconColor, title, desc, children, isDanger = false, className = '' }) {
   return (
-    <div className="bg-site-surface rounded-xl border border-site-border p-6">
+    <motion.div 
+      variants={staggerItem}
+      className={`bg-site-surface rounded-xl border ${isDanger ? 'border-red-200' : 'border-site-border'} p-6 ${className}`}
+    >
       <div className="flex items-center gap-3 mb-5">
         <div className={`p-2 rounded-lg ${iconBg}`}><Icon className={`w-5 h-5 ${iconColor}`} /></div>
-        <div><h2 className="font-semibold text-site-ink">{title}</h2><p className="text-xs text-site-faint">{desc}</p></div>
+        <div><h2 className={`font-semibold ${isDanger ? 'text-red-600' : 'text-site-ink'}`}>{title}</h2><p className="text-xs text-site-faint">{desc}</p></div>
       </div>
       {children}
-    </div>
+    </motion.div>
   )
 }
 
@@ -59,6 +68,7 @@ export default function AdminSettings() {
   const [message, setMessage] = useState('')
   const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [edited, setEdited] = useState({})
 
   // Section edit states
@@ -70,8 +80,7 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false)
 
   // Danger zone
-  const [confirmAction, setConfirmAction] = useState(null) // 'reset' | 'recalc' | 'export'
-  const [resetText, setResetText] = useState('')
+  const [confirmAction, setConfirmAction] = useState(null) // 'reset' | 'export'
   const [actionLoading, setActionLoading] = useState(false)
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -83,10 +92,14 @@ export default function AdminSettings() {
   const fetchSettings = async () => {
     try {
       setLoading(true)
+      setError(null)
       const token = await adminApi.getToken()
       const res = await fetch(`${apiUrl}/admin/xp-settings`, { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) { const d = await res.json(); setSettings(d); setEdited(d) }
-    } catch (e) { showMsg(`Error: ${e.message}`, 5000) }
+      else { throw new Error('Failed to load settings') }
+    } catch (e) { 
+      setError(e.message)
+    }
     finally { setLoading(false) }
   }
 
@@ -135,10 +148,46 @@ export default function AdminSettings() {
     finally { setActionLoading(false) }
   }
 
-  if (loading) return <div className="p-8 text-site-muted">Loading settings...</div>
+  if (loading) {
+    return (
+      <PageTransition>
+        <div className="p-6 lg:p-8 max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-site-ink">Settings</h1>
+            <p className="text-site-muted mt-1">Platform configuration and admin tools</p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={4} />
+            <SkeletonCard lines={2} />
+            <div className="lg:col-span-2">
+              <SkeletonCard lines={3} />
+            </div>
+          </div>
+        </div>
+      </PageTransition>
+    )
+  }
+
+  if (error) {
+    return (
+      <PageTransition>
+        <div className="p-6 lg:p-8 max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-site-ink">Settings</h1>
+            <p className="text-site-muted mt-1">Platform configuration and admin tools</p>
+          </div>
+          <ErrorState message={error} onRetry={fetchSettings} />
+        </div>
+      </PageTransition>
+    )
+  }
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl">
+    <PageTransition>
+      <div className="p-6 lg:p-8 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-site-ink">Settings</h1>
         <p className="text-site-muted mt-1">Platform configuration and admin tools</p>
@@ -148,7 +197,7 @@ export default function AdminSettings() {
         <div className={`mb-6 p-3 rounded-lg border text-sm ${message.startsWith('Error') ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'}`}>{message}</div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <AnimatedList className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* XP & Rewards */}
         <SectionCard icon={Zap} iconBg="bg-purple-50" iconColor="text-purple-600" title="XP & Rewards" desc="How users earn XP from activities">
@@ -254,11 +303,15 @@ export default function AdminSettings() {
         </SectionCard>
 
         {/* Admin Tools — full width */}
-        <div className="lg:col-span-2 bg-site-surface rounded-xl border border-red-200 p-6">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="p-2 rounded-lg bg-red-50"><AlertCircle className="w-5 h-5 text-red-600" /></div>
-            <div><h2 className="font-semibold text-red-600">Admin tools</h2><p className="text-xs text-site-faint">Destructive actions — use with caution</p></div>
-          </div>
+        <SectionCard 
+          icon={AlertCircle} 
+          iconBg="bg-red-50" 
+          iconColor="text-red-600" 
+          title="Admin tools" 
+          desc="Destructive actions — use with caution"
+          isDanger={true}
+          className="lg:col-span-2"
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <button onClick={() => setConfirmAction('reset')} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium">
@@ -274,8 +327,8 @@ export default function AdminSettings() {
             </div>
           </div>
           <p className="text-xs text-site-faint mt-3">All actions are logged in the audit log.</p>
-        </div>
-      </div>
+        </SectionCard>
+      </AnimatedList>
 
       {/* Confirmation Modal */}
       {confirmAction && (
@@ -287,7 +340,7 @@ export default function AdminSettings() {
               {confirmAction === 'export' && 'This will download a CSV with all user data.'}
             </p>
             <div className="flex gap-3">
-              <button onClick={() => { setConfirmAction(null); setResetText('') }} className="flex-1 px-4 py-2.5 border border-site-border rounded-lg text-sm font-medium text-site-ink hover:bg-site-bg transition-colors">
+              <button onClick={() => setConfirmAction(null)} className="flex-1 px-4 py-2.5 border border-site-border rounded-lg text-sm font-medium text-site-ink hover:bg-site-bg transition-colors">
                 No
               </button>
               <button
@@ -306,6 +359,7 @@ export default function AdminSettings() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PageTransition>
   )
 }

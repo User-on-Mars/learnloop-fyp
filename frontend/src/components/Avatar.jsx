@@ -51,7 +51,8 @@ export function Avatar({
       <img
         src={avatarUrl}
         alt={displayName || "User avatar"}
-        className={`${sizeClass} rounded-full flex-shrink-0 ${className}`}
+        className={`${sizeClass} rounded-full flex-shrink-0 object-cover ${className}`}
+        loading="lazy"
       />
     );
   }
@@ -71,6 +72,7 @@ export function Avatar({
           className={`${sizeClass} rounded-full object-cover ring-2 ring-white ${
             isLoading ? "opacity-0" : "opacity-100"
           } transition-opacity duration-200`}
+          loading="lazy"
         />
         {/* Loading skeleton */}
         {isLoading && (

@@ -65,7 +65,7 @@ export default function MarketingLayout() {
           {/* Mobile toggle */}
           <button
             type="button"
-            className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg border border-white/20 text-white"
+            className="md:hidden min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-lg border border-white/20 text-white"
             aria-expanded={open}
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((v) => !v)}

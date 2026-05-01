@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Crown, ShieldOff, ShieldCheck, Calendar, Clock, Trophy, Flame, BookOpen, Play, MessageSquare } from 'lucide-react'
 import { adminApi } from '../../api/adminApi'
 import ConfirmAction from '../../components/admin/ConfirmAction'
+import PageTransition from '../../components/admin/PageTransition'
+import ErrorState from '../../components/admin/ErrorState'
+import { Skeleton } from '../../components/admin/Skeleton'
 
 const STATUS_COLORS = {
   active: 'bg-green-100 text-green-700',
@@ -46,8 +49,75 @@ export default function AdminUserDetail() {
     }
   }
 
-  if (loading) return <div className="p-8 text-site-muted">Loading...</div>
-  if (error) return <div className="p-8 text-red-500">Error: {error}</div>
+  if (loading) {
+    return (
+      <PageTransition>
+        <div className="p-6 lg:p-8 max-w-6xl">
+          <Skeleton className="h-4 w-32 mb-6" />
+          
+          {/* Profile header skeleton */}
+          <div className="bg-site-surface rounded-xl border border-site-border p-6 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+              <Skeleton className="w-16 h-16 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <Skeleton className="h-10 w-24" />
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-4 mt-6 pt-6 border-t border-site-border">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="text-center space-y-2">
+                  <Skeleton className="h-4 w-4 mx-auto" />
+                  <Skeleton className="h-5 w-12 mx-auto" />
+                  <Skeleton className="h-3 w-16 mx-auto" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Content grid skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-site-surface rounded-xl border border-site-border p-5">
+              <Skeleton className="h-4 w-24 mb-3" />
+              <div className="space-y-2">
+                {Array.from({ length: 3 }, (_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </div>
+            <div className="bg-site-surface rounded-xl border border-site-border p-5">
+              <Skeleton className="h-4 w-32 mb-3" />
+              <div className="space-y-2">
+                {Array.from({ length: 3 }, (_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </div>
+            <div className="bg-site-surface rounded-xl border border-site-border p-5 lg:col-span-2">
+              <Skeleton className="h-4 w-36 mb-3" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <Skeleton key={i} className="h-24 w-full" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </PageTransition>
+    )
+  }
+  
+  if (error) {
+    return (
+      <PageTransition>
+        <div className="p-6 lg:p-8 max-w-6xl">
+          <ErrorState message={error} onRetry={fetchUser} />
+        </div>
+      </PageTransition>
+    )
+  }
+  
   if (!data) return null
 
   const { user, skills, practices, reflections, sessions, xpProfile } = data
@@ -65,10 +135,11 @@ export default function AdminUserDetail() {
   const practiceTime = totalMinutes >= 60 ? `${(totalMinutes / 60).toFixed(1)}h` : `${totalMinutes}m`
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl">
-      <button onClick={() => navigate('/admin/users')} className="flex items-center gap-1 text-sm text-site-muted hover:text-site-accent mb-6 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to Users
-      </button>
+    <PageTransition>
+      <div className="p-6 lg:p-8 max-w-6xl">
+        <button onClick={() => navigate('/admin/users')} className="flex items-center gap-1 text-sm text-site-muted hover:text-site-accent mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Users
+        </button>
 
       {/* ── Full-width Profile Header ─────────────────────────── */}
       <div className="bg-site-surface rounded-xl border border-site-border p-6 mb-6">
@@ -261,5 +332,6 @@ export default function AdminUserDetail() {
         onConfirm={handleAction}
       />
     </div>
+    </PageTransition>
   )
 }

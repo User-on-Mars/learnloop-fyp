@@ -593,12 +593,14 @@ router.post('/subscription/:userId/upgrade', requireAuth, requireAdmin, async (r
     const info = await SubscriptionService.getSubscriptionInfo(req.params.userId);
 
     // Audit log
-    await AdminAuditLog.create({
-      adminId: req.user.id,
-      action: 'subscription_upgrade',
-      targetUserId: req.params.userId,
-      details: `Upgraded to Pro until ${info.currentPeriodEnd}`
-    });
+    await AdminAuditLog.record(
+      req.user.id,
+      req.user.email,
+      'subscription_upgrade',
+      req.params.userId,
+      null,
+      `Upgraded to Pro until ${info.currentPeriodEnd}`
+    );
 
     res.json({ message: 'User upgraded to Pro', ...info });
   } catch (error) {
@@ -613,17 +615,41 @@ router.post('/subscription/:userId/downgrade', requireAuth, requireAdmin, async 
     await SubscriptionService.downgradeToFree(req.params.userId);
     const info = await SubscriptionService.getSubscriptionInfo(req.params.userId);
 
-    await AdminAuditLog.create({
-      adminId: req.user.id,
-      action: 'subscription_downgrade',
-      targetUserId: req.params.userId,
-      details: 'Downgraded to Free'
-    });
+    await AdminAuditLog.record(
+      req.user.id,
+      req.user.email,
+      'subscription_downgrade',
+      req.params.userId,
+      null,
+      'Downgraded to Free'
+    );
 
     res.json({ message: 'User downgraded to Free', ...info });
   } catch (error) {
     console.error('Admin downgrade subscription error:', error);
     res.status(500).json({ message: 'Failed to downgrade subscription' });
+  }
+});
+
+// POST /api/admin/subscription/:userId/cancel - Cancel user's pro subscription
+router.post('/subscription/:userId/cancel', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await SubscriptionService.cancelSubscription(req.params.userId);
+    const info = await SubscriptionService.getSubscriptionInfo(req.params.userId);
+
+    await AdminAuditLog.record(
+      req.user.id,
+      req.user.email,
+      'subscription_cancel',
+      req.params.userId,
+      null,
+      'Canceled Pro subscription'
+    );
+
+    res.json({ message: 'Subscription canceled', ...info });
+  } catch (error) {
+    console.error('Admin cancel subscription error:', error);
+    res.status(500).json({ message: 'Failed to cancel subscription' });
   }
 });
 

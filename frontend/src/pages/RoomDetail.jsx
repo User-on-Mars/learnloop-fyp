@@ -249,7 +249,7 @@ export default function RoomDetail() {
       <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-          <div className="px-4 sm:px-6 py-6">
+          <div className="px-4 sm:px-6 py-6 lg:py-8">
             {/* Back Button */}
             <div className="h-10 w-40 bg-white rounded-xl animate-pulse mb-6" />
             
@@ -307,7 +307,7 @@ export default function RoomDetail() {
       <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-          <div className="px-4 sm:px-6 py-6">
+          <div className="px-4 sm:px-6 py-6 lg:py-8">
             <button
               onClick={() => navigate("/roomspace")}
               className="flex items-center gap-2 text-[#9aa094] hover:text-[#1c1f1a] mb-6"
@@ -333,7 +333,7 @@ export default function RoomDetail() {
       <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-          <div className="px-4 sm:px-6 py-6">
+          <div className="px-4 sm:px-6 py-6 lg:py-8">
             <button
               onClick={() => navigate("/roomspace")}
               className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-[#c8cec0] hover:text-[#1c1f1a] transition-all mb-6 shadow-sm"
@@ -369,7 +369,7 @@ export default function RoomDetail() {
       <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-          <div className="px-4 sm:px-6 py-6">
+          <div className="px-4 sm:px-6 py-6 lg:py-8">
             <button
               onClick={() => navigate("/roomspace")}
               className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-[#c8cec0] hover:text-[#1c1f1a] transition-all mb-6 shadow-sm"
@@ -395,7 +395,7 @@ export default function RoomDetail() {
       <Sidebar />
 
       <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 py-6">
+        <div className="px-4 sm:px-6 py-6 lg:py-8">
           
           {/* ═══ Back Button ═══ */}
           <button
@@ -413,7 +413,7 @@ export default function RoomDetail() {
 
           {/* ═══ Hero Header ═══ */}
           <div 
-            className="relative overflow-hidden rounded-2xl border p-6 sm:p-8 mb-6"
+            className="relative overflow-hidden rounded-2xl border p-6 sm:p-7 mb-6"
             style={{ 
               background: `linear-gradient(135deg, ${themeColor}08 0%, ${themeColor}15 100%)`,
               borderColor: `${themeColor}30`
@@ -425,33 +425,34 @@ export default function RoomDetail() {
               style={{ backgroundColor: themeColor }}
             />
             
-            <div className="relative flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-              <div className="flex items-start gap-4">
+            <div className="relative flex flex-col gap-4 sm:gap-6">
+              {/* Top row: Icon, Title, and Description */}
+              <div className="flex items-start gap-3 sm:gap-4">
                 <div 
-                  className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0"
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0"
                   style={{ 
                     backgroundColor: themeColor,
                     boxShadow: `0 8px 24px -4px ${themeColor}40`
                   }}
                 >
-                  <RoomIcon className="w-8 h-8 text-white" />
+                  <RoomIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2 flex-wrap">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a]">{room.name}</h1>
+                  <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2 flex-wrap">
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#1c1f1a]">{room.name}</h1>
                     {isOwner && (
-                      <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">
+                      <span className="flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] sm:text-xs font-bold border border-amber-200">
                         <Crown className="w-3 h-3" />
                         Owner
                       </span>
                     )}
                   </div>
                   {room.description && (
-                    <p className="text-[#565c52] text-[15px] leading-relaxed mb-3">{room.description}</p>
+                    <p className="text-[#565c52] text-sm sm:text-[15px] leading-relaxed mb-2 sm:mb-3">{room.description}</p>
                   )}
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4" style={{ color: themeColor }} />
-                    <span className="text-sm text-[#565c52]">
+                    <span className="text-xs sm:text-sm text-[#565c52]">
                       {members.length} {members.length === 1 ? "member" : "members"}
                       {maxMembers !== Infinity && <span className="text-[#9aa094]"> / {maxMembers}</span>}
                     </span>
@@ -459,21 +460,22 @@ export default function RoomDetail() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Action Buttons - Full width on mobile, inline on desktop */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
                 {isOwner ? (
                   <>
                     <button
                       onClick={() => setShowEditModal(true)}
-                      className="p-2.5 text-[#9aa094] hover:text-[#1c1f1a] hover:bg-white rounded-xl transition-all border border-transparent hover:border-[#e2e6dc]"
+                      className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 text-[#565c52] hover:text-[#1c1f1a] bg-white hover:bg-[#f8faf6] rounded-xl transition-all border border-[#e2e6dc] text-sm font-medium sm:w-auto"
                       title="Edit room"
                     >
-                      <Settings className="w-5 h-5" />
+                      <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="sm:hidden">Edit Room</span>
                     </button>
                     <button
                       onClick={() => setShowInviteModal(true)}
                       disabled={isRoomFull}
-                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg ${
+                      className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-3 sm:py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg ${
                         isRoomFull
                           ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                           : 'text-white hover:opacity-90'
@@ -485,20 +487,21 @@ export default function RoomDetail() {
                       title={isRoomFull ? `Room is full` : 'Invite a member'}
                     >
                       <UserPlus className="w-4 h-4" />
-                      {isRoomFull ? 'Full' : 'Invite'}
+                      {isRoomFull ? 'Room Full' : 'Invite Member'}
                     </button>
                     <button
                       onClick={showDeleteRoomConfirm}
-                      className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-200"
+                      className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-all border border-red-200 text-sm font-medium sm:w-auto"
                       title="Delete room"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="sm:hidden">Delete Room</span>
                     </button>
                   </>
                 ) : (
                   <button
                     onClick={showLeaveRoomConfirm}
-                    className="flex items-center gap-2 px-4 py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-medium hover:bg-white hover:border-red-200 hover:text-red-600 transition-all text-sm"
+                    className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-medium hover:bg-white hover:border-red-200 hover:text-red-600 transition-all text-sm"
                   >
                     <LogOut className="w-4 h-4" />
                     Leave Room
@@ -509,44 +512,44 @@ export default function RoomDetail() {
           </div>
 
           {/* ═══ Content Grid ═══ */}
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6">
             
             {/* Left Column - Leaderboard & Skill Maps */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               
               {/* Leaderboard Section */}
               <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden">
-                <div className="px-6 py-4 border-b border-[#e8ece3] flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-amber-600" />
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#e8ece3] flex items-center justify-between">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-100 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-[#1c1f1a]">Leaderboard</h2>
-                      <p className="text-xs text-[#9aa094]">{members.length} member{members.length !== 1 ? 's' : ''} competing</p>
+                      <h2 className="text-base sm:text-lg font-bold text-[#1c1f1a]">Leaderboard</h2>
+                      <p className="text-[10px] sm:text-xs text-[#9aa094]">{members.length} member{members.length !== 1 ? 's' : ''} competing</p>
                     </div>
                   </div>
-                  <span className="text-xs text-[#9aa094] flex items-center gap-1">
+                  <span className="hidden sm:flex text-xs text-[#9aa094] items-center gap-1">
                     <TrendingUp className="w-3 h-3" />
                     Live Rankings
                   </span>
                 </div>
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <RoomLeaderboard roomId={roomId} currentUserId={currentUserId} />
                 </div>
               </div>
 
               {/* Skill Maps Section */}
               <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden">
-                <div className="px-6 py-4 border-b border-[#e8ece3] flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
-                      <Map className="w-5 h-5 text-emerald-600" />
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#e8ece3] flex items-center justify-between">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+                      <Map className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-[#1c1f1a]">Skill Maps</h2>
+                      <h2 className="text-base sm:text-lg font-bold text-[#1c1f1a]">Skill Maps</h2>
                       {skillMaps.length > 0 && (
-                        <p className="text-xs text-[#9aa094]">{skillMaps.length}/6 maps added</p>
+                        <p className="text-[10px] sm:text-xs text-[#9aa094]">{skillMaps.length}/6 maps added</p>
                       )}
                     </div>
                   </div>
@@ -554,46 +557,47 @@ export default function RoomDetail() {
                     <button
                       onClick={() => setShowAddSkillMapModal(true)}
                       disabled={skillMaps.length >= 6}
-                      className={`flex items-center gap-2 px-4 py-2 text-sm rounded-xl font-semibold transition-all ${
+                      className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-xl font-semibold transition-all ${
                         skillMaps.length >= 6
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           : 'bg-[#2e5023] text-white hover:bg-[#3a6b2e] shadow-md shadow-[#2e5023]/20'
                       }`}
                     >
-                      <Plus className="w-4 h-4" />
-                      Add Skill Map
+                      <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Add Skill Map</span>
+                      <span className="sm:hidden">Add</span>
                     </button>
                   )}
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   {skillMaps.length === 0 ? (
-                    <div className="text-center py-10">
-                      <div className="w-16 h-16 bg-[#f5f7f2] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <BookOpen className="w-8 h-8 text-[#c8cec0]" />
+                    <div className="text-center py-8 sm:py-10">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#f5f7f2] rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                        <BookOpen className="w-7 h-7 sm:w-8 sm:h-8 text-[#c8cec0]" />
                       </div>
-                      <h3 className="text-base font-bold text-[#1c1f1a] mb-2">No skill maps yet</h3>
+                      <h3 className="text-sm sm:text-base font-bold text-[#1c1f1a] mb-2">No skill maps yet</h3>
                       {isOwner ? (
                         <>
-                          <p className="text-sm text-[#9aa094] mb-4 max-w-sm mx-auto">
+                          <p className="text-xs sm:text-sm text-[#9aa094] mb-3 sm:mb-4 max-w-sm mx-auto px-4">
                             Add skill maps to give your team something to practice and compete on
                           </p>
                           <button
                             onClick={() => setShowAddSkillMapModal(true)}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#3a6b2e] transition-all shadow-md"
+                            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#2e5023] text-white rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#3a6b2e] transition-all shadow-md"
                           >
                             <Plus className="w-4 h-4" />
                             Add Your First Skill Map
                           </button>
                         </>
                       ) : (
-                        <p className="text-sm text-[#9aa094] max-w-sm mx-auto">
+                        <p className="text-xs sm:text-sm text-[#9aa094] max-w-sm mx-auto px-4">
                           The room owner hasn't added any skill maps yet
                         </p>
                       )}
                     </div>
                   ) : (
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       {skillMaps.map((skillMap) => (
                         <SkillMapCard
                           key={skillMap._id}
@@ -611,24 +615,24 @@ export default function RoomDetail() {
 
             {/* Right Column - Members */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden sticky top-24">
-                <div className="px-6 py-4 border-b border-[#e8ece3] flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden lg:sticky lg:top-24">
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#e8ece3] flex items-center justify-between">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <div 
-                      className="w-9 h-9 rounded-xl flex items-center justify-center"
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center"
                       style={{ backgroundColor: `${themeColor}15` }}
                     >
-                      <Users className="w-5 h-5" style={{ color: themeColor }} />
+                      <Users className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: themeColor }} />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-[#1c1f1a]">Members</h2>
-                      <p className="text-xs text-[#9aa094]">
+                      <h2 className="text-base sm:text-lg font-bold text-[#1c1f1a]">Members</h2>
+                      <p className="text-[10px] sm:text-xs text-[#9aa094]">
                         {members.length}{maxMembers !== Infinity ? `/${maxMembers}` : ''} members
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <div className="space-y-2">
                     {members.map((member) => (
                       <MemberCard
@@ -788,23 +792,23 @@ function MemberCard({ member, isOwner, currentUserId, onKick, themeColor }) {
   const displayName = member.user?.name || member.username || "Unknown User";
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-xl hover:bg-[#f8faf6] transition-colors group">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl hover:bg-[#f8faf6] transition-colors group">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         <div 
-          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: `${themeColor || '#ec4899'}20` }}
         >
-          <span className="font-bold text-sm" style={{ color: themeColor || '#ec4899' }}>
+          <span className="font-bold text-xs sm:text-sm" style={{ color: themeColor || '#ec4899' }}>
             {displayName.charAt(0).toUpperCase()}
           </span>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-[#1c1f1a]">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-semibold text-[#1c1f1a] truncate">
             {displayName}
             {isSelf && <span className="text-[#9aa094] font-normal ml-1">(You)</span>}
           </p>
           {memberIsOwner && (
-            <span className="flex items-center gap-1 text-[11px] text-amber-600 font-medium">
+            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-amber-600 font-medium">
               <Crown className="w-3 h-3" />
               Owner
             </span>
@@ -815,7 +819,7 @@ function MemberCard({ member, isOwner, currentUserId, onKick, themeColor }) {
       {isOwner && !memberIsOwner && !isSelf && (
         <button
           onClick={onKick}
-          className="p-2 text-[#c8cec0] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+          className="p-2 text-[#c8cec0] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
           title="Remove member"
         >
           <UserMinus className="w-4 h-4" />
@@ -937,7 +941,8 @@ function EditRoomModal({ room, onClose, onSuccess }) {
             <button
               onClick={onClose}
               disabled={isSubmitting}
-              className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
@@ -1172,7 +1177,8 @@ function AddSkillMapModal({ roomId, existingSkillMapIds, onClose, onSuccess }) {
             <button
               onClick={onClose}
               disabled={isSubmitting}
-              className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
@@ -1500,7 +1506,8 @@ function InviteModal({ roomId, onClose }) {
             <button
               onClick={onClose}
               disabled={isSubmitting}
-              className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>

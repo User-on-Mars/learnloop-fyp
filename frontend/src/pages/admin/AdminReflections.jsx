@@ -3,6 +3,9 @@ import { MessageSquare, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { adminApi } from '../../api/adminApi'
 import DataTable from '../../components/admin/DataTable'
 import ConfirmAction from '../../components/admin/ConfirmAction'
+import PageTransition from '../../components/admin/PageTransition'
+import ErrorState from '../../components/admin/ErrorState'
+import { SkeletonTable } from '../../components/admin/Skeleton'
 
 const MOOD_EMOJIS = {
   'Happy': '😄',
@@ -15,6 +18,7 @@ const MOOD_EMOJIS = {
 export default function AdminReflections() {
   const [reflections, setReflections] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [page, setPage] = useState(1)
@@ -27,10 +31,12 @@ export default function AdminReflections() {
   const loadReflections = async () => {
     try {
       setLoading(true)
+      setError(null)
       const result = await adminApi.getReflections(100)
       setReflections(result.reflections || [])
     } catch (error) {
       console.error('Failed to load reflections:', error)
+      setError('Failed to load reflections')
     } finally {
       setLoading(false)
     }
@@ -93,59 +99,67 @@ export default function AdminReflections() {
   ]
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-site-ink">Reflections</h1>
-        <p className="text-site-muted mt-1">Recent reflections — flagged or worth reviewing</p>
-      </div>
+    <PageTransition>
+      <div className="p-6 lg:p-8 max-w-7xl">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-site-ink">Reflections</h1>
+          <p className="text-site-muted mt-1">Recent reflections — flagged or worth reviewing</p>
+        </div>
 
-      <div className="bg-site-surface rounded-xl border border-site-border">
-        <DataTable
-          columns={columns}
-          data={paginatedReflections}
-          loading={loading}
-          empty="No reflections"
-        />
+        {error ? (
+          <ErrorState message={error} onRetry={loadReflections} />
+        ) : loading ? (
+          <SkeletonTable rows={20} columns={6} />
+        ) : (
+          <div className="bg-site-surface rounded-xl border border-site-border">
+            <DataTable
+              columns={columns}
+              data={paginatedReflections}
+              loading={loading}
+              empty="No reflections"
+            />
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-site-border">
-            <p className="text-sm text-site-faint">
-              Showing {startIndex + 1} to {Math.min(endIndex, reflections.length)} of {reflections.length} reflections
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-2 border border-site-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-site-bg transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-sm text-site-ink font-medium">
-                {page} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-2 border border-site-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-site-bg transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-site-border">
+                <p className="text-sm text-site-faint">
+                  Showing {startIndex + 1} to {Math.min(endIndex, reflections.length)} of {reflections.length} reflections
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="p-2 border border-site-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-site-bg transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm text-site-ink font-medium">
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="p-2 border border-site-border rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-site-bg transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
-      </div>
 
-      <ConfirmAction
-        isOpen={!!confirmDelete}
-        title="Delete Reflection"
-        message="This reflection will be permanently deleted. This action cannot be undone."
-        confirmText="Delete"
-        isDangerous
-        onConfirm={() => handleDelete(confirmDelete)}
-        onCancel={() => setConfirmDelete(null)}
-        loading={actionLoading}
-      />
-    </div>
+        <ConfirmAction
+          isOpen={!!confirmDelete}
+          title="Delete Reflection"
+          message="This reflection will be permanently deleted. This action cannot be undone."
+          confirmText="Delete"
+          isDangerous
+          onConfirm={() => handleDelete(confirmDelete)}
+          onCancel={() => setConfirmDelete(null)}
+          loading={actionLoading}
+        />
+      </div>
+    </PageTransition>
   )
 }

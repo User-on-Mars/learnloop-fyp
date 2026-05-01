@@ -55,6 +55,7 @@ import EsewaSuccess from "./pages/EsewaSuccess";
 import EsewaFailure from "./pages/EsewaFailure";
 
 import ActiveSessionPopup from "./components/ActiveSessionPopup";
+import AppShell from "./layout/AppShell";
 import AdminLayout from "./layout/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -104,7 +105,6 @@ function AppLayout() {
                 <ScrollToTop />
                 <Outlet />
                 <ActiveSessionPopup />
-                <MobileNav />
               </SkillMapProvider>
             </ActiveSessionProvider>
             </SubscriptionProvider>
@@ -120,11 +120,12 @@ function MapsShellLayout() {
   return (
     <div className="flex min-h-screen bg-site-bg">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14 pb-20 md:pb-0">
         <SkillMapTsProvider>
           <Outlet />
         </SkillMapTsProvider>
       </main>
+      <MobileNav />
     </div>
   );
 }
@@ -146,23 +147,28 @@ const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/signup", element: <Signup /> },
       { path: "/forgot", element: <ForgotPassword /> },
-      { path: "/dashboard", element: <Protected><Dashboard /></Protected> },
-      { path: "/profile", element: <Protected><Profile /></Protected> },
-      { path: "/subscription", element: <Protected><Subscription /></Protected> },
-      { path: "/subscription/esewa/success", element: <Protected><EsewaSuccess /></Protected> },
-      { path: "/subscription/esewa/failure", element: <Protected><EsewaFailure /></Protected> },
-      { path: "/log-practice", element: <Protected><LogPractice /></Protected> },
-      { path: "/reflect", element: <Protected><ReflectPage /></Protected> },
-      { path: "/reflections", element: <Protected><ReflectionHistory /></Protected> },
-      { path: "/weekly-summary", element: <Protected><WeeklySummary /></Protected> },
-      { path: "/leaderboard", element: <Protected><Leaderboard /></Protected> },
-      { path: "/roomspace", element: <Protected><RoomSpace /></Protected> },
-      { path: "/roomspace/:roomId", element: <Protected><RoomDetail /></Protected> },
-      { path: "/roomspace/:roomId/skill-maps/:roomSkillMapId", element: <Protected><RoomSkillMapDetail /></Protected> },
-      { path: "/roomspace/:roomId/skill-maps/:roomSkillMapId/nodes/:nodeId", element: <Protected><RoomNodeDetail /></Protected> },
-      { path: "/skills", element: <Protected><SkillMapPage /></Protected> },
-      { path: "/skills/:skillId", element: <Protected><SkillMapPage /></Protected> },
-      { path: "/skills/:skillId/nodes/:nodeId", element: <Protected><NodeDetailPage /></Protected> },
+      {
+        element: <Protected><AppShell /></Protected>,
+        children: [
+          { path: "/dashboard", element: <Dashboard /> },
+          { path: "/profile", element: <Profile /> },
+          { path: "/subscription", element: <Subscription /> },
+          { path: "/subscription/esewa/success", element: <EsewaSuccess /> },
+          { path: "/subscription/esewa/failure", element: <EsewaFailure /> },
+          { path: "/log-practice", element: <LogPractice /> },
+          { path: "/reflect", element: <ReflectPage /> },
+          { path: "/reflections", element: <ReflectionHistory /> },
+          { path: "/weekly-summary", element: <WeeklySummary /> },
+          { path: "/leaderboard", element: <Leaderboard /> },
+          { path: "/roomspace", element: <RoomSpace /> },
+          { path: "/roomspace/:roomId", element: <RoomDetail /> },
+          { path: "/roomspace/:roomId/skill-maps/:roomSkillMapId", element: <RoomSkillMapDetail /> },
+          { path: "/roomspace/:roomId/skill-maps/:roomSkillMapId/nodes/:nodeId", element: <RoomNodeDetail /> },
+          { path: "/skills", element: <SkillMapPage /> },
+          { path: "/skills/:skillId", element: <SkillMapPage /> },
+          { path: "/skills/:skillId/nodes/:nodeId", element: <NodeDetailPage /> },
+        ],
+      },
       {
         path: "/maps",
         element: <Protected><MapsShellLayout /></Protected>,

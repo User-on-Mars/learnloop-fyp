@@ -150,22 +150,55 @@ export function SkillMapProvider({ children }) {
     }
   }, []);
 
-  const loadSkills = useCallback(async () => {
+  const loadSkills = useCallback(async (subscriptionLimits = null) => {
+    console.log('📥 loadSkills called with:', subscriptionLimits);
     try {
       setIsLoading(true);
       setError(null);
 
       const token = await getAuthToken();
+      console.log('🔑 Got auth token');
       const response = await client.get('/skills', {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('📦 Received skills response:', response.data);
 
-      setSkills(response.data.skills || []);
+      let skillsData = response.data.skills || [];
+      console.log('📊 Skills data:', skillsData.length, 'skills');
+      
+      // Apply locking logic if subscription limits are provided
+      if (subscriptionLimits && subscriptionLimits.isFree !== undefined) {
+        console.log('🔒 Applying locking logic');
+        const { maxSkillMaps, isFree } = subscriptionLimits;
+        const maxAllowed = maxSkillMaps === -1 ? Infinity : (maxSkillMaps ?? 3);
+        
+        // Sort by creation date (newest first) to identify which skill maps are accessible
+        const sortedSkills = [...skillsData].sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        
+        // Mark skill maps as locked if user is on free plan and has exceeded limit
+        // The newest N skill maps (index < maxAllowed) are unlocked
+        skillsData = skillsData.map((skill) => {
+          const skillIndex = sortedSkills.findIndex(s => s._id === skill._id);
+          const isLocked = isFree && skillIndex >= maxAllowed;
+          
+          return {
+            ...skill,
+            locked: isLocked
+          };
+        });
+      }
+
+      console.log('✅ Setting skills:', skillsData.length, 'skills');
+      setSkills(skillsData);
     } catch (err) {
+      console.error('❌ Error loading skills:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Failed to load skills';
       setError(errorMessage);
       console.error('Error loading skills:', err);
     } finally {
+      console.log('🏁 loadSkills finished, setting isLoading to false');
       setIsLoading(false);
     }
   }, []);

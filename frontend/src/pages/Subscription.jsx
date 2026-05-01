@@ -4,7 +4,7 @@ import {
   Crown, Check, X, Zap, Users, Map, FileText,
   CreditCard, Loader2, Receipt, Gift, Clock, Star, Shield, Sparkles,
 } from "lucide-react";
-import Sidebar from "../components/Sidebar";
+import Modal, { ModalButton } from "../components/Modal";
 import { useSubscription } from "../context/SubscriptionContext";
 import { subscriptionAPI } from "../api/client";
 
@@ -78,13 +78,10 @@ export default function Subscription() {
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
-    <div className="flex min-h-screen bg-[#f8faf6]">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
+    <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
 
-          {/* Hero Header */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-purple-50 rounded-2xl border border-violet-100 p-6 sm:p-8">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-purple-50 rounded-2xl border border-violet-100 p-6 sm:p-7">
             <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-violet-200 opacity-15 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-purple-200 opacity-10 blur-2xl pointer-events-none" />
 
@@ -195,28 +192,30 @@ export default function Subscription() {
                 <p className="text-[11px] text-[#9aa094]">See what you get with Pro</p>
               </div>
             </div>
-            <div>
-              <div className="grid grid-cols-3 gap-4 px-5 py-3 bg-[#f8faf6] border-b border-[#e8ece3] text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider">
-                <span>Feature</span>
-                <span className="text-center">Free</span>
-                <span className="text-center flex items-center justify-center gap-1"><Crown className="w-3 h-3 text-amber-500" /> Pro</span>
-              </div>
-              {FEATURES.map((f, i) => (
-                <div key={f.name} className={`grid grid-cols-3 gap-4 px-5 py-3.5 items-center ${i < FEATURES.length - 1 ? 'border-b border-[#f0f2eb]' : ''}`}>
-                  <div className="flex items-center gap-2.5 text-sm text-[#1c1f1a]">
-                    <div className="w-8 h-8 rounded-lg bg-[#f8faf6] flex items-center justify-center flex-shrink-0">
-                      <f.icon className="w-4 h-4 text-[#9aa094]" />
-                    </div>
-                    <span className="font-medium">{f.name}</span>
-                  </div>
-                  <div className="text-center text-sm text-[#9aa094]">
-                    {typeof f.free === "boolean" ? (f.free ? <Check className="w-4 h-4 text-emerald-500 mx-auto" /> : <X className="w-4 h-4 text-[#d0d5ca] mx-auto" />) : f.free}
-                  </div>
-                  <div className="text-center text-sm font-bold text-violet-600">
-                    {typeof f.pro === "boolean" ? (f.pro ? <Check className="w-4 h-4 text-emerald-500 mx-auto" /> : <X className="w-4 h-4 text-[#d0d5ca] mx-auto" />) : f.pro}
-                  </div>
+            <div className="overflow-x-auto">
+              <div className="min-w-[500px]">
+                <div className="grid grid-cols-3 gap-4 px-5 py-3 bg-[#f8faf6] border-b border-[#e8ece3] text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider">
+                  <span>Feature</span>
+                  <span className="text-center">Free</span>
+                  <span className="text-center flex items-center justify-center gap-1"><Crown className="w-3 h-3 text-amber-500" /> Pro</span>
                 </div>
-              ))}
+                {FEATURES.map((f, i) => (
+                  <div key={f.name} className={`grid grid-cols-3 gap-4 px-5 py-3.5 items-center ${i < FEATURES.length - 1 ? 'border-b border-[#f0f2eb]' : ''}`}>
+                    <div className="flex items-center gap-2.5 text-sm text-[#1c1f1a]">
+                      <div className="w-8 h-8 rounded-lg bg-[#f8faf6] flex items-center justify-center flex-shrink-0">
+                        <f.icon className="w-4 h-4 text-[#9aa094]" />
+                      </div>
+                      <span className="font-medium">{f.name}</span>
+                    </div>
+                    <div className="text-center text-sm text-[#9aa094]">
+                      {typeof f.free === "boolean" ? (f.free ? <Check className="w-4 h-4 text-emerald-500 mx-auto" /> : <X className="w-4 h-4 text-[#d0d5ca] mx-auto" />) : f.free}
+                    </div>
+                    <div className="text-center text-sm font-bold text-violet-600">
+                      {typeof f.pro === "boolean" ? (f.pro ? <Check className="w-4 h-4 text-emerald-500 mx-auto" /> : <X className="w-4 h-4 text-[#d0d5ca] mx-auto" />) : f.pro}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -235,19 +234,19 @@ export default function Subscription() {
               <div className="p-5 space-y-6">
 
                 {/* Plan Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex flex-col sm:flex-row lg:grid lg:grid-cols-3 gap-3">
                   {PLANS.map(p => {
                     const isSelected = selectedPlan === p.id;
                     const isBest = p.badge === 'Best Value';
                     return (
                       <button key={p.id} onClick={() => setSelectedPlan(p.id)}
-                        className={`relative text-left p-5 rounded-xl border-2 transition-all ${
+                        className={`relative text-left p-5 rounded-xl border-2 transition-all min-h-[44px] ${
                           isSelected
                             ? 'border-violet-400 bg-gradient-to-br from-violet-50 to-purple-50 shadow-sm'
                             : 'border-[#e2e6dc] hover:border-violet-200 bg-[#f8faf6]'
                         }`}>
                         {p.badge && (
-                          <span className={`absolute -top-2.5 left-3 px-2.5 py-0.5 text-[10px] font-bold rounded-full shadow-sm ${
+                          <span className={`absolute -top-2.5 left-3 px-2.5 py-0.5 text-xs font-bold rounded-full shadow-sm ${
                             isBest ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white' : 'bg-amber-100 text-amber-700'
                           }`}>{p.badge}</span>
                         )}
@@ -286,7 +285,8 @@ export default function Subscription() {
                   <h4 className="text-sm font-bold text-[#1c1f1a] mb-3">Payment Method</h4>
                   <div className="flex items-center gap-3 p-4 border-2 border-violet-300 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border border-[#e2e6dc]">
-                      <img src="https://cdn.esewa.com.np/ui/images/logos/esewa-icon-large.png" alt="eSewa" className="w-8 h-8 object-contain"
+                      <img src="https://cdn.esewa.com.np/ui/images/logos/esewa-icon-large.png" alt="eSewa" className="w-full h-auto max-w-[32px] max-h-[32px] object-contain"
+                        loading="lazy"
                         onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "https://cdn.esewa.com.np/ui/images/esewa_og.png"; }} />
                     </div>
                     <div className="flex-1">
@@ -301,7 +301,7 @@ export default function Subscription() {
 
                 {/* Pay Button */}
                 <button onClick={handleUpgrade} disabled={upgrading}
-                  className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-semibold hover:from-violet-700 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm shadow-lg shadow-violet-500/20">
+                  className="w-full py-3.5 min-h-[44px] bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-semibold hover:from-violet-700 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm shadow-lg shadow-violet-500/20">
                   {upgrading ? (<><Loader2 className="w-4 h-4 animate-spin" /> Redirecting to eSewa...</>) : (<><CreditCard className="w-4 h-4" /> Pay Rs. {plan.price} with eSewa</>)}
                 </button>
                 {message && message.type === "error" && (
@@ -368,7 +368,7 @@ export default function Subscription() {
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-semibold text-[#1c1f1a] truncate">{item.label}</p>
                             {isReward && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-[10px] font-bold text-amber-700 flex-shrink-0">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-xs font-bold text-amber-700 flex-shrink-0">
                                 <Gift className="w-3 h-3" /> Reward
                               </span>
                             )}
@@ -380,7 +380,7 @@ export default function Subscription() {
                             {item.transactionId && (
                               <>
                                 <span className="text-[#d0d5ca]">·</span>
-                                <p className="text-[10px] text-[#9aa094] font-mono truncate max-w-[120px]">{item.transactionId}</p>
+                                <p className="text-xs text-[#9aa094] font-mono truncate max-w-[120px]">{item.transactionId}</p>
                               </>
                             )}
                           </div>
@@ -391,7 +391,7 @@ export default function Subscription() {
                           ) : (
                             <p className="text-sm font-bold text-[#1c1f1a]">Rs. {item.amount}</p>
                           )}
-                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusColors[item.status] || 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${statusColors[item.status] || 'bg-gray-100 text-gray-500 border-gray-200'}`}>
                             {item.status === 'COMPLETE' ? 'Paid' : item.status}
                           </span>
                         </div>
@@ -402,43 +402,59 @@ export default function Subscription() {
               )}
             </div>
           </div>
-
-        </div>
-      </main>
-
       {/* Cancel Modal */}
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-red-500 to-rose-500 px-6 py-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Crown className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Cancel Pro?</h3>
-                  <p className="text-white/70 text-xs">You'll lose Pro features</p>
-                </div>
-              </div>
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => { setShowCancelModal(false); setCancelConfirmInput(""); }}
+        maxWidth="max-w-sm"
+        showCloseButton={false}
+        preventBackdropClose={canceling}
+        footer={
+          <>
+            <ModalButton
+              variant="secondary"
+              onClick={() => { setShowCancelModal(false); setCancelConfirmInput(""); }}
+              disabled={canceling}
+            >
+              Keep Plan
+            </ModalButton>
+            <ModalButton
+              variant="danger"
+              onClick={confirmCancel}
+              disabled={cancelConfirmInput !== "CONFIRM" || canceling}
+            >
+              {canceling ? "Canceling..." : "Cancel Plan"}
+            </ModalButton>
+          </>
+        }
+      >
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-r from-red-500 to-rose-500 -mx-5 sm:-mx-6 -mt-4 sm:-mt-5 px-5 sm:px-6 py-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <Crown className="w-5 h-5 text-white" />
             </div>
-            <div className="p-6">
-              <p className="text-sm text-[#565c52] mb-1">Pro access continues until your billing period ends.</p>
-              <p className="text-sm text-[#565c52] mb-4">Type <span className="font-mono font-bold text-[#1c1f1a] bg-[#f4f7f2] px-1.5 py-0.5 rounded">CONFIRM</span> to cancel.</p>
-              <input type="text" value={cancelConfirmInput} onChange={(e) => setCancelConfirmInput(e.target.value)}
-                placeholder="Type CONFIRM" autoComplete="off"
-                className="w-full px-4 py-3 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 font-mono text-sm mb-4 transition-all" />
-              <div className="flex gap-3">
-                <button onClick={() => { setShowCancelModal(false); setCancelConfirmInput(""); }}
-                  className="flex-1 py-3 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all">Keep Plan</button>
-                <button onClick={confirmCancel} disabled={cancelConfirmInput !== "CONFIRM" || canceling}
-                  className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-                  {canceling ? "Canceling..." : "Cancel Plan"}
-                </button>
-              </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Cancel Pro?</h3>
+              <p className="text-white/70 text-xs">You'll lose Pro features</p>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Message */}
+        <p className="text-sm text-[#565c52] mb-1">Pro access continues until your billing period ends.</p>
+        <p className="text-sm text-[#565c52] mb-4">Type <span className="font-mono font-bold text-[#1c1f1a] bg-[#f4f7f2] px-1.5 py-0.5 rounded">CONFIRM</span> to cancel.</p>
+        
+        {/* Confirmation Input */}
+        <input 
+          type="text" 
+          value={cancelConfirmInput} 
+          onChange={(e) => setCancelConfirmInput(e.target.value)}
+          placeholder="Type CONFIRM" 
+          autoComplete="off"
+          className="w-full px-4 py-3 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 font-mono text-sm transition-all" 
+        />
+      </Modal>
     </div>
   );
 }

@@ -150,7 +150,8 @@ export default function NotificationBell() {
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1 text-site-muted hover:text-site-ink rounded transition-colors"
+                  className="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center text-site-muted hover:text-site-ink rounded transition-colors"
+                  aria-label="Close notifications"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -279,7 +280,7 @@ export default function NotificationBell() {
       <button
         ref={bellRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg text-site-muted hover:bg-site-bg hover:text-site-ink transition-colors"
+        className="relative min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg text-site-muted hover:bg-site-bg hover:text-site-ink transition-colors flex items-center justify-center"
         title="Notifications"
       >
         <Bell className="w-5 h-5" />

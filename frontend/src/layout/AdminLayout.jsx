@@ -1,39 +1,25 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { LayoutDashboard, Users, Activity, AlertCircle, TrendingUp, BookOpen, MessageSquare, FileText, Settings, ArrowLeft, Layers, Crown } from 'lucide-react'
-import LogoMark from '../components/LogoMark'
 import { useActiveSessions } from '../context/ActiveSessionContext'
-
-const adminNav = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
-  { id: 'alerts', label: 'Alerts', icon: AlertCircle, path: '/admin/alerts' },
-  { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
-  { id: 'activity', label: 'Activity', icon: Activity, path: '/admin/activity' },
-  { id: 'xp-leagues', label: 'XP Leaderboard', icon: TrendingUp, path: '/admin/xp-leagues' },
-  { id: 'subscriptions', label: 'Subscriptions', icon: Crown, path: '/admin/subscriptions' },
-  { id: 'skill-maps', label: 'Skill Maps', icon: BookOpen, path: '/admin/skill-maps' },
-  { id: 'templates', label: 'Templates', icon: Layers, path: '/admin/templates' },
-  { id: 'reflections', label: 'Reflections', icon: MessageSquare, path: '/admin/reflections' },
-  { id: 'audit-log', label: 'Audit Log', icon: FileText, path: '/admin/audit-log' },
-  { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
-]
+import { useAuth } from '../useAuth'
+import AdminSidebar from '../components/admin/AdminSidebar'
+import AdminHeader from '../components/admin/AdminHeader'
+import PageTransition from '../components/admin/PageTransition'
 
 export default function AdminLayout() {
-  const location = useLocation()
   const navigate = useNavigate()
   const [showBackConfirm, setShowBackConfirm] = useState(false)
-  
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
+
+  const user = useAuth()
+  const adminName = user?.displayName || user?.email || 'Admin'
+
   const { activeSessions, toggleSession } = useActiveSessions()
   const hasActiveSessions = activeSessions.length > 0
   const runningSessions = activeSessions.filter(s => s.isRunning)
 
-  const isActive = (path) => {
-    if (path === '/admin') return location.pathname === '/admin'
-    return location.pathname.startsWith(path)
-  }
-
   const handleBackClick = () => {
-    // Always show confirmation dialog
     setShowBackConfirm(true)
   }
 
@@ -48,54 +34,29 @@ export default function AdminLayout() {
 
   return (
     <div className="flex min-h-screen bg-site-bg">
-      {/* Admin Sidebar — app-themed */}
-      <aside className="w-60 bg-site-surface border-r border-site-border sticky top-0 h-screen overflow-y-auto flex-col hidden md:flex">
-        <div className="p-5 border-b border-site-border">
-          <div className="flex items-center gap-2">
-            <LogoMark size={32} />
-            <div>
-              <span className="text-base font-bold text-site-ink tracking-tight">Admin Panel</span>
-              <p className="text-[10px] text-site-faint leading-tight">LearnLoop Management</p>
-            </div>
-          </div>
-        </div>
+      {/* Admin Sidebar */}
+      <AdminSidebar
+        isCollapsed={isCollapsed}
+        onToggle={() => setIsCollapsed(prev => !prev)}
+        isMobileOpen={isMobileOpen}
+        onMobileClose={() => setIsMobileOpen(false)}
+        onBackClick={handleBackClick}
+      />
 
-        <nav className="px-3 py-4 flex-1">
-          {adminNav.map((item) => {
-            const Icon = item.icon
-            const active = isActive(item.path)
-            return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors ${
-                  active
-                    ? 'bg-site-soft text-site-accent font-semibold'
-                    : 'text-site-muted hover:bg-site-bg'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="text-sm font-medium">{item.label}</span>
-              </button>
-            )
-          })}
-        </nav>
+      {/* Main Content — flex-1 fills remaining space next to the sticky sidebar */}
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-200 ease-in-out">
+        {/* Admin Header */}
+        <AdminHeader
+          onMenuToggle={() => setIsMobileOpen(prev => !prev)}
+          adminName={adminName}
+        />
 
-        <div className="p-3 border-t border-site-border">
-          <button
-            onClick={handleBackClick}
-            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-site-muted hover:text-site-accent hover:bg-site-soft rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to App
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
+        <main className="flex-1 overflow-y-auto">
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
+        </main>
+      </div>
 
       {/* Back to App Confirmation Modal */}
       {showBackConfirm && (

@@ -78,14 +78,14 @@ export default function Login() {
       {/* Navbar — matches landing page */}
       <header className="relative z-20 sticky top-0 bg-[#4f7942] text-white shadow-sm">
         <div className="w-full px-6 lg:px-10 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
+          <Link to="/" className="flex items-center min-h-[44px]">
             <LogoMark size={48} />
           </Link>
           <div className="flex items-center gap-2.5">
-            <Link to="/" className="px-3.5 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+            <Link to="/" className="px-3.5 py-2 min-h-[44px] flex items-center rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
               Home
             </Link>
-            <Link to="/signup" className="px-5 py-2 text-sm font-semibold bg-white text-[#3d6b30] rounded-lg hover:bg-white/90 transition-colors shadow-sm">
+            <Link to="/signup" className="px-5 py-2 min-h-[44px] flex items-center text-sm font-semibold bg-white text-[#3d6b30] rounded-lg hover:bg-white/90 transition-colors shadow-sm">
               Sign up
             </Link>
           </div>
@@ -160,11 +160,11 @@ export default function Login() {
                 </div>
 
                 {/* ── Form content ── */}
-                <div className="relative z-10 p-7 sm:p-8">
-                <h1 className="md:hidden font-[var(--font-display)] text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-1">
+                <div className="relative z-10 p-6 sm:p-7 md:p-8">
+                <h1 className="md:hidden font-[var(--font-display)] text-xl sm:text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-1">
                   Welcome back
                 </h1>
-                <h1 className="hidden md:block font-[var(--font-display)] text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-1.5">
+                <h1 className="hidden md:block font-[var(--font-display)] text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#1c1f1a] tracking-tight mb-1.5">
                   Sign in to LearnLoop
                 </h1>
                 <p className="text-sm text-[#3d4a38] font-medium mb-6">
@@ -186,7 +186,7 @@ export default function Login() {
                       id="login-email" type="email" value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required placeholder="you@example.com"
-                      className="w-full px-4 py-3 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
+                      className="w-full px-4 py-3 min-h-[44px] bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                       autoComplete="email"
                     />
                   </div>
@@ -198,10 +198,10 @@ export default function Login() {
                         id="login-pw" type={showPassword ? "text" : "password"} value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required placeholder="Enter your password"
-                        className="w-full px-4 py-3 pr-12 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
+                        className="w-full px-4 py-3 pr-12 min-h-[44px] bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                         autoComplete="current-password"
                       />
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#9aa094] hover:text-[#565c52] transition-colors"
+                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-[#9aa094] hover:text-[#565c52] transition-colors"
                         onClick={() => setShowPassword(!showPassword)}
                         aria-label={showPassword ? "Hide password" : "Show password"}
                       >
@@ -209,12 +209,12 @@ export default function Login() {
                       </button>
                     </div>
                     <div className="flex justify-end mt-1.5">
-                      <Link to="/forgot" className="text-xs font-bold text-[#4f7942] hover:text-[#2e5023] transition-colors">Forgot password?</Link>
+                      <Link to="/forgot" className="text-xs font-bold text-[#4f7942] hover:text-[#2e5023] transition-colors min-h-[44px] flex items-center">Forgot password?</Link>
                     </div>
                   </div>
 
                   <button type="submit" disabled={loading}
-                    className="group w-full relative flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-[15px] font-bold transition-all disabled:opacity-50 overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 hover:scale-[1.01] active:scale-[0.99]"
+                    className="group w-full relative flex items-center justify-center gap-2.5 py-3.5 min-h-[44px] rounded-xl text-[15px] font-bold transition-all disabled:opacity-50 overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 hover:scale-[1.01] active:scale-[0.99]"
                   >
                     <span className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.08] to-white/[0.15] pointer-events-none" />
                     {loading ? <><Loader className="animate-spin relative z-10" size={18} /> <span className="relative z-10">Signing in…</span></> : <><LogIn className="relative z-10" size={18} /> <span className="relative z-10">Sign in</span></>}
@@ -228,10 +228,10 @@ export default function Login() {
                 </div>
 
                 <button type="button" onClick={handleGoogle} disabled={loading}
-                  className="group w-full flex items-center justify-center gap-3 py-3.5 bg-white border-2 border-[#e2e6dc] text-[#1c1f1a] text-[15px] font-bold rounded-xl hover:border-[#c8cec0] hover:bg-[#f8faf6] hover:shadow-md disabled:opacity-50 transition-all active:scale-[0.99]"
+                  className="group w-full flex items-center justify-center gap-3 py-3.5 min-h-[44px] bg-white border-2 border-[#e2e6dc] text-[#1c1f1a] text-[15px] font-bold rounded-xl hover:border-[#c8cec0] hover:bg-[#f8faf6] hover:shadow-md disabled:opacity-50 transition-all active:scale-[0.99]"
                 >
                   <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#f4f7f2]">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="" width={18} height={18} />
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" width={18} height={18} className="w-full h-auto" loading="lazy" />
                   </span>
                   Continue with Google
                 </button>

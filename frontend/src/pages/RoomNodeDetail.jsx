@@ -9,6 +9,7 @@ import Sidebar from "../components/Sidebar";
 import { SkillIcon } from "../components/IconPicker";
 import { useToast } from "../context/ToastContext";
 import { useActiveSessions } from "../context/ActiveSessionContext";
+import Modal from "../components/Modal";
 
 const CONF = ["", "Not confident", "Slightly", "Moderate", "Confident", "Very confident"];
 const PER = 5;
@@ -195,9 +196,9 @@ export default function RoomNodeDetail() {
                   )}
                   {isCompleted && <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-sm text-center font-medium">✓ This node is completed</div>}
                   <div className="grid grid-cols-3 gap-2 flex-1">
-                    <div className="bg-site-surface rounded-lg border border-site-border p-3 text-center flex flex-col items-center justify-center"><Clock className="w-4 h-4 text-site-accent mx-auto mb-1" /><p className="text-sm font-bold text-site-ink">{timeStr}</p><p className="text-[10px] text-site-faint">Total Time</p></div>
-                    <div className="bg-site-surface rounded-lg border border-site-border p-3 text-center flex flex-col items-center justify-center"><Target className="w-4 h-4 text-site-accent mx-auto mb-1" /><p className="text-sm font-bold text-site-ink">{hist.length}</p><p className="text-[10px] text-site-faint">Sessions</p></div>
-                    <div className="bg-site-surface rounded-lg border border-site-border p-3 text-center flex flex-col items-center justify-center"><Star className="w-4 h-4 text-yellow-500 mx-auto mb-1" /><p className="text-sm font-bold text-site-ink">{hist.length > 0 ? (hist.reduce((s, p) => s + (p.confidence || 0), 0) / hist.length).toFixed(1) : "—"}</p><p className="text-[10px] text-site-faint">Avg Confidence</p></div>
+                    <div className="bg-site-surface rounded-lg border border-site-border p-3 text-center flex flex-col items-center justify-center"><Clock className="w-4 h-4 text-site-accent mx-auto mb-1" /><p className="text-sm font-bold text-site-ink">{timeStr}</p><p className="text-xs text-site-faint">Total Time</p></div>
+                    <div className="bg-site-surface rounded-lg border border-site-border p-3 text-center flex flex-col items-center justify-center"><Target className="w-4 h-4 text-site-accent mx-auto mb-1" /><p className="text-sm font-bold text-site-ink">{hist.length}</p><p className="text-xs text-site-faint">Sessions</p></div>
+                    <div className="bg-site-surface rounded-lg border border-site-border p-3 text-center flex flex-col items-center justify-center"><Star className="w-4 h-4 text-yellow-500 mx-auto mb-1" /><p className="text-sm font-bold text-site-ink">{hist.length > 0 ? (hist.reduce((s, p) => s + (p.confidence || 0), 0) / hist.length).toFixed(1) : "—"}</p><p className="text-xs text-site-faint">Avg Confidence</p></div>
                   </div>
                 </div>
 
@@ -206,7 +207,7 @@ export default function RoomNodeDetail() {
                     <div className={`rounded-xl border-2 p-5 shadow-sm flex-1 flex flex-col ${activeSession.isRunning ? "border-green-500 bg-green-50/50" : "border-site-border bg-site-surface"}`}>
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-semibold text-site-ink">{activeSession.notes || "Session"}</p>
-                        <button onClick={() => setShowRemove(true)} className="p-1 text-site-faint hover:text-red-500 rounded"><X className="w-4 h-4" /></button>
+                        <button onClick={() => setShowRemove(true)} className="min-w-[44px] min-h-[44px] p-2 text-site-faint hover:text-red-500 rounded" aria-label="Remove session"><X className="w-4 h-4" /></button>
                       </div>
                       <div className="flex-1 flex flex-col justify-center">
                         <div className={`text-4xl font-bold font-mono text-center py-4 rounded-xl mb-3 ${activeSession.isRunning ? "bg-green-100 text-green-700" : "bg-site-bg text-site-ink"}`}>{formatTimer(activeSession.timer)}</div>
@@ -249,9 +250,9 @@ export default function RoomNodeDetail() {
                   </div>
                   {totPages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-4">
-                      <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+                      <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="min-w-[44px] min-h-[44px] p-2 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30" aria-label="Previous page"><ChevronLeft className="w-4 h-4" /></button>
                       <span className="text-xs text-site-muted">{page}/{totPages}</span>
-                      <button onClick={() => setPage(p => Math.min(totPages, p + 1))} disabled={page >= totPages} className="p-1.5 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
+                      <button onClick={() => setPage(p => Math.min(totPages, p + 1))} disabled={page >= totPages} className="min-w-[44px] min-h-[44px] p-2 rounded border border-site-border text-site-muted hover:bg-site-bg disabled:opacity-30" aria-label="Next page"><ChevronRight className="w-4 h-4" /></button>
                     </div>
                   )}
                 </>)}
@@ -268,14 +269,14 @@ export default function RoomNodeDetail() {
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isCompleted ? "bg-green-500" : isUnlocked ? "bg-site-accent" : "bg-gray-300"}`}>
                     {isFirst && !isCompleted ? <Rocket className="w-5 h-5 text-white" /> : isCompleted ? <CheckCircle className="w-5 h-5 text-white" /> : isUnlocked ? <Unlock className="w-5 h-5 text-white" /> : <Lock className="w-5 h-5 text-white" />}
                   </div>
-                  <div className="min-w-0"><h3 className="font-bold text-gray-900 truncate">{node?.title}</h3><span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${isCompleted ? "bg-green-100 text-green-700" : isUnlocked ? "bg-site-soft text-site-accent" : "bg-gray-100 text-gray-500"}`}>{dispStatus}</span></div>
+                  <div className="min-w-0"><h3 className="font-bold text-gray-900 truncate">{node?.title}</h3><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isCompleted ? "bg-green-100 text-green-700" : isUnlocked ? "bg-site-soft text-site-accent" : "bg-gray-100 text-gray-500"}`}>{dispStatus}</span></div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="text-center p-2 bg-site-bg rounded-lg"><p className="text-lg font-bold text-site-ink">{hist.length}</p><p className="text-[10px] text-site-faint">Sessions</p></div>
-                  <div className="text-center p-2 bg-site-bg rounded-lg"><p className="text-lg font-bold text-site-ink">{timeStr}</p><p className="text-[10px] text-site-faint">Total Time</p></div>
+                  <div className="text-center p-2 bg-site-bg rounded-lg"><p className="text-lg font-bold text-site-ink">{hist.length}</p><p className="text-xs text-site-faint">Sessions</p></div>
+                  <div className="text-center p-2 bg-site-bg rounded-lg"><p className="text-lg font-bold text-site-ink">{timeStr}</p><p className="text-xs text-site-faint">Total Time</p></div>
                 </div>
               </div>
-              <div className="bg-site-soft rounded-lg p-3 border border-site-border"><p className="text-[10px] text-site-faint uppercase mb-0.5">Skill Map</p><p className="text-sm font-semibold text-site-ink truncate">{skillMap?.name || "—"}</p></div>
+              <div className="bg-site-soft rounded-lg p-3 border border-site-border"><p className="text-xs text-site-faint uppercase mb-0.5">Skill Map</p><p className="text-sm font-semibold text-site-ink truncate">{skillMap?.name || "—"}</p></div>
               {node?.description && (
                 <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                   <h4 className="text-sm font-bold text-gray-900 mb-2">Description</h4>
@@ -292,22 +293,95 @@ export default function RoomNodeDetail() {
         {showPractice && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
           <h2 className="text-lg font-bold text-site-ink mb-1">Start Practice</h2>
           <p className="text-sm text-site-muted mb-4">Node: <span className="font-semibold text-site-ink">{node?.title}</span></p>
-          <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-1">Session Title <span className="text-red-500">*</span></label><input type="text" value={sessTitle} onChange={e => { if (e.target.value.length <= 20) setSessTitle(e.target.value); }} placeholder="e.g. 1st session" className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none" maxLength={20} autoFocus /><div className="text-right text-[10px] text-site-faint mt-0.5">{sessTitle.length}/20</div></div>
+          <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-1">Session Title <span className="text-red-500">*</span></label><input type="text" value={sessTitle} onChange={e => { if (e.target.value.length <= 20) setSessTitle(e.target.value); }} placeholder="e.g. 1st session" className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none" maxLength={20} autoFocus /><div className="text-right text-xs text-site-faint mt-0.5">{sessTitle.length}/20</div></div>
           <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-2">Timer Mode</label><div className="flex gap-2"><button onClick={() => setCd(true)} className={`flex-1 py-2 rounded-lg text-sm font-medium border-2 ${cd ? "border-site-accent bg-site-soft text-site-accent" : "border-site-border text-site-muted"}`}>Countdown</button><button onClick={() => setCd(false)} className={`flex-1 py-2 rounded-lg text-sm font-medium border-2 ${!cd ? "border-site-accent bg-site-soft text-site-accent" : "border-site-border text-site-muted"}`}>Stopwatch</button></div></div>
           {cd && <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-1">Duration (minutes)</label><input type="number" value={tgtM} onChange={e => setTgtM(Math.max(1, Math.min(120, parseInt(e.target.value) || 1)))} min={1} max={120} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none" /></div>}
           <div className="flex gap-3"><button onClick={() => setShowPractice(false)} className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg">Cancel</button><button onClick={startPractice} disabled={!sessTitle.trim()} className="flex-1 py-2.5 bg-site-accent text-white rounded-lg font-medium hover:bg-site-accent-hover disabled:opacity-50">Start</button></div>
         </div></div>)}
 
         {/* Complete & Log Modal */}
-        {showComp && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-          <div className="flex items-center justify-between mb-4"><h2 className="text-xl font-bold text-site-ink">Complete Session</h2><button onClick={() => setShowComp(false)} className="text-site-faint hover:text-site-ink"><X className="w-5 h-5" /></button></div>
-          <div className="bg-site-bg rounded-lg p-3 mb-4"><p className="font-semibold text-site-ink">{node?.title}</p>{activeSession?.notes && <p className="text-xs text-site-muted">{activeSession.notes}</p>}</div>
-          <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-2">Confidence *</label><div className="flex gap-1.5">{[1,2,3,4,5].map(n => (<button key={n} onClick={() => setComp(p => ({...p, confidence: n}))} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${comp.confidence === n ? 'bg-site-accent text-white shadow-md scale-105' : 'bg-site-bg text-site-muted border border-site-border hover:border-site-accent'}`}><Star className={`w-4 h-4 mx-auto mb-0.5 ${comp.confidence === n ? 'fill-white' : ''}`} />{n}</button>))}</div><p className="text-xs text-site-faint mt-1 text-center">{CONF[comp.confidence]}</p></div>
-          <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1">Notes</label><textarea value={comp.notes} onChange={e => { if (e.target.value.length <= 50) setComp(p => ({...p, notes: e.target.value})); }} rows={2} maxLength={50} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="What did you practice?" /><div className="text-right text-[10px] text-site-faint">{comp.notes.length}/50</div></div>
-          <div className="mb-3"><label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5 text-amber-500" />Blockers</label><textarea value={comp.blockers} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({...p, blockers: e.target.value})); }} rows={2} maxLength={200} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="Any challenges?" /><div className="text-right text-[10px] text-site-faint">{comp.blockers.length}/200</div></div>
-          <div className="mb-4"><label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1"><ArrowRight className="w-3.5 h-3.5 text-site-accent" />Next step</label><textarea value={comp.nextStep} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({...p, nextStep: e.target.value})); }} rows={2} maxLength={200} className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" placeholder="What's next?" /><div className="text-right text-[10px] text-site-faint">{comp.nextStep.length}/200</div></div>
-          <button onClick={submitComp} disabled={sub} className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50">{sub ? "Saving..." : "Save Practice Log"}</button>
-        </div></div>)}
+        <Modal
+          isOpen={showComp}
+          onClose={() => setShowComp(false)}
+          title="Complete Session"
+          maxWidth="max-w-lg"
+          footer={
+            <button 
+              onClick={submitComp} 
+              disabled={sub} 
+              className="w-full py-3 min-h-[44px] bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {sub ? "Saving..." : "Save Practice Log"}
+            </button>
+          }
+        >
+          <div className="bg-site-bg rounded-lg p-3 mb-4">
+            <p className="font-semibold text-site-ink">{node?.title}</p>
+            {activeSession?.notes && <p className="text-xs text-site-muted">{activeSession.notes}</p>}
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-site-ink mb-2">Confidence *</label>
+            <div className="flex gap-1.5">
+              {[1,2,3,4,5].map(n => (
+                <button 
+                  key={n} 
+                  onClick={() => setComp(p => ({...p, confidence: n}))} 
+                  className={`flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all ${comp.confidence === n ? 'bg-site-accent text-white shadow-md scale-105' : 'bg-site-bg text-site-muted border border-site-border hover:border-site-accent'}`}
+                >
+                  <Star className={`w-4 h-4 mx-auto mb-0.5 ${comp.confidence === n ? 'fill-white' : ''}`} />
+                  {n}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-site-faint mt-1 text-center">{CONF[comp.confidence]}</p>
+          </div>
+          
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-site-ink mb-1">Notes</label>
+            <textarea 
+              value={comp.notes} 
+              onChange={e => { if (e.target.value.length <= 50) setComp(p => ({...p, notes: e.target.value})); }} 
+              rows={2} 
+              maxLength={50} 
+              className="w-full px-3 py-2 min-h-[44px] border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" 
+              placeholder="What did you practice?" 
+            />
+            <div className="text-right text-xs text-site-faint">{comp.notes.length}/50</div>
+          </div>
+          
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+              Blockers
+            </label>
+            <textarea 
+              value={comp.blockers} 
+              onChange={e => { if (e.target.value.length <= 200) setComp(p => ({...p, blockers: e.target.value})); }} 
+              rows={2} 
+              maxLength={200} 
+              className="w-full px-3 py-2 min-h-[44px] border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" 
+              placeholder="Any challenges?" 
+            />
+            <div className="text-right text-xs text-site-faint">{comp.blockers.length}/200</div>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-site-ink mb-1 flex items-center gap-1">
+              <ArrowRight className="w-3.5 h-3.5 text-site-accent" />
+              Next step
+            </label>
+            <textarea 
+              value={comp.nextStep} 
+              onChange={e => { if (e.target.value.length <= 200) setComp(p => ({...p, nextStep: e.target.value})); }} 
+              rows={2} 
+              maxLength={200} 
+              className="w-full px-3 py-2 min-h-[44px] border border-site-border rounded-lg text-sm focus:border-site-accent outline-none resize-none" 
+              placeholder="What's next?" 
+            />
+            <div className="text-right text-xs text-site-faint">{comp.nextStep.length}/200</div>
+          </div>
+        </Modal>
 
         {/* Mark Complete Confirm */}
         {showMark && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">

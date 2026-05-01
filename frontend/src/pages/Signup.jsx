@@ -177,10 +177,10 @@ export default function Signup() {
 
                 {/* ── Form content ── */}
                 <div className="relative z-10 p-7 sm:p-8">
-                <h1 className="md:hidden font-[var(--font-display)] text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-1">
+                <h1 className="md:hidden font-[var(--font-display)] text-xl sm:text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-1">
                   Create account
                 </h1>
-                <h1 className="hidden md:block font-[var(--font-display)] text-2xl font-extrabold text-[#1c1f1a] tracking-tight mb-1.5">
+                <h1 className="hidden md:block font-[var(--font-display)] text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#1c1f1a] tracking-tight mb-1.5">
                   Create your account
                 </h1>
                 <p className="text-sm text-[#3d4a38] font-medium mb-6">
@@ -197,10 +197,10 @@ export default function Signup() {
 
                 {/* Google first — quick path */}
                 <button type="button" onClick={handleGoogle} disabled={loading}
-                  className="group w-full flex items-center justify-center gap-3 py-3.5 mb-5 bg-white border-2 border-[#e2e6dc] text-[#1c1f1a] text-[15px] font-bold rounded-xl hover:border-[#c8cec0] hover:bg-[#f8faf6] hover:shadow-md disabled:opacity-50 transition-all active:scale-[0.99]"
+                  className="group w-full h-11 flex items-center justify-center gap-3 mb-5 bg-white border-2 border-[#e2e6dc] text-[#1c1f1a] text-[15px] font-bold rounded-xl hover:border-[#c8cec0] hover:bg-[#f8faf6] hover:shadow-md disabled:opacity-50 transition-all active:scale-[0.99]"
                 >
                   <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#f4f7f2]">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="" width={18} height={18} />
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" width={18} height={18} className="w-full h-auto" loading="lazy" />
                   </span>
                   Sign up with Google
                 </button>
@@ -218,7 +218,7 @@ export default function Signup() {
                       id="signup-email" type="email" value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required placeholder="you@example.com"
-                      className="w-full px-4 py-3 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
+                      className="w-full h-11 px-4 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                       autoComplete="email"
                     />
                   </div>
@@ -230,10 +230,10 @@ export default function Signup() {
                         id="signup-pw" type={showPassword ? "text" : "password"} value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required placeholder="At least 6 characters"
-                        className="w-full px-4 py-3 pr-12 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
+                        className="w-full h-11 px-4 pr-12 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                         autoComplete="new-password"
                       />
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#9aa094] hover:text-[#565c52] transition-colors"
+                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-lg text-[#9aa094] hover:text-[#565c52] hover:bg-[#f8faf6] transition-colors"
                         onClick={() => setShowPassword(!showPassword)}
                         aria-label={showPassword ? "Hide password" : "Show password"}
                       >
@@ -249,10 +249,10 @@ export default function Signup() {
                         id="signup-confirm" type={showConfirm ? "text" : "password"} value={confirm}
                         onChange={(e) => setConfirm(e.target.value)}
                         required placeholder="Re-enter password"
-                        className="w-full px-4 py-3 pr-12 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
+                        className="w-full h-11 px-4 pr-12 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                         autoComplete="new-password"
                       />
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#9aa094] hover:text-[#565c52] transition-colors"
+                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-lg text-[#9aa094] hover:text-[#565c52] hover:bg-[#f8faf6] transition-colors"
                         onClick={() => setShowConfirm(!showConfirm)}
                         aria-label={showConfirm ? "Hide password" : "Show password"}
                       >
@@ -262,7 +262,7 @@ export default function Signup() {
                   </div>
 
                   <button type="submit" disabled={loading}
-                    className="group w-full relative flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-[15px] font-bold transition-all disabled:opacity-50 overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 hover:scale-[1.01] active:scale-[0.99]"
+                    className="group w-full h-11 relative flex items-center justify-center gap-2.5 rounded-xl text-[15px] font-bold transition-all disabled:opacity-50 overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 hover:scale-[1.01] active:scale-[0.99]"
                   >
                     <span className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.08] to-white/[0.15] pointer-events-none" />
                     {loading ? <><Loader className="animate-spin relative z-10" size={18} /> <span className="relative z-10">Creating account…</span></> : <><UserPlus className="relative z-10" size={18} /> <span className="relative z-10">Create account</span></>}

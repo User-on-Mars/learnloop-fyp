@@ -8,8 +8,8 @@ export default function App(){
   // If user is logged in, redirect to dashboard
   if (user) {
     return (
-      <div className="min-h-screen grid place-items-center bg-gray-50">
-        <div className="p-8 rounded-2xl shadow bg-white w-[420px] text-center">
+      <div className="min-h-screen grid place-items-center bg-gray-50 px-4">
+        <div className="p-8 rounded-2xl shadow bg-white w-full max-w-[420px] text-center">
           <h1 className="text-2xl font-bold mb-2">Welcome back!</h1>
           <p className="text-gray-600 mb-6">You are already logged in.</p>
           <Link className="block text-center bg-site-accent text-white rounded-lg py-2 hover:bg-site-accent-hover" to="/dashboard">
@@ -21,9 +21,9 @@ export default function App(){
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-gray-50">
+    <div className="min-h-screen grid place-items-center bg-gray-50 px-4">
       <AuthDebug />
-      <div className="p-8 rounded-2xl shadow bg-white w-[420px]">
+      <div className="p-8 rounded-2xl shadow bg-white w-full max-w-[420px]">
         <h1 className="text-2xl font-bold mb-2">LearnLoop</h1>
         <p className="text-gray-600 mb-6">Reflective Skill Development Tracker</p>
         <div className="space-y-3">

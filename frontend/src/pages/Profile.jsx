@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
 import Alert from "../components/Alert";
 import { Avatar } from "../components/Avatar";
+import Modal, { ModalButton } from "../components/Modal";
 import { useAuth } from "../useAuth";
 import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider, linkWithCredential, deleteUser } from "firebase/auth";
 import { auth } from "../firebase";
@@ -184,35 +184,28 @@ export default function Profile() {
 
   if (user === undefined) {
     return (
-      <div className="flex min-h-screen bg-[#f8faf6]"><Sidebar />
-        <main className="flex-1 overflow-y-auto flex items-center justify-center pt-16 md:pl-14">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center animate-pulse"><User className="w-6 h-6 text-white" /></div>
-        </main>
-      </div>
+      <main className="flex-1 overflow-y-auto flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center animate-pulse"><User className="w-6 h-6 text-white" /></div>
+      </main>
     );
   }
   if (!user) {
     return (
-      <div className="flex min-h-screen bg-[#f8faf6]"><Sidebar />
-        <main className="flex-1 overflow-y-auto flex items-center justify-center pt-16 md:pl-14">
-          <p className="text-[#9aa094]">Please log in to view your profile.</p>
-        </main>
-      </div>
+      <main className="flex-1 overflow-y-auto flex items-center justify-center">
+        <p className="text-[#9aa094]">Please log in to view your profile.</p>
+      </main>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f8faf6]">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
+    <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
 
-          {/* Hero Header */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-rose-50 via-white to-pink-50 rounded-2xl border border-rose-100 p-6 sm:p-8">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-rose-50 via-white to-pink-50 rounded-2xl border border-rose-100 p-6 sm:p-7">
             <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-rose-200 opacity-15 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-pink-200 opacity-10 blur-2xl pointer-events-none" />
 
-            <div className="relative flex items-center gap-5">
+            <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-5">
               {/* Avatar */}
               <div className="relative flex-shrink-0">
                 <Avatar photoURL={user?.photoURL} displayName={user?.displayName} email={user?.email} size="xl" />
@@ -222,10 +215,10 @@ export default function Profile() {
                 </button>
               </div>
 
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-center sm:text-left">
                 <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a] truncate">{user.displayName || "Learner"}</h1>
                 <p className="text-sm text-rose-600 font-medium">{user.email}</p>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
                   {hasGoogleProvider && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-rose-200 rounded-full text-[10px] font-semibold text-rose-700">
                       <svg className="w-3 h-3" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
@@ -277,15 +270,15 @@ export default function Profile() {
                   {isEditingName ? (
                     <div className="flex gap-2">
                       <button onClick={handleCancelEdit} disabled={isUpdatingName}
-                        className="px-4 py-3 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all disabled:opacity-50">Cancel</button>
+                        className="px-4 py-3 min-h-[44px] border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all disabled:opacity-50">Cancel</button>
                       <button onClick={handleSaveName} disabled={isUpdatingName}
-                        className="px-5 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold text-sm hover:from-rose-700 hover:to-pink-700 transition-all disabled:opacity-50 shadow-sm">
+                        className="px-5 py-3 min-h-[44px] bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold text-sm hover:from-rose-700 hover:to-pink-700 transition-all disabled:opacity-50 shadow-sm">
                         {isUpdatingName ? "Saving..." : "Save"}
                       </button>
                     </div>
                   ) : (
                     <button onClick={handleEditName}
-                      className="px-5 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold text-sm hover:from-rose-700 hover:to-pink-700 transition-all shadow-sm">Edit</button>
+                      className="px-5 py-3 min-h-[44px] bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl font-semibold text-sm hover:from-rose-700 hover:to-pink-700 transition-all shadow-sm">Edit</button>
                   )}
                 </div>
               </div>
@@ -321,7 +314,7 @@ export default function Profile() {
                       <input type={showCurrentPassword ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
                         required disabled={isChangingPassword} autoComplete="new-password" placeholder="Enter current password"
                         className="w-full px-4 py-3 pr-10 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 bg-[#f8faf6] focus:bg-white text-sm transition-all disabled:opacity-50" />
-                      <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa094] hover:text-[#565c52]">
+                      <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] text-[#9aa094] hover:text-[#565c52] flex items-center justify-center" aria-label={showCurrentPassword ? "Hide password" : "Show password"}>
                         {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
@@ -334,7 +327,7 @@ export default function Profile() {
                     <input type={showNewPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
                       required minLength={6} disabled={isChangingPassword} autoComplete="new-password" placeholder="Min 6 characters"
                       className="w-full px-4 py-3 pr-10 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 bg-[#f8faf6] focus:bg-white text-sm transition-all disabled:opacity-50" />
-                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa094] hover:text-[#565c52]">
+                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] text-[#9aa094] hover:text-[#565c52] flex items-center justify-center" aria-label={showNewPassword ? "Hide password" : "Show password"}>
                       {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -346,14 +339,14 @@ export default function Profile() {
                     <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                       required disabled={isChangingPassword} autoComplete="new-password" placeholder="Re-enter password"
                       className="w-full px-4 py-3 pr-10 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 bg-[#f8faf6] focus:bg-white text-sm transition-all disabled:opacity-50" />
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa094] hover:text-[#565c52]">
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] text-[#9aa094] hover:text-[#565c52] flex items-center justify-center" aria-label={showConfirmPassword ? "Hide password" : "Show password"}>
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 <button type="submit" disabled={isChangingPassword}
-                  className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold text-sm hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-50 shadow-sm flex items-center justify-center gap-2">
+                  className="w-full py-3 min-h-[44px] bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold text-sm hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-50 shadow-sm flex items-center justify-center gap-2">
                   <Key className="w-4 h-4" />
                   {isChangingPassword ? (hasPasswordProvider ? "Changing..." : "Setting...") : (hasPasswordProvider ? "Change Password" : "Set Password")}
                 </button>
@@ -413,7 +406,7 @@ export default function Profile() {
             <div className="p-5 space-y-3">
               {/* Log Out */}
               <button onClick={() => setShowLogoutModal(true)}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border border-[#e2e6dc] hover:bg-[#f8faf6] transition-all group">
+                className="w-full flex items-center gap-4 p-4 min-h-[44px] rounded-xl border border-[#e2e6dc] hover:bg-[#f8faf6] transition-all group">
                 <div className="w-10 h-10 rounded-xl bg-[#f8faf6] flex items-center justify-center group-hover:bg-white transition-colors">
                   <LogOut className="w-5 h-5 text-[#565c52]" />
                 </div>
@@ -426,7 +419,7 @@ export default function Profile() {
 
               {/* Delete Account */}
               <button onClick={() => { setShowDeleteModal(true); setDeleteConfirmInput(""); setDeletePassword(""); setDeleteError(""); }}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border border-red-200 hover:bg-red-50 transition-all group">
+                className="w-full flex items-center gap-4 p-4 min-h-[44px] rounded-xl border border-red-200 hover:bg-red-50 transition-all group">
                 <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
                   <Trash2 className="w-5 h-5 text-red-500" />
                 </div>
@@ -439,107 +432,134 @@ export default function Profile() {
             </div>
           </div>
 
-        </div>
-      </main>
-
       {/* Avatar Picker */}
       <AvatarPicker isOpen={showAvatarPicker} onClose={() => setShowAvatarPicker(false)} onSelect={handleAvatarSelect} currentAvatar={customAvatar} />
 
       {/* Logout Confirmation Modal */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-[#e2e6dc]">
-            <div className="bg-gradient-to-r from-gray-600 to-slate-700 px-6 py-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <LogOut className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">Log Out</h2>
-                  <p className="text-white/70 text-xs">Are you sure?</p>
-                </div>
-              </div>
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        maxWidth="max-w-sm"
+        showCloseButton={false}
+        footer={
+          <>
+            <ModalButton
+              variant="secondary"
+              onClick={() => setShowLogoutModal(false)}
+            >
+              Stay
+            </ModalButton>
+            <ModalButton
+              variant="primary"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4" /> Log Out
+            </ModalButton>
+          </>
+        }
+      >
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-r from-gray-600 to-slate-700 -mx-5 sm:-mx-6 -mt-4 sm:-mt-5 px-5 sm:px-6 py-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <LogOut className="w-5 h-5 text-white" />
             </div>
-            <div className="p-6">
-              <p className="text-sm text-[#565c52] mb-5">You'll need to sign in again to access your account.</p>
-              <div className="flex gap-3">
-                <button onClick={() => setShowLogoutModal(false)}
-                  className="flex-1 py-3 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all">Stay</button>
-                <button onClick={handleLogout}
-                  className="flex-1 py-3 bg-gradient-to-r from-gray-700 to-slate-800 text-white rounded-xl font-semibold text-sm hover:from-gray-800 hover:to-slate-900 transition-all flex items-center justify-center gap-2">
-                  <LogOut className="w-4 h-4" /> Log Out
-                </button>
-              </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Log Out</h2>
+              <p className="text-white/70 text-xs">Are you sure?</p>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Message */}
+        <p className="text-sm text-[#565c52]">You'll need to sign in again to access your account.</p>
+      </Modal>
 
       {/* Delete Account Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="bg-gradient-to-r from-red-500 to-rose-500 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <AlertTriangle className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Delete Account</h2>
-                    <p className="text-white/70 text-xs">This is permanent</p>
-                  </div>
-                </div>
-                <button onClick={() => setShowDeleteModal(false)} className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        maxWidth="max-w-md"
+        showCloseButton={false}
+        preventBackdropClose={isDeleting}
+        footer={
+          <>
+            <ModalButton
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </ModalButton>
+            <ModalButton
+              variant="danger"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting || deleteConfirmInput !== "DELETE" || (hasPasswordProvider && !deletePassword)}
+            >
+              {isDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</> : <><Trash2 className="w-4 h-4" /> Delete Forever</>}
+            </ModalButton>
+          </>
+        }
+      >
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-r from-red-500 to-rose-500 -mx-5 sm:-mx-6 -mt-4 sm:-mt-5 px-5 sm:px-6 py-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-white" />
             </div>
-            <div className="p-6 space-y-4">
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                <p className="text-sm text-red-800 font-medium mb-1">This will permanently:</p>
-                <ul className="text-xs text-red-700 space-y-1 ml-4 list-disc">
-                  <li>Delete your login account (you won't be able to sign in)</li>
-                  <li>Remove your access to all skill maps and rooms</li>
-                  <li>Your practice history and reflections will be archived</li>
-                  <li>This action cannot be reversed</li>
-                </ul>
-              </div>
-
-              {hasPasswordProvider && (
-                <div>
-                  <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">Enter your password</label>
-                  <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Your password"
-                    className="w-full px-4 py-3 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 text-sm transition-all" />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
-                  Type <span className="font-mono bg-red-50 text-red-600 px-1.5 py-0.5 rounded">DELETE</span> to confirm
-                </label>
-                <input type="text" value={deleteConfirmInput} onChange={e => setDeleteConfirmInput(e.target.value)} placeholder="Type DELETE"
-                  className="w-full px-4 py-3 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 font-mono text-sm transition-all" />
-              </div>
-
-              {deleteError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-xl text-[12px] flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />{deleteError}
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button onClick={() => setShowDeleteModal(false)} disabled={isDeleting}
-                  className="flex-1 py-3 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all disabled:opacity-50">Cancel</button>
-                <button onClick={handleDeleteAccount} disabled={isDeleting || deleteConfirmInput !== "DELETE" || (hasPasswordProvider && !deletePassword)}
-                  className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
-                  {isDeleting ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</> : <><Trash2 className="w-4 h-4" /> Delete Forever</>}
-                </button>
-              </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Delete Account</h2>
+              <p className="text-white/70 text-xs">This is permanent</p>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Warning Box */}
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+          <p className="text-sm text-red-800 font-medium mb-1">This will permanently:</p>
+          <ul className="text-xs text-red-700 space-y-1 ml-4 list-disc">
+            <li>Delete your login account (you won't be able to sign in)</li>
+            <li>Remove your access to all skill maps and rooms</li>
+            <li>Your practice history and reflections will be archived</li>
+            <li>This action cannot be reversed</li>
+          </ul>
+        </div>
+
+        {/* Password Input (if needed) */}
+        {hasPasswordProvider && (
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">Enter your password</label>
+            <input 
+              type="password" 
+              value={deletePassword} 
+              onChange={e => setDeletePassword(e.target.value)} 
+              placeholder="Your password"
+              className="w-full px-4 py-3 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 text-sm transition-all" 
+            />
+          </div>
+        )}
+
+        {/* Confirmation Input */}
+        <div className="mb-4">
+          <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
+            Type <span className="font-mono bg-red-50 text-red-600 px-1.5 py-0.5 rounded">DELETE</span> to confirm
+          </label>
+          <input 
+            type="text" 
+            value={deleteConfirmInput} 
+            onChange={e => setDeleteConfirmInput(e.target.value)} 
+            placeholder="Type DELETE"
+            className="w-full px-4 py-3 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 font-mono text-sm transition-all" 
+          />
+        </div>
+
+        {/* Error Message */}
+        {deleteError && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-xl text-[12px] flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />{deleteError}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
@@ -555,8 +575,11 @@ function ToggleRow({ icon, label, desc, checked, onChange }) {
         <p className="text-sm font-semibold text-[#1c1f1a]">{label}</p>
         <p className="text-[11px] text-[#9aa094]">{desc}</p>
       </div>
-      <button onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-gradient-to-r from-rose-500 to-pink-500' : 'bg-[#d0d5ca]'}`}>
+      <button 
+        onClick={() => onChange(!checked)}
+        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-gradient-to-r from-rose-500 to-pink-500' : 'bg-[#d0d5ca]'}`}
+        aria-label={`Toggle ${label}`}
+      >
         <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
       </button>
     </div>

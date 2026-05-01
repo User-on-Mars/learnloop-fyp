@@ -1,7 +1,10 @@
 import { useState } from "react";
+import Modal, { ModalButton } from "./Modal";
 
 /**
  * Reusable confirmation dialog component for destructive actions
+ * 
+ * Uses the responsive Modal component to ensure proper display across all breakpoints.
  * 
  * @param {Object} props
  * @param {string} props.title - Dialog title
@@ -54,61 +57,60 @@ export default function ConfirmationDialog({
     onCancel();
   };
 
-  // Determine confirm button styles based on variant
-  const confirmButtonClass = confirmStyle === "danger"
-    ? "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
-    : "bg-site-accent text-white hover:bg-site-accent-hover focus:ring-site-accent";
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-site-surface rounded-2xl shadow-xl w-full max-w-md p-6 border border-site-border">
-        {/* Title */}
-        <h3 className="text-lg font-bold text-site-ink mb-2">{title}</h3>
-        
-        {/* Message */}
-        <p className="text-site-muted text-sm mb-4 leading-relaxed whitespace-pre-line">{message}</p>
-
-        {/* Typing Confirmation Input */}
-        {requiresTyping && (
-          <div className="mb-6">
-            <input
-              type="text"
-              value={typedValue}
-              onChange={(e) => setTypedValue(e.target.value)}
-              placeholder={`Type "${typingValue}" to confirm`}
-              className={`
-                w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-colors
-                ${isTypingValid && typedValue ? 'border-green-500 focus:ring-green-500' : 'border-site-border focus:ring-site-accent'}
-              `}
-              disabled={isProcessing}
-              autoFocus
-            />
-            {typedValue && !isTypingValid && (
-              <p className="text-red-600 text-xs mt-1">
-                Text doesn't match. Please type exactly: "{typingValue}"
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-3">
-          <button
+    <Modal
+      isOpen={isOpen}
+      onClose={handleCancel}
+      title={title}
+      maxWidth="max-w-md"
+      showCloseButton={false}
+      preventBackdropClose={isProcessing}
+      footer={
+        <>
+          <ModalButton
+            variant="secondary"
             onClick={handleCancel}
             disabled={isProcessing}
-            className="flex-1 py-2.5 border border-site-border text-site-muted rounded-lg font-medium hover:bg-site-bg focus:outline-none focus:ring-2 focus:ring-site-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {cancelText}
-          </button>
-          <button
+          </ModalButton>
+          <ModalButton
+            variant={confirmStyle}
             onClick={handleConfirm}
             disabled={isProcessing || !isTypingValid}
-            className={`flex-1 py-2.5 rounded-lg font-medium focus:outline-none focus:ring-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${confirmButtonClass}`}
           >
             {isProcessing ? "Processing..." : confirmText}
-          </button>
+          </ModalButton>
+        </>
+      }
+    >
+      {/* Message */}
+      <p className="text-[#565c52] text-sm mb-4 leading-relaxed whitespace-pre-line">
+        {message}
+      </p>
+
+      {/* Typing Confirmation Input */}
+      {requiresTyping && (
+        <div className="mb-2">
+          <input
+            type="text"
+            value={typedValue}
+            onChange={(e) => setTypedValue(e.target.value)}
+            placeholder={`Type "${typingValue}" to confirm`}
+            className={`
+              w-full px-4 py-3 min-h-[44px] border rounded-xl focus:outline-none focus:ring-2 transition-colors text-sm
+              ${isTypingValid && typedValue ? 'border-green-500 focus:ring-green-500' : 'border-[#e2e6dc] focus:ring-sky-500'}
+            `}
+            disabled={isProcessing}
+            autoFocus
+          />
+          {typedValue && !isTypingValid && (
+            <p className="text-red-600 text-xs mt-2">
+              Text doesn't match. Please type exactly: "{typingValue}"
+            </p>
+          )}
         </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 }

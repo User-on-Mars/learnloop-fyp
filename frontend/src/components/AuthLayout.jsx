@@ -17,7 +17,7 @@ export default function AuthLayout({ title, subtitle, children }) {
 
       {/* Top bar */}
       <motion.div 
-        className="mx-auto max-w-6xl px-4 pt-10 relative z-10"
+        className="mx-auto max-w-6xl px-4 sm:px-6 pt-6 sm:pt-10 relative z-10"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -26,7 +26,7 @@ export default function AuthLayout({ title, subtitle, children }) {
       </motion.div>
 
       {/* Main grid */}
-      <div className="mx-auto max-w-6xl px-4 py-12 grid md:grid-cols-2 gap-10 items-center relative z-10">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12 grid md:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
         {/* Left: narrative / marketing copy */}
         <motion.div 
           className="hidden md:block"
@@ -44,14 +44,14 @@ export default function AuthLayout({ title, subtitle, children }) {
             <span>Start Your Learning Journey</span>
           </motion.div>
 
-          <h1 className="text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+          <h1 className="text-3xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-4 lg:mb-6">
             Map your skills. <br />
             <span className="bg-gradient-to-r from-ll-600 to-ll-700 bg-clip-text text-transparent">
               Grow faster.
             </span>
           </h1>
 
-          <p className="text-lg text-gray-700 max-w-md mb-8 leading-relaxed">
+          <p className="text-base lg:text-lg text-gray-700 max-w-md mb-6 lg:mb-8 leading-relaxed">
             LearnLoop helps you track progress, visualize your skill map, and plan
             your path for continuous improvement.
           </p>
@@ -112,12 +112,12 @@ export default function AuthLayout({ title, subtitle, children }) {
           transition={{ duration: 0.7, delay: 0.3 }}
         >
           <motion.div 
-            className="bg-white/90 backdrop-blur-xl shadow-2xl rounded-2xl p-8 border border-gray-200"
+            className="bg-white/90 backdrop-blur-xl shadow-2xl rounded-2xl px-4 sm:px-6 py-8 sm:py-12 border border-gray-200 w-full"
             whileHover={{ boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)" }}
             transition={{ duration: 0.3 }}
           >
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{title}</h2>
               {subtitle && (
                 <p className="text-sm text-gray-600 mt-2">{subtitle}</p>
               )}

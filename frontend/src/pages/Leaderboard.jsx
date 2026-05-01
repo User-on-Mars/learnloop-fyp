@@ -5,7 +5,7 @@ import {
   Target, Gift, Calendar, Lightbulb, BookOpen, Check
 } from 'lucide-react';
 import { leaderboardAPI, xpAPI, subscriptionAPI } from '../api/client';
-import Sidebar from '../components/Sidebar';
+import HeroSection from '../components/HeroSection';
 import { auth } from '../firebase';
 
 const TABS = [
@@ -106,49 +106,39 @@ export default function Leaderboard() {
   const hasMultiplier = currentStreak >= 7;
 
   return (
-    <div className="flex min-h-screen bg-[#f8faf6]">
-      <Sidebar />
+    <div className="px-4 sm:px-6 py-6 lg:py-8">
 
-      <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 py-6 lg:py-8">
-
-          {/* Hero Header */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-amber-50/50 via-[#f8faf6] to-orange-50/30 rounded-2xl border border-[#e2e6dc] p-6 sm:p-8 mb-6 shadow-sm">
-            <div className="absolute -top-20 -right-20 w-52 h-52 rounded-full bg-amber-100/30 blur-3xl pointer-events-none" />
-            
-            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center shadow-sm">
-                    <Trophy className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a]">Leaderboard</h1>
-                    <p className="text-sm text-amber-600 font-medium">Compete & Climb</p>
-                  </div>
-                </div>
-                <p className="text-[#565c52] text-[15px] leading-relaxed max-w-xl">
-                  See how you stack up against other learners. Earn XP, maintain streaks, and climb the ranks!
-                </p>
+      {/* Hero Header */}
+      <HeroSection
+            title="Leaderboard"
+            subtitle="Compete & Climb"
+            description="See how you stack up against other learners. Earn XP, maintain streaks, and climb the ranks!"
+            icon={Trophy}
+            gradientFrom="amber-50/50"
+            gradientVia="[#f8faf6]"
+            gradientTo="orange-50/30"
+            borderColor="[#e2e6dc]"
+            iconGradientFrom="amber-600"
+            iconGradientTo="orange-600"
+            subtitleColor="amber-600"
+            decorColor1="amber-100/30"
+            decorColor2="orange-100/20"
+            actions={hasMultiplier ? [] : undefined}
+            stats={[
+              { icon: Zap, color: "#f59e0b", bg: "bg-amber-100", label: "Total XP", value: totalXp.toLocaleString() },
+              { icon: TrendingUp, color: "#10b981", bg: "bg-emerald-100", label: "Weekly XP", value: weeklyXp.toLocaleString() },
+              { icon: Flame, color: "#ef4444", bg: "bg-red-100", label: "Streak", value: `${currentStreak}d` },
+              { icon: Crown, color: tier.color, bg: tier.bg, label: "League", value: tier.label },
+              { icon: Target, color: "#8b5cf6", bg: "bg-purple-100", label: "Rank", value: weeklyRank ? `#${weeklyRank}` : '-' }
+            ]}
+            statsColumns="grid-cols-2 sm:grid-cols-5"
+            extraContent={hasMultiplier && (
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-600 to-red-600 rounded-xl shadow-sm w-fit">
+                <Flame className="w-5 h-5 text-white" />
+                <span className="text-white font-bold text-sm">2x XP Active!</span>
               </div>
-
-              {hasMultiplier && (
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-600 to-red-600 rounded-xl shadow-sm">
-                  <Flame className="w-5 h-5 text-white" />
-                  <span className="text-white font-bold text-sm">2x XP Active!</span>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Stats */}
-            <div className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-6 border-t border-[#e8ece3]">
-              <StatCard icon={Zap} color="#f59e0b" bg="bg-amber-100" label="Total XP" value={totalXp.toLocaleString()} />
-              <StatCard icon={TrendingUp} color="#10b981" bg="bg-emerald-100" label="Weekly XP" value={weeklyXp.toLocaleString()} />
-              <StatCard icon={Flame} color="#ef4444" bg="bg-red-100" label="Streak" value={`${currentStreak}d`} />
-              <StatCard icon={Crown} color={tier.color} bg={tier.bg} label="League" value={tier.label} />
-              <StatCard icon={Target} color="#8b5cf6" bg="bg-purple-100" label="Rank" value={weeklyRank ? `#${weeklyRank}` : '-'} />
-            </div>
-          </div>
+            )}
+          />
 
           {/* League Progress - Flat Horizontal Layout */}
           {xpProfile && (
@@ -323,8 +313,6 @@ export default function Leaderboard() {
               </div>
             </div>
           </div>
-        </div>
-      </main>
     </div>
   );
 }

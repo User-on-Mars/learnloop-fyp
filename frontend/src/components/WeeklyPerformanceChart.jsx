@@ -27,6 +27,9 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
     const secondaryBar = '#4f7942';
     const tertiaryBar = '#a3c99a';
 
+    // Detect mobile viewport for responsive configuration
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
     const chartData = {
         labels: activeData.map(d => d.day),
         datasets: [
@@ -35,21 +38,21 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                 data: activeData.map(d => d.practice),
                 backgroundColor: primaryBar,
                 borderRadius: 6,
-                barThickness: 40
+                // Remove fixed barThickness - let Chart.js calculate dynamically
             },
             {
                 label: 'Reflections',
                 data: activeData.map(d => d.reflections),
                 backgroundColor: secondaryBar,
                 borderRadius: 6,
-                barThickness: 40
+                // Remove fixed barThickness - let Chart.js calculate dynamically
             },
             {
                 label: 'Blockers',
                 data: activeData.map(d => d.blockers),
                 backgroundColor: tertiaryBar,
                 borderRadius: 6,
-                barThickness: 40
+                // Remove fixed barThickness - let Chart.js calculate dynamically
             }
         ]
     };
@@ -62,9 +65,11 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                 position: 'bottom',
                 labels: {
                     usePointStyle: true,
-                    padding: 15,
+                    // Scale legend padding: smaller on mobile
+                    padding: isMobile ? 10 : 15,
                     font: {
-                        size: 12,
+                        // Scale legend font size: 11px on mobile, 12px on desktop
+                        size: isMobile ? 11 : 12,
                         family: "var(--font-body), system-ui, sans-serif"
                     },
                     color: '#475569',
@@ -72,13 +77,16 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
             },
             tooltip: {
                 backgroundColor: 'rgba(31, 41, 55, 0.9)',
-                padding: 12,
+                // Scale tooltip padding: smaller on mobile
+                padding: isMobile ? 10 : 12,
                 titleFont: {
-                    size: 13,
+                    // Scale tooltip title font: 12px on mobile, 13px on desktop
+                    size: isMobile ? 12 : 13,
                     weight: 'bold'
                 },
                 bodyFont: {
-                    size: 12
+                    // Scale tooltip body font: 11px on mobile, 12px on desktop
+                    size: isMobile ? 11 : 12
                 },
                 borderColor: '#2e5023',
                 borderWidth: 1,
@@ -116,10 +124,14 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                 },
                 ticks: {
                     font: {
-                        size: 12,
+                        // Scale x-axis font: 11px on mobile, 12px on desktop
+                        size: isMobile ? 11 : 12,
                         family: "var(--font-body), system-ui, sans-serif"
                     },
-                    color: '#475569'
+                    color: '#475569',
+                    // Rotate x-axis labels 45° on mobile if needed
+                    maxRotation: isMobile ? 45 : 0,
+                    minRotation: isMobile ? 45 : 0
                 }
             },
             y: {
@@ -130,7 +142,8 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
                 },
                 ticks: {
                     font: {
-                        size: 12,
+                        // Scale y-axis font: 11px on mobile, 12px on desktop
+                        size: isMobile ? 11 : 12,
                         family: "var(--font-body), system-ui, sans-serif"
                     },
                     color: '#475569',
@@ -149,7 +162,7 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
 
     if (isLoading) {
         return (
-            <div className="h-64 sm:h-80 flex items-center justify-center">
+            <div className="h-48 sm:h-64 lg:h-80 flex items-center justify-center">
                 <div className="animate-pulse text-site-accent/60 font-medium">
                     Loading chart data...
                 </div>
@@ -160,7 +173,7 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
     // Show empty state if no data
     if (activeData.length === 0) {
         return (
-            <div className="h-64 sm:h-80 flex items-center justify-center">
+            <div className="h-48 sm:h-64 lg:h-80 flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-site-muted mb-2">No practice data this week</p>
                     <p className="text-xs text-site-faint">Start logging practice sessions to see your weekly performance</p>
@@ -170,7 +183,7 @@ export default function WeeklyPerformanceChart({ weeklyData = [], isLoading = fa
     }
 
     return (
-        <div className="h-64 sm:h-80">
+        <div className="h-48 sm:h-64 lg:h-80">
             <Bar data={chartData} options={options} />
         </div>
     );

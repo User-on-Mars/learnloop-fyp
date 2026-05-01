@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, ShieldAlert, Clock, Zap, Copy, UserX, CheckCircle, XCircle, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { adminApi } from '../../api/adminApi'
 import ConfirmAction from '../../components/admin/ConfirmAction'
+import PageTransition from '../../components/admin/PageTransition'
+import ErrorState from '../../components/admin/ErrorState'
+import { SkeletonCard } from '../../components/admin/Skeleton'
+import MetricCard from '../../components/admin/MetricCard'
+import AnimatedList from '../../components/admin/AnimatedList'
+import { staggerItem } from '../../components/admin/animations'
 
 const FLAG_CONFIG = {
   too_many_sessions: { icon: ShieldAlert, label: 'Excessive sessions', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', desc: 'User completed an unusually high number of sessions in 24 hours' },
@@ -41,6 +48,7 @@ export default function AdminAlerts() {
   const [alerts, setAlerts] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
   const [confirmAction, setConfirmAction] = useState(null)
@@ -52,12 +60,14 @@ export default function AdminAlerts() {
   const loadAlerts = async () => {
     try {
       setLoading(true)
+      setError(null)
       const result = await adminApi.getAlerts(page, PER_PAGE)
       setAlerts(result.flags || [])
       setTotal(result.total || 0)
       setPages(result.pages || 1)
     } catch (error) {
       console.error('Failed to load alerts:', error)
+      setError('Failed to load alerts. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -95,173 +105,193 @@ export default function AdminAlerts() {
   const medCount = alerts.filter(a => a.severity === 'medium').length
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-site-ink">Alerts & Flags</h1>
-        <p className="text-site-muted mt-1">Automated detection of suspicious or unusual user activity</p>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-site-surface rounded-xl border border-site-border p-5">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg bg-amber-50"><AlertTriangle className="w-5 h-5 text-amber-500" /></div>
-            <span className="text-sm text-site-muted font-medium">Open alerts</span>
-          </div>
-          <p className="text-2xl font-bold text-site-ink">{total}</p>
+    <PageTransition>
+      <div className="p-6 lg:p-8 max-w-6xl">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-site-ink">Alerts & Flags</h1>
+          <p className="text-site-muted mt-1">Automated detection of suspicious or unusual user activity</p>
         </div>
-        <div className="bg-site-surface rounded-xl border border-site-border p-5">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg bg-red-50"><ShieldAlert className="w-5 h-5 text-red-500" /></div>
-            <span className="text-sm text-site-muted font-medium">High severity</span>
-          </div>
-          <p className="text-2xl font-bold text-red-600">{highCount}</p>
-        </div>
-        <div className="bg-site-surface rounded-xl border border-site-border p-5">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg bg-amber-50"><Clock className="w-5 h-5 text-amber-500" /></div>
-            <span className="text-sm text-site-muted font-medium">Medium severity</span>
-          </div>
-          <p className="text-2xl font-bold text-amber-600">{medCount}</p>
-        </div>
-      </div>
 
-      {/* Active Alerts */}
-      <div className="bg-site-surface rounded-xl border border-site-border p-6 mb-8">
-        <h2 className="font-semibold text-site-ink mb-4">Active alerts</h2>
-
-        {loading ? (
-          <p className="text-sm text-site-faint py-8 text-center">Loading...</p>
-        ) : alerts.length === 0 ? (
-          <div className="text-center py-10">
-            <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-400" />
-            <p className="text-sm text-site-faint">No open alerts — all clear</p>
-          </div>
+        {error ? (
+          <ErrorState message={error} onRetry={loadAlerts} />
         ) : (
           <>
-            <div className="space-y-3">
-              {alerts.map(alert => {
-                const cfg = FLAG_CONFIG[alert.flagType] || FLAG_CONFIG.xp_farming
-                const Icon = cfg.icon
-                return (
-                  <div key={alert._id} className={`flex items-start gap-4 p-4 rounded-xl border ${cfg.border} ${cfg.bg}`}>
-                    <div className={`p-2 rounded-lg bg-white/60 flex-shrink-0`}>
-                      <Icon className={`w-5 h-5 ${cfg.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-semibold text-site-ink text-sm">{cfg.label}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${SEVERITY_STYLE[alert.severity]}`}>
-                          {alert.severity}
-                        </span>
-                        <span className="text-xs text-site-faint ml-auto flex-shrink-0">{timeAgo(alert.triggeredAt)}</span>
-                      </div>
-                      <p className="text-sm text-site-muted mb-1">{alert.detail}</p>
-                      {alert.userEmail && (
-                        <p className="text-xs text-site-faint">User: <span className="font-medium text-site-ink">{alert.userEmail}</span></p>
-                      )}
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      {alert.userId && (
-                        <button
-                          onClick={() => {
-                            // Find user by firebaseUid — navigate to admin users page
-                            navigate(`/admin/users`)
-                          }}
-                          className="p-2 rounded-lg border border-site-border bg-white text-site-muted hover:bg-site-bg transition-colors"
-                          title="View user"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setConfirmAction({ type: 'action', flagId: alert._id })}
-                        className="p-2 rounded-lg border border-site-border bg-white text-green-600 hover:bg-green-50 transition-colors"
-                        title="Mark as handled"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setConfirmAction({ type: 'dismiss', flagId: alert._id })}
-                        className="p-2 rounded-lg border border-site-border bg-white text-site-faint hover:bg-site-bg transition-colors"
-                        title="Dismiss"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Pagination */}
-            {pages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-site-border">
-                <span className="text-xs text-site-faint">
-                  {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, total)} of {total}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1 rounded border border-site-border disabled:opacity-30 hover:bg-site-bg transition-colors">
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  {Array.from({ length: pages }, (_, i) => i + 1).slice(0, 5).map(p => (
-                    <button key={p} onClick={() => setPage(p)} className={`min-w-[28px] h-7 text-xs rounded font-medium transition-colors ${page === p ? 'bg-site-accent text-white' : 'border border-site-border text-site-ink hover:bg-site-bg'}`}>
-                      {p}
-                    </button>
-                  ))}
-                  <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="p-1 rounded border border-site-border disabled:opacity-30 hover:bg-site-bg transition-colors">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+            {/* Summary cards */}
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                <SkeletonCard lines={2} />
+                <SkeletonCard lines={2} />
+                <SkeletonCard lines={2} />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                <MetricCard
+                  icon={AlertTriangle}
+                  label="Open alerts"
+                  value={total}
+                  iconBg="bg-amber-50"
+                  iconColor="text-amber-500"
+                />
+                <MetricCard
+                  icon={ShieldAlert}
+                  label="High severity"
+                  value={highCount}
+                  iconBg="bg-red-50"
+                  iconColor="text-red-500"
+                />
+                <MetricCard
+                  icon={Clock}
+                  label="Medium severity"
+                  value={medCount}
+                  iconBg="bg-amber-50"
+                  iconColor="text-amber-500"
+                />
               </div>
             )}
+
+            {/* Active Alerts */}
+            <div className="bg-site-surface rounded-xl border border-site-border p-6 mb-8">
+              <h2 className="font-semibold text-site-ink mb-4">Active alerts</h2>
+
+              {loading ? (
+                <p className="text-sm text-site-faint py-8 text-center">Loading...</p>
+              ) : alerts.length === 0 ? (
+                <div className="text-center py-10">
+                  <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-400" />
+                  <p className="text-sm text-site-faint">No open alerts — all clear</p>
+                </div>
+              ) : (
+                <>
+                  <AnimatedList className="space-y-3">
+                    {alerts.map(alert => {
+                      const cfg = FLAG_CONFIG[alert.flagType] || FLAG_CONFIG.xp_farming
+                      const Icon = cfg.icon
+                      return (
+                        <motion.div
+                          key={alert._id}
+                          variants={staggerItem}
+                          className={`flex items-start gap-4 p-4 rounded-xl border ${cfg.border} ${cfg.bg}`}
+                        >
+                          <div className={`p-2 rounded-lg bg-white/60 flex-shrink-0`}>
+                            <Icon className={`w-5 h-5 ${cfg.color}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="font-semibold text-site-ink text-sm">{cfg.label}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${SEVERITY_STYLE[alert.severity]}`}>
+                                {alert.severity}
+                              </span>
+                              <span className="text-xs text-site-faint ml-auto flex-shrink-0">{timeAgo(alert.triggeredAt)}</span>
+                            </div>
+                            <p className="text-sm text-site-muted mb-1">{alert.detail}</p>
+                            {alert.userEmail && (
+                              <p className="text-xs text-site-faint">User: <span className="font-medium text-site-ink">{alert.userEmail}</span></p>
+                            )}
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            {alert.userId && (
+                              <button
+                                onClick={() => {
+                                  // Find user by firebaseUid — navigate to admin users page
+                                  navigate(`/admin/users`)
+                                }}
+                                className="p-2 rounded-lg border border-site-border bg-white text-site-muted hover:bg-site-bg transition-colors"
+                                title="View user"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setConfirmAction({ type: 'action', flagId: alert._id })}
+                              className="p-2 rounded-lg border border-site-border bg-white text-green-600 hover:bg-green-50 transition-colors"
+                              title="Mark as handled"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setConfirmAction({ type: 'dismiss', flagId: alert._id })}
+                              className="p-2 rounded-lg border border-site-border bg-white text-site-faint hover:bg-site-bg transition-colors"
+                              title="Dismiss"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      )
+                    })}
+                  </AnimatedList>
+
+                  {/* Pagination */}
+                  {pages > 1 && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-site-border">
+                      <span className="text-xs text-site-faint">
+                        {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, total)} of {total}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1 rounded border border-site-border disabled:opacity-30 hover:bg-site-bg transition-colors">
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        {Array.from({ length: pages }, (_, i) => i + 1).slice(0, 5).map(p => (
+                          <button key={p} onClick={() => setPage(p)} className={`min-w-[28px] h-7 text-xs rounded font-medium transition-colors ${page === p ? 'bg-site-accent text-white' : 'border border-site-border text-site-ink hover:bg-site-bg'}`}>
+                            {p}
+                          </button>
+                        ))}
+                        <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="p-1 rounded border border-site-border disabled:opacity-30 hover:bg-site-bg transition-colors">
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Detection Rules */}
+            <div className="bg-site-surface rounded-xl border border-site-border p-6">
+              <h2 className="font-semibold text-site-ink mb-1">Detection rules</h2>
+              <p className="text-xs text-site-faint mb-4">These rules run automatically when users complete sessions or earn XP</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {RULES.map(rule => {
+                  const cfg = FLAG_CONFIG[rule.type]
+                  const Icon = cfg?.icon || AlertTriangle
+                  return (
+                    <div key={rule.type} className="p-4 bg-site-bg rounded-xl border border-site-border/50">
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <Icon className={`w-4 h-4 ${cfg?.color || 'text-site-faint'}`} />
+                        <span className="font-medium text-site-ink text-sm">{rule.label}</span>
+                        <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-medium ${SEVERITY_STYLE[rule.severity]}`}>
+                          {rule.severity}
+                        </span>
+                      </div>
+                      <p className="text-xs text-site-muted leading-relaxed">{rule.desc}</p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </>
         )}
-      </div>
 
-      {/* Detection Rules */}
-      <div className="bg-site-surface rounded-xl border border-site-border p-6">
-        <h2 className="font-semibold text-site-ink mb-1">Detection rules</h2>
-        <p className="text-xs text-site-faint mb-4">These rules run automatically when users complete sessions or earn XP</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {RULES.map(rule => {
-            const cfg = FLAG_CONFIG[rule.type]
-            const Icon = cfg?.icon || AlertTriangle
-            return (
-              <div key={rule.type} className="p-4 bg-site-bg rounded-xl border border-site-border/50">
-                <div className="flex items-center gap-2.5 mb-2">
-                  <Icon className={`w-4 h-4 ${cfg?.color || 'text-site-faint'}`} />
-                  <span className="font-medium text-site-ink text-sm">{rule.label}</span>
-                  <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-medium ${SEVERITY_STYLE[rule.severity]}`}>
-                    {rule.severity}
-                  </span>
-                </div>
-                <p className="text-xs text-site-muted leading-relaxed">{rule.desc}</p>
-              </div>
-            )
-          })}
-        </div>
+        {/* Confirm modals */}
+        <ConfirmAction
+          isOpen={confirmAction?.type === 'dismiss'}
+          title="Dismiss Alert"
+          message="This will mark the alert as dismissed. It won't appear in the active list anymore."
+          confirmText="Dismiss"
+          onConfirm={() => handleDismiss(confirmAction.flagId)}
+          onCancel={() => setConfirmAction(null)}
+          loading={actionLoading}
+        />
+        <ConfirmAction
+          isOpen={confirmAction?.type === 'action'}
+          title="Mark as Handled"
+          message="This confirms you've reviewed and taken appropriate action on this alert."
+          confirmText="Mark Handled"
+          onConfirm={() => handleAction(confirmAction.flagId)}
+          onCancel={() => setConfirmAction(null)}
+          loading={actionLoading}
+        />
       </div>
-
-      {/* Confirm modals */}
-      <ConfirmAction
-        isOpen={confirmAction?.type === 'dismiss'}
-        title="Dismiss Alert"
-        message="This will mark the alert as dismissed. It won't appear in the active list anymore."
-        confirmText="Dismiss"
-        onConfirm={() => handleDismiss(confirmAction.flagId)}
-        onCancel={() => setConfirmAction(null)}
-        loading={actionLoading}
-      />
-      <ConfirmAction
-        isOpen={confirmAction?.type === 'action'}
-        title="Mark as Handled"
-        message="This confirms you've reviewed and taken appropriate action on this alert."
-        confirmText="Mark Handled"
-        onConfirm={() => handleAction(confirmAction.flagId)}
-        onCancel={() => setConfirmAction(null)}
-        loading={actionLoading}
-      />
-    </div>
+    </PageTransition>
   )
 }

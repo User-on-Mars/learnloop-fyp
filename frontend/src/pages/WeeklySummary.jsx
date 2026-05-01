@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import { practiceAPI, skillsAPI } from "../api/client";
 import client from "../api/client";
-import Sidebar from "../components/Sidebar";
 import FilterDropdown from "../components/FilterDropdown";
 
 function getWeekStart(date) {
@@ -222,13 +221,10 @@ export default function WeeklySummary() {
   }, [maxWeeksBack]);
 
   return (
-    <div className="flex min-h-screen bg-[#f8faf6]">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 py-6 lg:py-8">
-          
-          {/* Hero Header */}
-          <div className="relative bg-gradient-to-br from-teal-50 via-white to-cyan-50 rounded-2xl border border-teal-100 p-6 sm:p-8 mb-6 shadow-sm">
+    <div className="px-4 sm:px-6 py-6 lg:py-8">
+      
+      {/* Hero Header */}
+      <div className="relative bg-gradient-to-br from-teal-50 via-white to-cyan-50 rounded-2xl border border-teal-100 p-6 sm:p-7 mb-6 shadow-sm">
             <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-teal-200 opacity-20 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-cyan-200 opacity-20 blur-3xl pointer-events-none" />
             
@@ -258,7 +254,7 @@ export default function WeeklySummary() {
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div className="text-center min-w-[140px]">
-                  <p className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">{weekLabel(weekOffset)}</p>
+                  <p className="text-xs font-bold text-teal-600 uppercase tracking-wider">{weekLabel(weekOffset)}</p>
                   <p className="text-sm font-bold text-[#1c1f1a]">{formatWeekRange(weekStart)}</p>
                 </div>
                 <button 
@@ -296,7 +292,7 @@ export default function WeeklySummary() {
           ) : (
             <>
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <StatCard 
                   icon={Clock} 
                   label="Total Time" 
@@ -360,7 +356,7 @@ export default function WeeklySummary() {
               </div>
 
               {/* Two Column Layout */}
-              <div className="grid lg:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Most Practiced + Avg Confidence */}
                 <div className="flex flex-col gap-4">
                   {topSkillMap && (
@@ -370,7 +366,7 @@ export default function WeeklySummary() {
                           <Trophy className="w-7 h-7 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">Most Practiced</p>
+                          <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Most Practiced</p>
                           <p className="text-lg font-bold text-[#1c1f1a] truncate">{topSkillMap[0]}</p>
                           <p className="text-sm text-[#9aa094]">
                             {topSkillMap[1].sessions} session{topSkillMap[1].sessions !== 1 ? "s" : ""} · {fmtMin(topSkillMap[1].minutes)}
@@ -387,7 +383,7 @@ export default function WeeklySummary() {
                           <Star className="w-7 h-7 text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-[10px] font-bold text-yellow-600 uppercase tracking-wider mb-1">Avg Confidence</p>
+                          <p className="text-xs font-bold text-yellow-600 uppercase tracking-wider mb-1">Avg Confidence</p>
                           <div className="flex items-baseline gap-2">
                             <p className="text-2xl font-bold text-[#1c1f1a]">{avgConf}</p>
                             <p className="text-sm text-[#9aa094]">/ 5</p>
@@ -414,27 +410,27 @@ export default function WeeklySummary() {
                         </div>
                         <div>
                           <p className="text-sm font-bold text-[#1c1f1a]">Quick Tips</p>
-                          <p className="text-[10px] text-[#9aa094]">Boost your learning</p>
+                          <p className="text-xs text-[#9aa094]">Boost your learning</p>
                         </div>
                       </div>
                       <div className="space-y-2.5">
                         <div className="flex items-start gap-2">
                           <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-[10px] font-bold text-emerald-600">1</span>
+                            <span className="text-xs font-bold text-emerald-600">1</span>
                           </div>
-                          <p className="text-xs text-[#565c52]">Practice daily for at least 15 minutes to build consistency</p>
+                          <p className="text-sm text-[#565c52]">Practice daily for at least 15 minutes to build consistency</p>
                         </div>
                         <div className="flex items-start gap-2">
                           <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-[10px] font-bold text-amber-600">2</span>
+                            <span className="text-xs font-bold text-amber-600">2</span>
                           </div>
-                          <p className="text-xs text-[#565c52]">Rate your confidence after each session to track progress</p>
+                          <p className="text-sm text-[#565c52]">Rate your confidence after each session to track progress</p>
                         </div>
                         <div className="flex items-start gap-2">
                           <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-[10px] font-bold text-blue-600">3</span>
+                            <span className="text-xs font-bold text-blue-600">3</span>
                           </div>
-                          <p className="text-xs text-[#565c52]">Write reflections to reinforce what you've learned</p>
+                          <p className="text-sm text-[#565c52]">Write reflections to reinforce what you've learned</p>
                         </div>
                       </div>
                     </div>
@@ -463,7 +459,7 @@ export default function WeeklySummary() {
                         const isToday = dayDate.toDateString() === new Date().toDateString();
                         return (
                           <div key={day} className="flex flex-col items-center gap-1.5">
-                            <span className={`text-[10px] font-medium ${isToday ? "text-teal-600" : "text-[#9aa094]"}`}>{day}</span>
+                            <span className={`text-xs font-medium ${isToday ? "text-teal-600" : "text-[#9aa094]"}`}>{day}</span>
                             <div
                               className={`w-full aspect-square rounded-xl flex flex-col items-center justify-center transition-all ${
                                 isToday ? "ring-2 ring-teal-400 ring-offset-2" : ""
@@ -475,10 +471,10 @@ export default function WeeklySummary() {
                               {mins > 0 ? (
                                 <>
                                   <span className="text-[11px] font-bold text-white">{fmtMin(mins)}</span>
-                                  <span className="text-[8px] text-white/80">{sess}x</span>
+                                  <span className="text-[9px] text-white/80">{sess}x</span>
                                 </>
                               ) : (
-                                <span className="text-[10px] text-[#d0d5ca]">—</span>
+                                <span className="text-xs text-[#d0d5ca]">—</span>
                               )}
                             </div>
                           </div>
@@ -559,8 +555,6 @@ export default function WeeklySummary() {
               )}
             </>
           )}
-        </div>
-      </main>
     </div>
   );
 }

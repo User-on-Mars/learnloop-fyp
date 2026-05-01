@@ -7,9 +7,10 @@ import {
 } from "lucide-react";
 import { practiceAPI, skillsAPI, xpAPI } from "../api/client.ts";
 import client from "../api/client.ts";
-import Sidebar from "../components/Sidebar";
 import { SkillIcon } from "../components/IconPicker";
 import { useAuth } from "../useAuth";
+import HeroSection from "../components/HeroSection";
+import DataTable from "../components/DataTable";
 
 const MAPS_PER_PAGE = 5;
 
@@ -17,19 +18,16 @@ import FilterDropdown from "../components/FilterDropdown";
 
 function DashboardSkeleton() {
   return (
-    <>
-      <Sidebar />
-      <div className="pt-16 md:pl-14 min-h-screen bg-[#f8faf6]">
-        <div className="px-4 sm:px-6 py-6 space-y-4">
-          <div className="h-44 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="h-52 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
-            <div className="h-52 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
-          </div>
-          <div className="h-64 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
+    <div className="min-h-screen bg-[#f8faf6]">
+      <div className="px-4 sm:px-6 py-6 space-y-4">
+        <div className="h-44 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="h-52 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
+          <div className="h-52 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
         </div>
+        <div className="h-64 rounded-2xl bg-white/60 animate-pulse border border-[#e2e6dc]" />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -152,98 +150,56 @@ export default function Dashboard() {
   if (isLoading) return <DashboardSkeleton />;
   if (error) {
     return (
-      <>
-        <Sidebar />
-        <div className="pt-16 md:pl-14 min-h-screen bg-[#f8faf6] flex items-center justify-center">
-          <div className="bg-red-50 text-red-700 p-5 rounded-xl text-sm border border-red-200 max-w-sm text-center">
-            <p className="font-semibold mb-1.5">{error}</p>
-            <button onClick={fetchDashboard} className="text-red-500 hover:text-red-700 underline text-xs font-medium">Try again</button>
-          </div>
+      <div className="min-h-screen bg-[#f8faf6] flex items-center justify-center">
+        <div className="bg-red-50 text-red-700 p-5 rounded-xl text-sm border border-red-200 max-w-sm text-center">
+          <p className="font-semibold mb-1.5">{error}</p>
+          <button onClick={fetchDashboard} className="text-red-500 hover:text-red-700 underline text-xs font-medium">Try again</button>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <Sidebar />
-      <div className="pt-16 md:pl-14 min-h-screen bg-[#f8faf6]">
-        <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
+    <div className="min-h-screen bg-[#f8faf6]">
+      <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
 
           {/* Hero Greeting */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-sky-50 via-white to-blue-50 rounded-2xl border border-sky-100 p-6 sm:p-8">
-            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-sky-200 opacity-15 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-blue-200 opacity-10 blur-2xl pointer-events-none" />
-
-            <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-600 to-blue-600 flex items-center justify-center shadow-sm">
-                    <LayoutDashboard className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a]">{greeting}, {displayName}</h1>
-                    <p className="text-sm text-sky-600 font-medium">Your Learning Dashboard</p>
-                  </div>
-                </div>
-                <p className="text-[#565c52] text-[15px] leading-relaxed max-w-xl">
-                  Here's your learning overview. Track progress, review sessions, and keep building your skills.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2.5">
-                <button onClick={() => navigate("/log-practice")}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-xl text-[13px] font-semibold hover:from-sky-700 hover:to-blue-700 transition-all shadow-lg shadow-sky-500/20 active:scale-[0.97]">
-                  <Play className="w-4 h-4" /> Log Practice
-                </button>
-                <button onClick={() => navigate("/roomspace")}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#565c52] rounded-xl text-[13px] font-semibold hover:bg-[#f5f7f2] transition-colors border border-[#e2e6dc]">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                  RoomSpace
-                </button>
-              </div>
-            </div>
-
-            {/* Quick XP Stats */}
-            <div className="relative grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-sky-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-sky-600" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{totalXp.toLocaleString()}</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">Total XP</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{weeklyXp.toLocaleString()}</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">Weekly XP</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-                  <Flame className="w-5 h-5 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{streak}d</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">Streak</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                  <Trophy className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{tier}</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">League</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <HeroSection
+            title={`${greeting}, ${displayName}`}
+            subtitle="Your Learning Dashboard"
+            description="Here's your learning overview. Track progress, review sessions, and keep building your skills."
+            icon={LayoutDashboard}
+            gradientFrom="sky-50"
+            gradientVia="white"
+            gradientTo="blue-50"
+            borderColor="sky-100"
+            iconGradientFrom="sky-600"
+            iconGradientTo="blue-600"
+            subtitleColor="sky-600"
+            decorColor1="sky-200"
+            decorColor2="blue-200"
+            actions={[
+              {
+                label: "Log Practice",
+                icon: Play,
+                onClick: () => navigate("/log-practice"),
+                variant: "primary"
+              },
+              {
+                label: "RoomSpace",
+                icon: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
+                onClick: () => navigate("/roomspace"),
+                variant: "secondary"
+              }
+            ]}
+            stats={[
+              { icon: Zap, color: "#0ea5e9", bg: "bg-sky-100", label: "Total XP", value: totalXp.toLocaleString() },
+              { icon: TrendingUp, color: "#3b82f6", bg: "bg-blue-100", label: "Weekly XP", value: weeklyXp.toLocaleString() },
+              { icon: Flame, color: "#f97316", bg: "bg-orange-100", label: "Streak", value: `${streak}d` },
+              { icon: Trophy, color: "#a855f7", bg: "bg-purple-100", label: "League", value: tier }
+            ]}
+            statsColumns="grid-cols-2 sm:grid-cols-4"
+          />
 
           {/* ═══ 2. Two overview cards ═══ */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -262,15 +218,17 @@ export default function Dashboard() {
               {/* Full-height divider */}
               <div className="w-px bg-[#e2e6dc]" />
               {/* Right section: donut + legend */}
-              <div className="flex items-center gap-5 p-6 sm:p-7">
-                <DonutWithCenter
-                  segments={[
-                    { value: completedNodes, color: '#2e5023' },
-                    { value: Math.max(0, totalNodes - completedNodes), color: '#d97706' },
-                  ]}
-                  size={120} stroke={16} centerText={`${overallPct}%`} centerSub="complete"
-                />
-                <div className="space-y-3">
+              <div className="flex items-center gap-3 sm:gap-5 p-6 sm:p-7">
+                <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
+                  <DonutWithCenter
+                    segments={[
+                      { value: completedNodes, color: '#2e5023' },
+                      { value: Math.max(0, totalNodes - completedNodes), color: '#d97706' },
+                    ]}
+                    size={128} stroke={14} centerText={`${overallPct}%`} centerSub="complete"
+                  />
+                </div>
+                <div className="space-y-2 sm:space-y-3 flex-1 min-w-0">
                   <LegendRow color="#2e5023" label="Completed" value={completedNodes} />
                   <LegendRow color="#d97706" label="In Progress" value={Math.max(0, totalNodes - completedNodes)} />
                 </div>
@@ -280,16 +238,18 @@ export default function Dashboard() {
             {/* RIGHT: Skill Category — donut + legend */}
             <div className="lg:col-span-2 bg-white rounded-2xl border border-[#e2e6dc] p-6 sm:p-7">
               <h2 className="text-[17px] font-bold text-site-ink mb-6">Skill Category</h2>
-              <div className="flex items-center gap-5">
-                <DonutWithCenter
-                  segments={[
-                    { value: completedMaps, color: '#2e5023' },
-                    { value: inProgressMaps, color: '#d97706' },
-                    { value: Math.max(0, unlockedSkills.length - completedMaps - inProgressMaps), color: '#60a5fa' },
-                  ]}
-                  size={120} stroke={16} centerText={unlockedSkills.length} centerSub="total"
-                />
-                <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-3 sm:gap-5">
+                <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
+                  <DonutWithCenter
+                    segments={[
+                      { value: completedMaps, color: '#2e5023' },
+                      { value: inProgressMaps, color: '#d97706' },
+                      { value: Math.max(0, unlockedSkills.length - completedMaps - inProgressMaps), color: '#60a5fa' },
+                    ]}
+                    size={128} stroke={14} centerText={unlockedSkills.length} centerSub="total"
+                  />
+                </div>
+                <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
                   <LegendRow color="#2e5023" label="Completed" value={completedMaps} />
                   <LegendRow color="#d97706" label="In Progress" value={inProgressMaps} />
                   <LegendRow color="#60a5fa" label="Not Started" value={Math.max(0, unlockedSkills.length - completedMaps - inProgressMaps)} />
@@ -393,180 +353,457 @@ export default function Dashboard() {
             <div className="px-6 pb-6 pt-4">
               {/* Skill Maps tab */}
               {activeTab === 'skills' && (
-                filteredSkills.length === 0 ? (
-                  <div className="text-center py-10">
-                    <MapPin className="w-7 h-7 text-gray-300 mx-auto mb-2" />
-                    <p className="text-sm text-site-muted">{statusFilter !== 'all' ? 'No matching skill maps' : 'No skill maps yet'}</p>
-                    {statusFilter === 'all' && (
-                      <button onClick={() => navigate("/skills")} className="inline-flex items-center gap-1 text-xs text-sky-600 font-bold hover:underline mt-2">
-                        Create skill map <ArrowUpRight className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    {/* Table header */}
-                    <div className="grid grid-cols-12 gap-3 px-3 pb-2 text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider">
-                      <span className="col-span-1">#</span>
-                      <span className="col-span-4">Name</span>
-                      <span className="col-span-2 text-center">Nodes</span>
-                      <span className="col-span-3">Progress</span>
-                      <span className="col-span-2 text-right">Status</span>
-                    </div>
-                    {/* Rows */}
-                    <div className="divide-y divide-[#f0f2eb]">
-                      {filteredSkills.slice((mapPage - 1) * MAPS_PER_PAGE, mapPage * MAPS_PER_PAGE).map((skill, i) => {                        const pct = skill.completionPercentage || 0;
-                        const done = skill.completedNodes || 0;
-                        const total = skill.nodeCount || 0;
-                        const color = skill.color || "#2e5023";
-                        const isComplete = pct === 100;
-                        return (
-                          <div key={skill._id} onClick={() => navigate(`/skills/${skill._id}`)}
-                            className="grid grid-cols-12 gap-3 items-center px-3 py-3 hover:bg-[#f8faf6] cursor-pointer transition-colors group">
-                            <span className="col-span-1 text-[12px] text-site-faint font-medium">{(mapPage - 1) * MAPS_PER_PAGE + i + 1}</span>
-                            <div className="col-span-4 flex items-center gap-2.5 min-w-0">
+                <>
+                  <DataTable
+                    data={filteredSkills.slice((mapPage - 1) * MAPS_PER_PAGE, mapPage * MAPS_PER_PAGE)}
+                    columns={[
+                      {
+                        key: 'index',
+                        label: '#',
+                        span: 1,
+                        render: (skill, i) => (
+                          <span className="text-[12px] text-site-faint font-medium">
+                            {(mapPage - 1) * MAPS_PER_PAGE + i + 1}
+                          </span>
+                        )
+                      },
+                      {
+                        key: 'name',
+                        label: 'Name',
+                        span: 4,
+                        render: (skill) => {
+                          const color = skill.color || "#2e5023";
+                          return (
+                            <div className="flex items-center gap-2.5 min-w-0">
                               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
                                 style={{ backgroundColor: color + '15', borderColor: color + '25', color }}>
                                 <SkillIcon name={skill.icon || 'Map'} size={16} />
                               </div>
-                            <span className="text-[13px] font-semibold text-site-ink truncate group-hover:text-sky-600 transition-colors">{skill.name}</span>
+                              <span className="text-[13px] font-semibold text-site-ink truncate group-hover:text-sky-600 transition-colors">
+                                {skill.name}
+                              </span>
                             </div>
-                            <span className="col-span-2 text-center text-[12px] text-site-muted">{done}/{total}</span>
-                            <div className="col-span-3 flex items-center gap-2">
+                          );
+                        }
+                      },
+                      {
+                        key: 'nodes',
+                        label: 'Nodes',
+                        span: 2,
+                        align: 'center',
+                        render: (skill) => {
+                          const done = skill.completedNodes || 0;
+                          const total = skill.nodeCount || 0;
+                          return (
+                            <span className="text-[12px] text-site-muted">{done}/{total}</span>
+                          );
+                        }
+                      },
+                      {
+                        key: 'progress',
+                        label: 'Progress',
+                        span: 3,
+                        render: (skill) => {
+                          const pct = skill.completionPercentage || 0;
+                          const color = skill.color || "#2e5023";
+                          return (
+                            <div className="flex items-center gap-2">
                               <div className="flex-1 h-[5px] bg-[#e8ece3] rounded-full overflow-hidden">
-                                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+                                <div className="h-full rounded-full transition-all duration-500" 
+                                  style={{ width: `${pct}%`, backgroundColor: color }} />
                               </div>
-                              <span className="text-[11px] font-bold tabular-nums" style={{ color }}>{pct}%</span>
+                              <span className="text-[11px] font-bold tabular-nums" style={{ color }}>
+                                {pct}%
+                              </span>
                             </div>
-                            <div className="col-span-2 text-right">
-                              {isComplete ? (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-full border border-emerald-200">
-                                  <Sparkles className="w-3 h-3" /> Completed
-                                </span>
-                              ) : pct > 0 ? (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 text-[11px] font-bold rounded-full border border-amber-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> In Progress
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 text-[11px] font-bold rounded-full border border-gray-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Not Started
-                                </span>
-                              )}
+                          );
+                        }
+                      },
+                      {
+                        key: 'status',
+                        label: 'Status',
+                        span: 2,
+                        align: 'right',
+                        render: (skill) => {
+                          const pct = skill.completionPercentage || 0;
+                          const isComplete = pct === 100;
+                          
+                          if (isComplete) {
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-full border border-emerald-200">
+                                <Sparkles className="w-3 h-3" /> Completed
+                              </span>
+                            );
+                          } else if (pct > 0) {
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 text-[11px] font-bold rounded-full border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> In Progress
+                              </span>
+                            );
+                          } else {
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 text-[11px] font-bold rounded-full border border-gray-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Not Started
+                              </span>
+                            );
+                          }
+                        }
+                      }
+                    ]}
+                    renderMobileCard={(skill, i) => {
+                      const pct = skill.completionPercentage || 0;
+                      const done = skill.completedNodes || 0;
+                      const total = skill.nodeCount || 0;
+                      const color = skill.color || "#2e5023";
+                      const isComplete = pct === 100;
+                      
+                      return (
+                        <>
+                          {/* Header Row: Icon + Name + Status */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
+                                style={{ backgroundColor: color + '15', borderColor: color + '25', color }}>
+                                <SkillIcon name={skill.icon || 'Map'} size={16} />
+                              </div>
+                              <span className="text-[13px] font-semibold text-site-ink truncate">
+                                {skill.name}
+                              </span>
+                            </div>
+                            {isComplete ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-200 flex-shrink-0">
+                                <Sparkles className="w-3 h-3" /> Done
+                              </span>
+                            ) : pct > 0 ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full border border-amber-200 flex-shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full border border-gray-200 flex-shrink-0">
+                                New
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Stats Row: Nodes + Progress */}
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <p className="text-[11px] text-[#9aa094] mb-1 font-medium">Nodes</p>
+                              <p className="text-[13px] font-semibold text-site-ink">{done}/{total}</p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] text-[#9aa094] mb-1 font-medium">Progress</p>
+                              <p className="text-[13px] font-semibold" style={{ color }}>{pct}%</p>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                          
+                          {/* Progress Bar */}
+                          <div className="h-[5px] bg-[#e8ece3] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" 
+                              style={{ width: `${pct}%`, backgroundColor: color }} />
+                          </div>
+                        </>
+                      );
+                    }}
+                    onRowClick={(skill) => navigate(`/skills/${skill._id}`)}
+                    emptyMessage={statusFilter !== 'all' ? 'No matching skill maps' : 'No skill maps yet'}
+                    emptyIcon={<MapPin className="w-7 h-7 text-gray-300" />}
+                    emptyAction={statusFilter === 'all' ? (
+                      <button onClick={() => navigate("/skills")} className="inline-flex items-center gap-1 text-xs text-sky-600 font-bold hover:underline mt-2">
+                        Create skill map <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    ) : null}
+                  />
+                  {filteredSkills.length > 0 && (
                     <Pagination page={mapPage} setPage={setMapPage} totalPages={filteredMapPages} />
-                  </>
-                )
+                  )}
+                </>
               )}
 
               {/* Reflections tab */}
               {activeTab === 'reflections' && (
-                filteredReflections.length === 0 ? (
-                  <div className="text-center py-10">
-                    <Award className="w-6 h-6 text-gray-300 mx-auto mb-2" />
-                    <p className="text-xs text-site-muted">{moodFilter !== 'all' ? 'No matching reflections' : 'No reflections yet'}</p>
-                    {moodFilter === 'all' && (
+                <>
+                  <DataTable
+                    data={filteredReflections.slice((mapPage - 1) * MAPS_PER_PAGE, mapPage * MAPS_PER_PAGE)}
+                    columns={[
+                      {
+                        key: 'date',
+                        label: 'Date',
+                        span: 3,
+                        render: (reflection) => (
+                          <span className="text-[12px] text-site-faint">
+                            {new Date(reflection.createdAt).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              year: 'numeric' 
+                            })}
+                          </span>
+                        )
+                      },
+                      {
+                        key: 'mood',
+                        label: 'Mood',
+                        span: 2,
+                        align: 'center',
+                        render: (reflection) => {
+                          const moods = {
+                            Happy: { emoji: '😊', label: 'Happy', cls: 'text-emerald-700 bg-emerald-50' },
+                            Neutral: { emoji: '😐', label: 'Neutral', cls: 'text-gray-600 bg-gray-100' },
+                            Sad: { emoji: '😔', label: 'Struggling', cls: 'text-blue-700 bg-blue-50' },
+                            Energized: { emoji: '⚡', label: 'Energized', cls: 'text-amber-700 bg-amber-50' },
+                            Thoughtful: { emoji: '🧠', label: 'Thoughtful', cls: 'text-violet-700 bg-violet-50' }
+                          };
+                          const m = moods[reflection.mood] || { 
+                            emoji: '—', 
+                            label: reflection.mood || 'None', 
+                            cls: 'text-gray-500 bg-gray-50' 
+                          };
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${m.cls}`}>
+                              {m.emoji} {m.label}
+                            </span>
+                          );
+                        }
+                      },
+                      {
+                        key: 'title',
+                        label: 'Title',
+                        span: 5,
+                        render: (reflection) => (
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-semibold text-site-ink truncate group-hover:text-sky-600 transition-colors">
+                              {reflection.title || 'Untitled'}
+                            </p>
+                            <p className="text-[11px] text-site-faint truncate">
+                              {reflection.content?.slice(0, 50)}{reflection.content?.length > 50 ? '...' : ''}
+                            </p>
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'tags',
+                        label: 'Tags',
+                        span: 2,
+                        align: 'right',
+                        render: (reflection) => {
+                          if (!reflection.tags || reflection.tags.length === 0) {
+                            return <span className="text-[11px] text-site-faint">—</span>;
+                          }
+                          return (
+                            <div className="flex flex-wrap gap-1 justify-end">
+                              {reflection.tags.slice(0, 2).map((tag, idx) => (
+                                <span key={idx} className="inline-flex px-2 py-0.5 bg-sky-100 text-sky-700 text-[9px] font-semibold rounded">
+                                  {tag}
+                                </span>
+                              ))}
+                              {reflection.tags.length > 2 && (
+                                <span className="text-[9px] text-site-faint">+{reflection.tags.length - 2}</span>
+                              )}
+                            </div>
+                          );
+                        }
+                      }
+                    ]}
+                    renderMobileCard={(reflection) => {
+                      const moods = {
+                        Happy: { emoji: '😊', label: 'Happy', cls: 'text-emerald-700 bg-emerald-50' },
+                        Neutral: { emoji: '😐', label: 'Neutral', cls: 'text-gray-600 bg-gray-100' },
+                        Sad: { emoji: '😔', label: 'Struggling', cls: 'text-blue-700 bg-blue-50' },
+                        Energized: { emoji: '⚡', label: 'Energized', cls: 'text-amber-700 bg-amber-50' },
+                        Thoughtful: { emoji: '🧠', label: 'Thoughtful', cls: 'text-violet-700 bg-violet-50' }
+                      };
+                      const m = moods[reflection.mood] || { 
+                        emoji: '—', 
+                        label: reflection.mood || 'None', 
+                        cls: 'text-gray-500 bg-gray-50' 
+                      };
+                      
+                      return (
+                        <>
+                          {/* Header Row: Date + Mood */}
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-[11px] text-site-faint font-medium">
+                              {new Date(reflection.createdAt).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric' 
+                              })}
+                            </span>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${m.cls}`}>
+                              {m.emoji} {m.label}
+                            </span>
+                          </div>
+                          
+                          {/* Title */}
+                          <div className="mb-3">
+                            <p className="text-[13px] font-semibold text-site-ink mb-1">
+                              {reflection.title || 'Untitled'}
+                            </p>
+                            <p className="text-[11px] text-site-faint line-clamp-2">
+                              {reflection.content || 'No content'}
+                            </p>
+                          </div>
+                          
+                          {/* Tags Row */}
+                          {reflection.tags && reflection.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {reflection.tags.map((tag, idx) => (
+                                <span key={idx} className="inline-flex px-2 py-0.5 bg-sky-100 text-sky-700 text-[9px] font-semibold rounded">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    }}
+                    onRowClick={() => navigate("/reflect")}
+                    emptyMessage={moodFilter !== 'all' ? 'No matching reflections' : 'No reflections yet'}
+                    emptyIcon={<Award className="w-7 h-7 text-gray-300" />}
+                    emptyAction={moodFilter === 'all' ? (
                       <button onClick={() => navigate("/reflect")} className="inline-flex items-center gap-1 text-xs text-sky-600 font-bold hover:underline mt-2">
                         Write a reflection <ArrowUpRight className="w-3 h-3" />
                       </button>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-12 gap-3 px-3 pb-2 text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider border-b border-[#f0f2eb]">
-                      <span className="col-span-1">#</span>
-                      <span className="col-span-4">Title</span>
-                      <span className="col-span-2 text-center">Mood</span>
-                      <span className="col-span-3">Date</span>
-                      <span className="col-span-2 text-right">Action</span>
-                    </div>
-                    <div className="divide-y divide-[#f0f2eb]">
-                      {filteredReflections.slice((mapPage-1)*MAPS_PER_PAGE, mapPage*MAPS_PER_PAGE).map((r, i) => {
-                        const moods = { Happy: { emoji: '😊', label: 'Happy', cls: 'text-emerald-700 bg-emerald-50' }, Neutral: { emoji: '😐', label: 'Neutral', cls: 'text-gray-600 bg-gray-100' }, Sad: { emoji: '😔', label: 'Struggling', cls: 'text-blue-700 bg-blue-50' }, Energized: { emoji: '⚡', label: 'Energized', cls: 'text-amber-700 bg-amber-50' }, Thoughtful: { emoji: '🧠', label: 'Thoughtful', cls: 'text-violet-700 bg-violet-50' } };
-                        const m = moods[r.mood] || { emoji: '—', label: r.mood || 'None', cls: 'text-gray-500 bg-gray-50' };
-                        return (
-                          <div key={r._id} onClick={() => navigate("/reflect")}
-                            className="grid grid-cols-12 gap-3 items-center px-3 py-3.5 hover:bg-[#f8faf6] cursor-pointer transition-colors group">
-                            <span className="col-span-1 text-[12px] text-site-faint font-medium">{(mapPage-1)*MAPS_PER_PAGE + i + 1}</span>
-                            <div className="col-span-4 min-w-0">
-                              <p className="text-[13px] font-semibold text-site-ink truncate group-hover:text-sky-600 transition-colors">{r.title || 'Untitled'}</p>
-                              <p className="text-[11px] text-site-faint truncate">{r.content?.slice(0, 50)}{r.content?.length > 50 ? '...' : ''}</p>
-                            </div>
-                            <div className="col-span-2 flex justify-center">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${m.cls}`}>
-                                {m.emoji} {m.label}
-                              </span>
-                            </div>
-                            <span className="col-span-3 text-[12px] text-site-faint">{new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                            <div className="col-span-2 text-right">
-                              <span className="inline-flex px-3 py-1 bg-sky-600 text-white text-[10px] font-bold rounded-lg">View</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    ) : null}
+                  />
+                  {filteredReflections.length > 0 && (
                     <Pagination page={mapPage} setPage={setMapPage} totalPages={Math.ceil(filteredReflections.length / MAPS_PER_PAGE)} />
-                  </>
-                )
+                  )}
+                </>
               )}
 
               {/* Sessions tab */}
               {activeTab === 'sessions' && (
-                filteredSessions.length === 0 ? (
-                  <div className="text-center py-10">
-                    <Clock className="w-6 h-6 text-gray-300 mx-auto mb-2" />
-                    <p className="text-xs text-site-muted">{sessionTypeFilter !== 'all' ? 'No matching sessions' : 'No sessions yet'}</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-12 gap-2 px-3 pb-2 text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider border-b border-[#f0f2eb]">
-                      <span className="col-span-1">#</span>
-                      <span className="col-span-3">Skill</span>
-                      <span className="col-span-2 text-center">Type</span>
-                      <span className="col-span-2 text-center">Duration</span>
-                      <span className="col-span-2">When</span>
-                      <span className="col-span-2 text-right">Action</span>
-                    </div>
-                    <div className="divide-y divide-[#f0f2eb]">
-                      {filteredSessions.slice((mapPage-1)*MAPS_PER_PAGE, mapPage*MAPS_PER_PAGE).map((p, i) => {
-                        const isSkillMap = !!p.skillId;
-                        return (
-                        <div key={p._id} onClick={() => navigate("/log-practice")}
-                          className="grid grid-cols-12 gap-2 items-center px-3 py-3.5 hover:bg-[#f8faf6] cursor-pointer transition-colors group">
-                          <span className="col-span-1 text-[12px] text-site-faint font-medium">{(mapPage-1)*MAPS_PER_PAGE + i + 1}</span>
-                          <div className="col-span-3 flex items-center gap-2.5 min-w-0">
+                <>
+                  <DataTable
+                    data={filteredSessions.slice((mapPage - 1) * MAPS_PER_PAGE, mapPage * MAPS_PER_PAGE)}
+                    columns={[
+                      {
+                        key: 'date',
+                        label: 'Date',
+                        span: 3,
+                        render: (session) => (
+                          <span className="text-[12px] text-site-faint">
+                            {new Date(session.date).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              year: 'numeric' 
+                            })}
+                          </span>
+                        )
+                      },
+                      {
+                        key: 'skill',
+                        label: 'Skill',
+                        span: 4,
+                        render: (session) => (
+                          <div className="flex items-center gap-2.5 min-w-0">
                             <div className="w-8 h-8 rounded-lg bg-[#f0f2eb] flex items-center justify-center flex-shrink-0">
-                              <span className="text-[#2e5023] text-[11px] font-bold">{p.skillName?.charAt(0).toUpperCase()}</span>
+                              <span className="text-[#2e5023] text-[11px] font-bold">
+                                {session.skillName?.charAt(0).toUpperCase() || 'F'}
+                              </span>
                             </div>
-                            <span className="text-[13px] font-semibold text-site-ink truncate group-hover:text-sky-600 transition-colors">{p.skillName}</span>
-                          </div>
-                          <div className="col-span-2 text-center">
-                            <span className={`inline-flex px-1.5 py-0.5 text-[9px] font-bold rounded ${isSkillMap ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-                              {isSkillMap ? 'Skill Map' : 'Free'}
+                            <span className="text-[13px] font-semibold text-site-ink truncate group-hover:text-sky-600 transition-colors">
+                              {session.skillName || 'Free Practice'}
                             </span>
                           </div>
-                          <span className="col-span-2 text-center text-[12px] text-site-muted">{p.minutesPracticed}min</span>
-                          <span className="col-span-2 text-[12px] text-site-faint">{timeAgo(p.date)}</span>
-                          <div className="col-span-2 text-right">
-                            <span className="inline-flex px-3 py-1 bg-sky-600 text-white text-[10px] font-bold rounded-lg">View Details</span>
+                        )
+                      },
+                      {
+                        key: 'duration',
+                        label: 'Duration',
+                        span: 2,
+                        align: 'center',
+                        render: (session) => (
+                          <span className="text-[12px] text-site-muted font-semibold">
+                            {session.minutesPracticed}min
+                          </span>
+                        )
+                      },
+                      {
+                        key: 'xp',
+                        label: 'XP',
+                        span: 3,
+                        align: 'right',
+                        render: (session) => {
+                          const xpEarned = session.xpEarned || 0;
+                          return (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Zap className="w-3.5 h-3.5 text-amber-500" />
+                              <span className="text-[12px] font-bold text-amber-600">
+                                +{xpEarned}
+                              </span>
+                            </div>
+                          );
+                        }
+                      }
+                    ]}
+                    renderMobileCard={(session) => {
+                      const isSkillMap = !!session.skillId;
+                      const xpEarned = session.xpEarned || 0;
+                      
+                      return (
+                        <>
+                          {/* Header Row: Skill + Date */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-[#f0f2eb] flex items-center justify-center flex-shrink-0">
+                                <span className="text-[#2e5023] text-[11px] font-bold">
+                                  {session.skillName?.charAt(0).toUpperCase() || 'F'}
+                                </span>
+                              </div>
+                              <span className="text-[13px] font-semibold text-site-ink truncate">
+                                {session.skillName || 'Free Practice'}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-site-faint font-medium flex-shrink-0 ml-2">
+                              {new Date(session.date).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </span>
                           </div>
-                        </div>
-                        );
-                      })}
-                    </div>
+                          
+                          {/* Stats Row: Duration + XP */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-[11px] text-[#9aa094] mb-1 font-medium">Duration</p>
+                              <p className="text-[13px] font-semibold text-site-ink">
+                                {session.minutesPracticed} min
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] text-[#9aa094] mb-1 font-medium">XP Earned</p>
+                              <div className="flex items-center gap-1.5">
+                                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                                <p className="text-[13px] font-semibold text-amber-600">
+                                  +{xpEarned}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    }}
+                    onRowClick={() => navigate("/log-practice")}
+                    emptyMessage={sessionTypeFilter !== 'all' ? 'No matching sessions' : 'No sessions yet'}
+                    emptyIcon={<Clock className="w-7 h-7 text-gray-300" />}
+                    emptyAction={sessionTypeFilter === 'all' ? (
+                      <button onClick={() => navigate("/log-practice")} className="inline-flex items-center gap-1 text-xs text-sky-600 font-bold hover:underline mt-2">
+                        Log a session <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    ) : null}
+                  />
+                  {filteredSessions.length > 0 && (
                     <Pagination page={mapPage} setPage={setMapPage} totalPages={Math.ceil(filteredSessions.length / MAPS_PER_PAGE)} />
-                  </>
-                )
+                  )}
+                </>
               )}
             </div>
           </div>  {/* end Result Card */}
 
         </div>
       </div>
-    </>
   );
 }
 
@@ -600,8 +837,8 @@ const DonutWithCenter = memo(function DonutWithCenter({ segments, size, stroke, 
 
   let cumDeg = 0;
   return (
-    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
+    <div className="relative w-full h-full flex-shrink-0">
+      <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }} preserveAspectRatio="xMidYMid meet">
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#f0f2eb" strokeWidth={stroke} />
         {activeSegs.map((seg, i) => {
           const segDeg = (seg.value / total) * usableDeg;
@@ -619,8 +856,8 @@ const DonutWithCenter = memo(function DonutWithCenter({ segments, size, stroke, 
         })}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-lg font-bold text-site-ink leading-none">{centerText}</span>
-        {centerSub && <span className="text-[9px] text-site-faint mt-0.5">{centerSub}</span>}
+        <span className="text-base sm:text-lg font-bold text-site-ink leading-none">{centerText}</span>
+        {centerSub && <span className="text-[8px] sm:text-[9px] text-site-faint mt-0.5">{centerSub}</span>}
       </div>
     </div>
   );
@@ -629,10 +866,10 @@ const DonutWithCenter = memo(function DonutWithCenter({ segments, size, stroke, 
 const LegendRow = memo(function LegendRow({ color, label, value, hidden }) {
   if (hidden) return null;
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="w-3 h-3 rounded-[3px] flex-shrink-0" style={{ backgroundColor: color }} />
-      <span className="text-[13px] text-[#565c52] flex-1">{label}</span>
-      <span className="text-[13px] font-bold text-site-ink tabular-nums">{value}</span>
+    <div className="flex items-center gap-2 sm:gap-2.5">
+      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[3px] flex-shrink-0" style={{ backgroundColor: color }} />
+      <span className="text-xs sm:text-[13px] text-[#565c52] flex-1 truncate">{label}</span>
+      <span className="text-xs sm:text-[13px] font-bold text-site-ink tabular-nums">{value}</span>
     </div>
   );
 });

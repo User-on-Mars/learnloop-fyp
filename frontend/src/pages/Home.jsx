@@ -42,7 +42,7 @@ function FeatureCarousel() {
       <div className="max-w-5xl mx-auto px-5 py-20">
         <h2 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#1c1f1a] text-center mb-1">What you can do</h2>
         <p className="text-sm text-[#565c52] text-center mb-14">Everything you need for deliberate practice.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {[
             {
               title: "Skill Maps",
@@ -159,14 +159,14 @@ function FeatureCarousel() {
               ),
             },
           ].map((card) => (
-            <div key={card.title} className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-              <div className={`h-44 bg-gradient-to-br ${card.gradient} flex items-center justify-center relative overflow-hidden`}>
+            <div key={card.title} className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-200 min-h-[280px] flex flex-col">
+              <div className={`h-44 bg-gradient-to-br ${card.gradient} flex items-center justify-center relative overflow-hidden flex-shrink-0`}>
                 <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full ${card.blob} opacity-25 blur-xl`} />
                 <div className="relative">{card.illustration}</div>
               </div>
-              <div className="p-6">
-                <h3 className="text-base font-bold text-[#1c1f1a] mb-1.5">{card.title}</h3>
-                <p className="text-[13px] text-[#565c52] leading-relaxed">{card.desc}</p>
+              <div className="p-5 sm:p-6 flex-1 flex flex-col">
+                <h3 className="text-base font-bold text-[#1c1f1a] mb-2">{card.title}</h3>
+                <p className="text-[13px] sm:text-sm text-[#565c52] leading-relaxed">{card.desc}</p>
               </div>
             </div>
           ))}
@@ -192,10 +192,10 @@ function PricingSection() {
         <h2 className="font-[var(--font-display)] text-2xl sm:text-3xl font-bold text-[#1c1f1a] text-center mb-1">Simple pricing</h2>
         <p className="text-sm text-[#565c52] text-center mb-14">Free to start. Upgrade when you need more room.</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-14">
+        <div className="flex flex-col md:flex-row gap-6 mb-14">
 
           {/* ── FREE ── */}
-          <div className="rounded-2xl border border-[#e2e6dc] bg-[#f8faf6] p-8 flex flex-col">
+          <div className="w-full rounded-2xl border border-[#e2e6dc] bg-[#f8faf6] p-8 flex flex-col">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-11 h-11 rounded-xl bg-gray-200/60 flex items-center justify-center">
                 <Zap className="w-5 h-5 text-gray-400" />
@@ -222,13 +222,13 @@ function PricingSection() {
               ))}
             </ul>
 
-            <Link to="/signup" className="block text-center py-3.5 text-[15px] font-bold text-[#565c52] bg-white border-2 border-[#e2e6dc] rounded-xl hover:bg-gray-100 hover:text-[#1c1f1a] hover:border-[#c8cec0] transition-all">
+            <Link to="/signup" className="block text-center py-3.5 min-h-[44px] text-[15px] font-bold text-[#565c52] bg-white border-2 border-[#e2e6dc] rounded-xl hover:bg-gray-100 hover:text-[#1c1f1a] hover:border-[#c8cec0] transition-all">
               Sign up free
             </Link>
           </div>
 
           {/* ── PRO ── */}
-          <div className="relative rounded-2xl border-2 border-[#2e5023] bg-white p-8 flex flex-col shadow-xl overflow-hidden">
+          <div className="w-full relative rounded-2xl border-2 border-[#2e5023] bg-white p-8 flex flex-col shadow-xl overflow-hidden">
             {/* Background art */}
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[#a3c99a] opacity-20 blur-2xl" />
@@ -252,7 +252,7 @@ function PricingSection() {
                   <button
                     key={p.months}
                     onClick={() => setSelected(i)}
-                    className={`flex-1 relative py-2.5 text-xs font-bold rounded-lg transition-all ${
+                    className={`flex-1 relative py-2.5 min-h-[44px] text-xs font-bold rounded-lg transition-all ${
                       selected === i
                         ? "bg-[#4f7942] text-white shadow-md"
                         : "text-[#565c52] hover:text-[#1c1f1a]"
@@ -292,10 +292,10 @@ function PricingSection() {
               </ul>
 
               <Link to="/signup"
-                className="group relative block text-center py-3.5 text-[15px] font-bold rounded-xl overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 transition-all"
+                className="group relative block text-center py-3.5 min-h-[44px] text-[15px] font-bold rounded-xl overflow-hidden bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white shadow-lg shadow-[#2e5023]/25 hover:shadow-xl hover:shadow-[#2e5023]/30 transition-all"
               >
                 <span className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.08] to-white/[0.15] pointer-events-none" />
-                <span className="relative z-10">Get ProZxcv bnmkjkhgfdsaXC/. {plan.label}</span>
+                <span className="relative z-10">Get Pro · {plan.label}</span>
               </Link>
             </div>
           </div>
@@ -349,31 +349,31 @@ export default function Home() {
     <div className="w-full">
 
       {/* ━━━━ HERO ━━━━ */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#edf5e9] via-white to-[#f4f7f2] min-h-[520px] sm:min-h-[600px]">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#edf5e9] via-white to-[#f4f7f2]">
         {/* Left decorative leaves — big and bold */}
-        <LeafDecoration className="absolute -left-10 -top-10 w-[650px] h-[650px] sm:w-[800px] sm:h-[800px] lg:w-[900px] lg:h-[900px] pointer-events-none" />
+        <LeafDecoration className="absolute -left-10 -top-10 w-[650px] h-[650px] sm:w-[800px] sm:h-[800px] lg:w-[900px] lg:h-[900px] pointer-events-none opacity-30 md:opacity-100" />
 
         {/* Subtle bottom-right glow */}
         <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-[#a3c99a] opacity-10 blur-3xl pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-5 py-20 sm:py-28 flex flex-col md:flex-row items-center">
-          {/* Left spacer — takes up space where the leaves are */}
+        <div className="relative max-w-7xl mx-auto px-5 py-16 sm:py-20 md:py-28 flex flex-col md:flex-row items-center">
+          {/* Left spacer — takes up space where the leaves are on desktop */}
           <div className="hidden md:block md:w-[45%] lg:w-1/2" />
 
-          {/* Right content — pushed right with extra padding */}
-          <div className="md:w-[55%] lg:w-1/2 md:pl-10 lg:pl-20 text-center md:text-left">
-            <h1 className="font-[var(--font-display)] text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#1c1f1a] leading-tight mb-3">
+          {/* Content — centered on mobile, pushed right on desktop */}
+          <div className="w-full md:w-[55%] lg:w-1/2 md:pl-10 lg:pl-20 text-center md:text-left">
+            <h1 className="font-[var(--font-display)] text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#1c1f1a] leading-tight mb-3">
               Learn with<br className="hidden sm:block" /> structure.
             </h1>
-            <p className="text-[#2e5023] font-semibold text-lg sm:text-xl mb-5">
+            <p className="text-[#2e5023] font-semibold text-base sm:text-lg md:text-xl mb-4 sm:mb-5">
               Your personal skill-building companion
             </p>
-            <p className="text-[#565c52] text-[15px] leading-relaxed max-w-lg mb-6 mx-auto md:mx-0">
+            <p className="text-[#565c52] text-sm sm:text-[15px] leading-relaxed max-w-lg mb-6 mx-auto md:mx-0">
               Turn big goals into step-by-step skill maps. Track practice with timers, build daily streaks, earn XP, and compete on the weekly leaderboard. Learn solo or invite friends into shared rooms.
             </p>
             <Link
               to="/signup"
-              className="inline-flex items-center gap-2 px-7 py-3 bg-[#2e5023] text-white text-sm font-semibold rounded-lg hover:bg-[#4f7942] transition-colors shadow-md"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3 bg-[#2e5023] text-white text-sm font-semibold rounded-lg hover:bg-[#4f7942] transition-colors shadow-md min-h-[44px]"
             >
               GET STARTED
             </Link>
@@ -407,9 +407,9 @@ export default function Home() {
           </div>
 
           {/* Podium */}
-          <div className="flex flex-col sm:flex-row items-end justify-center gap-4 mb-14">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-center gap-4 mb-14">
             {/* 2nd place */}
-            <div className="w-full sm:w-56 text-center bg-white rounded-2xl border border-gray-200 p-6 order-2 sm:order-1">
+            <div className="w-full sm:w-56 text-center bg-white rounded-2xl border border-gray-200 p-6 order-2 sm:order-1 min-h-[200px] sm:min-h-0">
               <Award className="w-8 h-8 text-gray-400 mx-auto mb-2" />
               <p className="text-xl font-extrabold text-[#1c1f1a]">2nd</p>
               <p className="text-sm text-[#565c52] font-semibold mt-1 mb-4">3 months Pro</p>
@@ -419,7 +419,7 @@ export default function Home() {
             </div>
 
             {/* 1st place */}
-            <div className="w-full sm:w-64 text-center bg-gradient-to-b from-amber-50 to-white rounded-2xl border-2 border-amber-300 p-7 shadow-lg order-1 sm:order-2">
+            <div className="w-full sm:w-64 text-center bg-gradient-to-b from-amber-50 to-white rounded-2xl border-2 border-amber-300 p-7 shadow-lg order-1 sm:order-2 min-h-[220px] sm:min-h-0">
               <Crown className="w-10 h-10 text-amber-500 mx-auto mb-2" />
               <p className="text-2xl font-extrabold text-[#1c1f1a]">1st</p>
               <p className="text-base font-bold text-amber-700 mt-1 mb-4">6 months Pro</p>
@@ -429,7 +429,7 @@ export default function Home() {
             </div>
 
             {/* 3rd place */}
-            <div className="w-full sm:w-56 text-center bg-white rounded-2xl border border-orange-200 p-6 order-3">
+            <div className="w-full sm:w-56 text-center bg-white rounded-2xl border border-orange-200 p-6 order-3 min-h-[200px] sm:min-h-0">
               <Award className="w-8 h-8 text-orange-400 mx-auto mb-2" />
               <p className="text-xl font-extrabold text-[#1c1f1a]">3rd</p>
               <p className="text-sm text-[#565c52] font-semibold mt-1 mb-4">1 month Pro</p>

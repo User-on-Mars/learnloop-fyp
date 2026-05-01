@@ -55,7 +55,7 @@ export default function AvatarPicker({ isOpen, onClose, onSelect, currentAvatar 
                 <p className="text-white/70 text-xs">Pick a character and color</p>
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors">
+            <button onClick={onClose} className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors" aria-label="Close">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -68,7 +68,7 @@ export default function AvatarPicker({ isOpen, onClose, onSelect, currentAvatar 
           <div className="flex justify-center">
             <div className="relative">
               {preview ? (
-                <img src={preview} alt="Avatar preview" className="w-24 h-24 rounded-full ring-4 ring-[#e2e6dc] shadow-lg" />
+                <img src={preview} alt="Avatar preview" className="w-24 h-24 rounded-full ring-4 ring-[#e2e6dc] shadow-lg w-auto h-auto object-cover" loading="lazy" />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-[#f5f7f2] flex items-center justify-center ring-4 ring-[#e2e6dc]">
                   <span className="text-[#c8cec0] text-sm">Preview</span>
@@ -94,7 +94,7 @@ export default function AvatarPicker({ isOpen, onClose, onSelect, currentAvatar 
                         ? 'bg-gradient-to-br from-rose-50 to-pink-50 border-2 border-rose-400 shadow-sm scale-105'
                         : 'bg-[#f8faf6] border-2 border-transparent hover:border-[#e2e6dc] hover:bg-white'
                     }`}>
-                    <img src={shapeSvg} alt={shape.name} className="w-10 h-10 rounded-full" />
+                    <img src={shapeSvg} alt={shape.name} className="w-10 h-10 rounded-full w-auto h-auto object-cover" loading="lazy" />
                     <span className={`text-[10px] font-semibold ${isSelected ? 'text-rose-600' : 'text-[#9aa094]'}`}>{shape.name}</span>
                     {isSelected && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center">

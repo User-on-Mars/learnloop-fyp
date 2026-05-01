@@ -4,8 +4,10 @@ import { practiceAPI, skillsAPI } from '../api/client';
 import { useActiveSessions } from '../context/ActiveSessionContext';
 import { useToast } from '../context/ToastContext';
 import { showXpNotification } from '../utils/xpNotifications';
-import Sidebar from '../components/Sidebar';
 import FilterDropdown from '../components/FilterDropdown';
+import HeroSection from '../components/HeroSection';
+import DataTable from '../components/DataTable';
+import Modal, { ModalButton } from '../components/Modal';
 import {
   Play, Pause, RotateCcw, Plus, X, Search, FileText, Trash2,
   CheckCircle, Star, AlertTriangle, ArrowRight, ChevronDown,
@@ -218,68 +220,38 @@ export default function LogPractice() {
   const activeCount = activeSessions.length;
 
   return (
-    <div className="flex min-h-screen bg-[#f8faf6]">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
+    <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
 
-          {/* Hero Header */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-amber-50 rounded-2xl border border-orange-100 p-6 sm:p-8">
-            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-orange-200 opacity-15 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-amber-200 opacity-10 blur-2xl pointer-events-none" />
-
-            <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center shadow-sm">
-                    <Timer className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1f1a]">Practice Sessions</h1>
-                    <p className="text-sm text-orange-600 font-medium">Track & Improve</p>
-                  </div>
-                </div>
-                <p className="text-[#565c52] text-[15px] leading-relaxed max-w-xl">
-                  Track your learning with timers, notes, and confidence ratings. Build consistency and watch your skills grow.
-                </p>
-              </div>
-              <button onClick={()=>{resetForm();setShowNew(true);}}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl font-semibold text-sm hover:from-orange-700 hover:to-amber-700 transition-all shadow-lg shadow-orange-500/20 active:scale-[0.97] self-start sm:self-center">
-                <Plus className="w-4 h-4" /> New Session
-              </button>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="relative grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-orange-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{totalHrs}h {totalMins}m</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">Total Practice</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{totalLogged}</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">Sessions Logged</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-[#1c1f1a] leading-none">{activeCount}</p>
-                  <p className="text-[11px] text-[#9aa094] mt-0.5">Active Now</p>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* Hero Header */}
+      <HeroSection
+            title="Practice Sessions"
+            subtitle="Track & Improve"
+            description="Track your learning with timers, notes, and confidence ratings. Build consistency and watch your skills grow."
+            icon={Timer}
+            gradientFrom="orange-50"
+            gradientVia="white"
+            gradientTo="amber-50"
+            borderColor="orange-100"
+            iconGradientFrom="orange-600"
+            iconGradientTo="amber-600"
+            subtitleColor="orange-600"
+            decorColor1="orange-200"
+            decorColor2="amber-200"
+            actions={[
+              {
+                label: "New Session",
+                icon: Plus,
+                onClick: () => { resetForm(); setShowNew(true); },
+                variant: "primary"
+              }
+            ]}
+            stats={[
+              { icon: Clock, color: "#ea580c", bg: "bg-orange-100", label: "Total Practice", value: `${totalHrs}h ${totalMins}m` },
+              { icon: BarChart3, color: "#f59e0b", bg: "bg-amber-100", label: "Sessions Logged", value: totalLogged },
+              { icon: Zap, color: "#10b981", bg: "bg-emerald-100", label: "Active Now", value: activeCount }
+            ]}
+            statsColumns="grid-cols-2 sm:grid-cols-3"
+          />
 
           {/* ═══ Alerts ═══ */}
           {success && <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm font-medium"><CheckCircle className="w-4 h-4 flex-shrink-0" />{success}</div>}
@@ -320,7 +292,7 @@ export default function LogPractice() {
                       </div>
                       {s.notes && <p className="text-xs text-[#565c52] truncate mt-1">{s.notes}</p>}
                     </div>
-                    <button onClick={()=>setRemoveId(s._id??s.id)} className="text-[#c8cec0] hover:text-red-500 p-1 transition-colors"><X className="w-4 h-4"/></button>
+                    <button onClick={()=>setRemoveId(s._id??s.id)} className="min-w-[44px] min-h-[44px] text-[#c8cec0] hover:text-red-500 p-2 transition-colors" aria-label="Remove session"><X className="w-4 h-4"/></button>
                   </div>
 
                   {isR && <p className="text-xs text-[#2e5023] font-medium flex items-center gap-1.5 mb-3 bg-[#edf5e9] px-3 py-1.5 rounded-lg"><Flame className="w-3.5 h-3.5"/>Focus mode — you got this!</p>}
@@ -406,7 +378,7 @@ export default function LogPractice() {
           {/* ═══ Completed Sessions ═══ */}
           <div>
             {/* Section header */}
-            <div className="flex items-center gap-2.5 mb-4">
+            <div className="flex items-center gap-2.5 mb-4 pt-2">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center">
                 <History className="w-[18px] h-[18px] text-white" />
               </div>
@@ -481,7 +453,7 @@ export default function LogPractice() {
                             <feature.icon className={`w-5 h-5 ${feature.color}`} />
                           </div>
                           <h4 className="text-sm font-bold text-[#1c1f1a] mb-1">{feature.title}</h4>
-                          <p className="text-xs text-[#9aa094]">{feature.desc}</p>
+                          <p className="text-sm text-[#9aa094]">{feature.desc}</p>
                         </div>
                       ))}
                     </div>
@@ -489,102 +461,192 @@ export default function LogPractice() {
                 </div>
               ) : (
                 <>
-                  {/* Table header */}
-                  <div className="grid grid-cols-12 gap-3 px-5 py-3 text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider border-b border-[#e8ece3] bg-[#f8faf6] rounded-t-2xl">
-                    <span className="col-span-1">#</span>
-                    <span className="col-span-4">Skill</span>
-                    <span className="col-span-2 text-center">Duration</span>
-                    <span className="col-span-2 text-center">Confidence</span>
-                    <span className="col-span-3 text-right">Date</span>
-                  </div>
-
-                  {/* Rows */}
-                  <div className="divide-y divide-[#f0f2eb]">
-                    {paged.map((p, i) => {
-                      const open = expandedId === p._id;
-                      return (
-                        <div key={p._id}>
-                          <button type="button" onClick={()=>setExpandedId(open?null:p._id)}
-                            className="w-full grid grid-cols-12 gap-3 items-center px-5 py-3.5 text-left hover:bg-[#f8faf6] transition-colors group">
-                            <span className="col-span-1 text-[12px] text-[#9aa094] font-medium">{(page-1)*PER_PAGE+i+1}</span>
-                            <div className="col-span-4 flex items-center gap-2.5 min-w-0">
-                              <div className="w-8 h-8 rounded-lg bg-[#edf5e9] flex items-center justify-center flex-shrink-0 border border-[#d4e8cc]">
-                                <span className="text-[#2e5023] font-bold text-sm">{p.skillName?.charAt(0).toUpperCase()}</span>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-[13px] font-semibold text-[#1c1f1a] truncate group-hover:text-orange-600 transition-colors">{p.skillName}</p>
-                                {p.tags?.length > 0 && <p className="text-[10px] text-[#c8cec0] truncate">{p.tags.join(' · ')}</p>}
-                              </div>
+                  <DataTable
+                    data={paged}
+                    columns={[
+                      {
+                        key: 'skill',
+                        label: 'Skill',
+                        span: 4,
+                        render: (p, i) => (
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-[#edf5e9] flex items-center justify-center flex-shrink-0 border border-[#d4e8cc]">
+                              <span className="text-[#2e5023] font-bold text-sm">{p.skillName?.charAt(0).toUpperCase()}</span>
                             </div>
-                            <span className="col-span-2 text-center text-[12px] text-[#565c52] font-medium">{p.minutesPracticed} min</span>
-                            <div className="col-span-2 flex justify-center">
-                              {p.confidence ? (
-                                <div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} className={`w-3 h-3 ${n<=p.confidence?'text-amber-400 fill-amber-400':'text-gray-200'}`}/>)}</div>
-                              ) : <span className="text-[11px] text-[#c8cec0]">—</span>}
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-semibold text-[#1c1f1a] truncate group-hover:text-orange-600 transition-colors">{p.skillName}</p>
+                              {p.tags?.length > 0 && <p className="text-[10px] text-[#c8cec0] truncate">{p.tags.join(' · ')}</p>}
                             </div>
-                            <div className="col-span-3 flex items-center justify-end gap-2">
-                              <span className="text-[12px] text-[#9aa094]">{fmtDate(p.date)}</span>
-                              {open ? <ChevronUp className="w-3.5 h-3.5 text-[#c8cec0]"/> : <ChevronDown className="w-3.5 h-3.5 text-[#c8cec0]"/>}
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'date',
+                        label: 'Start Time',
+                        span: 3,
+                        render: (p) => (
+                          <span className="text-[12px] text-[#9aa094]">{fmtDate(p.date)}</span>
+                        )
+                      },
+                      {
+                        key: 'duration',
+                        label: 'Duration',
+                        span: 2,
+                        align: 'center',
+                        render: (p) => (
+                          <span className="text-[12px] text-[#565c52] font-medium">{p.minutesPracticed} min</span>
+                        )
+                      },
+                      {
+                        key: 'status',
+                        label: 'Status',
+                        span: 2,
+                        align: 'center',
+                        render: (p) => (
+                          <div className="flex justify-center">
+                            {p.confidence ? (
+                              <div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} className={`w-3 h-3 ${n<=p.confidence?'text-amber-400 fill-amber-400':'text-gray-200'}`}/>)}</div>
+                            ) : <span className="text-[11px] text-[#c8cec0]">—</span>}
+                          </div>
+                        )
+                      },
+                      {
+                        key: 'actions',
+                        label: 'Actions',
+                        span: 1,
+                        align: 'right',
+                        render: (p) => {
+                          const open = expandedId === p._id;
+                          return (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedId(open ? null : p._id);
+                              }}
+                              className="p-1 hover:bg-[#f0f2eb] rounded-lg transition-colors"
+                            >
+                              {open ? <ChevronUp className="w-4 h-4 text-[#c8cec0]"/> : <ChevronDown className="w-4 h-4 text-[#c8cec0]"/>}
+                            </button>
+                          );
+                        }
+                      }
+                    ]}
+                    renderMobileCard={(p, i) => (
+                      <>
+                        {/* Header Row: Skill + Status */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-[#edf5e9] flex items-center justify-center flex-shrink-0 border border-[#d4e8cc]">
+                              <span className="text-[#2e5023] font-bold text-sm">{p.skillName?.charAt(0).toUpperCase()}</span>
                             </div>
-                          </button>
-
-                          {/* Expanded detail */}
-                          {open && (
-                            <div className="px-5 pb-5 bg-[#f8faf6] border-t border-[#e8ece3]">
-                              <div className="grid sm:grid-cols-2 gap-5 pt-5">
-                                <div className="space-y-4">
-                                  {p.confidence && (
-                                    <div>
-                                      <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Confidence</p>
-                                      <div className="flex items-center gap-2.5">
-                                        <div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} className={`w-4 h-4 ${n<=p.confidence?'text-amber-400 fill-amber-400':'text-gray-200'}`}/>)}</div>
-                                        <span className="text-sm text-[#565c52] font-medium">{CONF[p.confidence]}</span>
-                                      </div>
-                                    </div>
-                                  )}
-                                  <div>
-                                    <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Duration</p>
-                                    <p className="text-sm text-[#1c1f1a] font-medium">{p.minutesPracticed} minutes</p>
-                                  </div>
-                                  {p.tags?.length > 0 && (
-                                    <div>
-                                      <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Tags</p>
-                                      <div className="flex flex-wrap gap-1.5">{p.tags.map(t=><span key={t} className="px-2.5 py-0.5 bg-[#edf5e9] text-[#2e5023] text-xs font-medium rounded-full border border-[#d4e8cc]">{t}</span>)}</div>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="space-y-4">
-                                  {p.notes && (
-                                    <div>
-                                      <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Notes</p>
-                                      <p className="text-sm text-[#1c1f1a] leading-relaxed">{p.notes}</p>
-                                    </div>
-                                  )}
-                                  {p.blockers && (
-                                    <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
-                                      <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Blockers</p>
-                                      <p className="text-sm text-amber-900">{p.blockers}</p>
-                                    </div>
-                                  )}
-                                  {p.nextStep && (
-                                    <div className="bg-[#edf5e9] rounded-xl p-3 border border-[#d4e8cc]">
-                                      <p className="text-[11px] font-semibold text-[#2e5023] uppercase tracking-wider mb-1 flex items-center gap-1"><ArrowRight className="w-3 h-3"/>Next Step</p>
-                                      <p className="text-sm text-[#2e5023]">{p.nextStep}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="mt-4 pt-3 border-t border-[#e2e6dc] flex justify-end">
-                                <button onClick={()=>{setDeleteId(p._id);setDelInput('');}} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg font-semibold transition-colors">
-                                  <Trash2 className="w-3.5 h-3.5"/>Delete
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                            <span className="text-[13px] font-semibold text-[#1c1f1a] truncate">{p.skillName}</span>
+                          </div>
+                          <div className="flex-shrink-0 ml-2">
+                            {p.confidence ? (
+                              <div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} className={`w-3 h-3 ${n<=p.confidence?'text-amber-400 fill-amber-400':'text-gray-200'}`}/>)}</div>
+                            ) : <span className="text-[11px] text-[#c8cec0]">—</span>}
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* Stats Row: Time + Duration */}
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div>
+                            <p className="text-[11px] text-[#9aa094] mb-1 font-medium">Start Time</p>
+                            <p className="text-[12px] font-semibold text-[#1c1f1a]">{fmtDate(p.date)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-[#9aa094] mb-1 font-medium">Duration</p>
+                            <p className="text-[12px] font-semibold text-[#565c52]">{p.minutesPracticed} min</p>
+                          </div>
+                        </div>
+
+                        {/* Tags if present */}
+                        {p.tags?.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {p.tags.map(t=><span key={t} className="px-2 py-0.5 bg-[#edf5e9] text-[#2e5023] text-[10px] font-medium rounded-full border border-[#d4e8cc]">{t}</span>)}
+                          </div>
+                        )}
+
+                        {/* Expand button */}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const open = expandedId === p._id;
+                            setExpandedId(open ? null : p._id);
+                          }}
+                          className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-[#9aa094] hover:text-[#1c1f1a] font-medium transition-colors"
+                        >
+                          {expandedId === p._id ? (
+                            <>Hide Details <ChevronUp className="w-3.5 h-3.5" /></>
+                          ) : (
+                            <>View Details <ChevronDown className="w-3.5 h-3.5" /></>
+                          )}
+                        </button>
+                      </>
+                    )}
+                    onRowClick={(p) => {
+                      const open = expandedId === p._id;
+                      setExpandedId(open ? null : p._id);
+                    }}
+                  />
+
+                  {/* Expanded detail section - shown below table/cards */}
+                  {expandedId && (() => {
+                    const p = paged.find(item => item._id === expandedId);
+                    if (!p) return null;
+                    return (
+                      <div className="px-5 pb-5 bg-[#f8faf6] border-t border-[#e8ece3]">
+                        <div className="grid sm:grid-cols-2 gap-5 pt-5">
+                          <div className="space-y-4">
+                            {p.confidence && (
+                              <div>
+                                <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Confidence</p>
+                                <div className="flex items-center gap-2.5">
+                                  <div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} className={`w-4 h-4 ${n<=p.confidence?'text-amber-400 fill-amber-400':'text-gray-200'}`}/>)}</div>
+                                  <span className="text-sm text-[#565c52] font-medium">{CONF[p.confidence]}</span>
+                                </div>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Duration</p>
+                              <p className="text-sm text-[#1c1f1a] font-medium">{p.minutesPracticed} minutes</p>
+                            </div>
+                            {p.tags?.length > 0 && (
+                              <div>
+                                <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Tags</p>
+                                <div className="flex flex-wrap gap-1.5">{p.tags.map(t=><span key={t} className="px-2.5 py-0.5 bg-[#edf5e9] text-[#2e5023] text-xs font-medium rounded-full border border-[#d4e8cc]">{t}</span>)}</div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-4">
+                            {p.notes && (
+                              <div>
+                                <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Notes</p>
+                                <p className="text-sm text-[#1c1f1a] leading-relaxed">{p.notes}</p>
+                              </div>
+                            )}
+                            {p.blockers && (
+                              <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
+                                <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Blockers</p>
+                                <p className="text-sm text-amber-900">{p.blockers}</p>
+                              </div>
+                            )}
+                            {p.nextStep && (
+                              <div className="bg-[#edf5e9] rounded-xl p-3 border border-[#d4e8cc]">
+                                <p className="text-[11px] font-semibold text-[#2e5023] uppercase tracking-wider mb-1 flex items-center gap-1"><ArrowRight className="w-3 h-3"/>Next Step</p>
+                                <p className="text-sm text-[#2e5023]">{p.nextStep}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-[#e2e6dc] flex justify-end">
+                          <button onClick={()=>{setDeleteId(p._id);setDelInput('');}} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg font-semibold transition-colors">
+                            <Trash2 className="w-3.5 h-3.5"/>Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Pagination */}
                   {totPages > 1 && (
@@ -605,9 +667,6 @@ export default function LogPractice() {
             </div>
           </div>
 
-        </div>
-      </main>
-
       {/* ═══ New Session Modal ═══ */}
       {showNew && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -624,7 +683,7 @@ export default function LogPractice() {
                     <p className="text-white/70 text-xs">Set up your timer and start</p>
                   </div>
                 </div>
-                <button onClick={()=>setShowNew(false)} className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"><X className="w-4 h-4"/></button>
+                <button onClick={()=>setShowNew(false)} className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors" aria-label="Close"><X className="w-4 h-4"/></button>
               </div>
             </div>
 
@@ -687,82 +746,114 @@ export default function LogPractice() {
       )}
 
       {/* ═══ Complete Session Modal ═══ */}
-      {showComp && compSess && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="px-6 py-4 flex-shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Complete Session</h2>
-                    <p className="text-white/70 text-xs">{compSess.skillName} — {fmtDur(compSess)}</p>
-                  </div>
-                </div>
-                <button onClick={()=>{setShowComp(false);setCompSess(null);}} className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"><X className="w-4 h-4"/></button>
-              </div>
+      <Modal
+        isOpen={showComp && compSess}
+        onClose={() => { setShowComp(false); setCompSess(null); }}
+        title={
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
             </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* Session summary */}
-              <div className="bg-[#f4f7f2] rounded-xl p-4 border border-[#e2e6dc] flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-[#edf5e9] flex items-center justify-center border border-[#d4e8cc]">
-                  <span className="text-[#2e5023] font-bold">{compSess.skillName?.charAt(0).toUpperCase()}</span>
-                </div>
-                <div>
-                  <p className="font-bold text-[#1c1f1a]">{compSess.skillName}</p>
-                  <p className="text-sm text-[#565c52]">Duration: <span className="font-semibold text-[#2e5023]">{fmtDur(compSess)}</span></p>
-                </div>
-              </div>
-
-              {/* Confidence */}
-              <div>
-                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">How confident do you feel?</label>
-                <div className="flex gap-2">
-                  {[1,2,3,4,5].map(n=>(
-                    <button key={n} onClick={()=>setComp(p=>({...p,confidence:n}))}
-                      className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
-                        comp.confidence===n ? 'bg-[#2e5023] text-white shadow-md scale-105' : 'bg-[#f4f7f2] text-[#565c52] border border-[#e2e6dc] hover:border-[#4f7942]'
-                      }`}>
-                      <Star className={`w-4 h-4 mx-auto mb-0.5 ${comp.confidence===n?'fill-white':''}`}/>{n}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-[#9aa094] mt-1.5 text-center font-medium">{CONF[comp.confidence]}</p>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">What did you practice? <span className="text-xs text-[#9aa094] font-normal">({comp.notes.length}/200)</span></label>
-                <textarea value={comp.notes} onChange={e=>setComp(p=>({...p,notes:e.target.value.slice(0,200)}))} placeholder="Describe what you worked on..." rows={3} maxLength={200}
-                  className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm resize-none transition-all"/>
-              </div>
-
-              {/* Blockers */}
-              <div>
-                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-500"/>Any blockers? <span className="text-xs text-[#9aa094] font-normal">({comp.blockers.length}/200)</span></label>
-                <textarea value={comp.blockers} onChange={e=>setComp(p=>({...p,blockers:e.target.value.slice(0,200)}))} placeholder="What was difficult?" rows={3} maxLength={200}
-                  className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 bg-[#f8faf6] focus:bg-white text-sm resize-none transition-all"/>
-              </div>
-
-              {/* Next step */}
-              <div>
-                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2 flex items-center gap-1.5"><ArrowRight className="w-4 h-4 text-[#2e5023]"/>Next step? <span className="text-xs text-[#9aa094] font-normal">({comp.nextStep.length}/200)</span></label>
-                <textarea value={comp.nextStep} onChange={e=>setComp(p=>({...p,nextStep:e.target.value.slice(0,200)}))} placeholder="What will you focus on next?" rows={3} maxLength={200}
-                  className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm resize-none transition-all"/>
-              </div>
-
-              <button onClick={submitComp} disabled={submitting}
-                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-sm flex items-center justify-center gap-2">
-                <CheckCircle className="w-4 h-4" />{submitting ? 'Saving...' : 'Save Practice Log'}
-              </button>
+            <div>
+              <h2 className="text-lg font-bold text-[#1c1f1a]">Complete Session</h2>
+              <p className="text-[#565c52] text-xs font-normal">{compSess?.skillName || 'Session'} — {compSess ? fmtDur(compSess) : '0m'}</p>
             </div>
           </div>
+        }
+        maxWidth="max-w-lg"
+        showCloseButton={true}
+      >
+        {compSess && (
+          <>
+            {/* Session summary */}
+            <div className="bg-[#f4f7f2] rounded-xl p-4 border border-[#e2e6dc] flex items-center gap-4 mb-5">
+              <div className="w-10 h-10 rounded-lg bg-[#edf5e9] flex items-center justify-center border border-[#d4e8cc]">
+                <span className="text-[#2e5023] font-bold">{compSess.skillName?.charAt(0).toUpperCase()}</span>
+              </div>
+              <div>
+                <p className="font-bold text-[#1c1f1a]">{compSess.skillName}</p>
+                <p className="text-sm text-[#565c52]">Duration: <span className="font-semibold text-[#2e5023]">{fmtDur(compSess)}</span></p>
+              </div>
+            </div>
+
+            {/* Confidence */}
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">How confident do you feel?</label>
+              <div className="flex gap-2">
+                {[1,2,3,4,5].map(n=>(
+                  <button 
+                    key={n} 
+                    onClick={()=>setComp(p=>({...p,confidence:n}))}
+                    className={`flex-1 py-3 min-h-[44px] rounded-xl text-sm font-semibold transition-all ${
+                      comp.confidence===n ? 'bg-[#2e5023] text-white shadow-md scale-105' : 'bg-[#f4f7f2] text-[#565c52] border border-[#e2e6dc] hover:border-[#4f7942]'
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 mx-auto mb-0.5 ${comp.confidence===n?'fill-white':''}`}/>
+                    {n}
+                  </button>
+                ))}
+              </div>
+          <p className="text-xs text-[#9aa094] mt-1.5 text-center font-medium">{CONF[comp.confidence]}</p>
         </div>
-      )}
+
+        {/* Notes */}
+        <div className="mb-5">
+          <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
+            What did you practice? <span className="text-xs text-[#9aa094] font-normal">({comp.notes.length}/200)</span>
+          </label>
+          <textarea 
+            value={comp.notes} 
+            onChange={e=>setComp(p=>({...p,notes:e.target.value.slice(0,200)}))} 
+            placeholder="Describe what you worked on..." 
+            rows={3} 
+            maxLength={200}
+            className="w-full px-4 py-2.5 min-h-[44px] border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm resize-none transition-all"
+          />
+        </div>
+
+        {/* Blockers */}
+        <div className="mb-5">
+          <label className="block text-sm font-semibold text-[#1c1f1a] mb-2 flex items-center gap-1.5">
+            <AlertTriangle className="w-4 h-4 text-amber-500"/>
+            Any blockers? <span className="text-xs text-[#9aa094] font-normal">({comp.blockers.length}/200)</span>
+          </label>
+          <textarea 
+            value={comp.blockers} 
+            onChange={e=>setComp(p=>({...p,blockers:e.target.value.slice(0,200)}))} 
+            placeholder="What was difficult?" 
+            rows={3} 
+            maxLength={200}
+            className="w-full px-4 py-2.5 min-h-[44px] border border-[#e2e6dc] rounded-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 bg-[#f8faf6] focus:bg-white text-sm resize-none transition-all"
+          />
+        </div>
+
+        {/* Next step */}
+        <div className="mb-5">
+          <label className="block text-sm font-semibold text-[#1c1f1a] mb-2 flex items-center gap-1.5">
+            <ArrowRight className="w-4 h-4 text-[#2e5023]"/>
+            Next step? <span className="text-xs text-[#9aa094] font-normal">({comp.nextStep.length}/200)</span>
+          </label>
+          <textarea 
+            value={comp.nextStep} 
+            onChange={e=>setComp(p=>({...p,nextStep:e.target.value.slice(0,200)}))} 
+            placeholder="What will you focus on next?" 
+            rows={3} 
+            maxLength={200}
+            className="w-full px-4 py-2.5 min-h-[44px] border border-[#e2e6dc] rounded-xl outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 bg-[#f8faf6] focus:bg-white text-sm resize-none transition-all"
+          />
+        </div>
+
+        <button 
+          onClick={submitComp} 
+          disabled={submitting}
+          className="w-full py-3 min-h-[44px] bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-sm flex items-center justify-center gap-2"
+        >
+          <CheckCircle className="w-4 h-4" />
+          {submitting ? 'Saving...' : 'Save Practice Log'}
+        </button>
+          </>
+        )}
+      </Modal>
 
       {/* ═══ Confirm Modals ═══ */}
       {resetConfirmId != null && (
@@ -815,32 +906,53 @@ export default function LogPractice() {
         </div>
       )}
 
-      {deleteId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-[#e2e6dc]">
-            <div className="bg-gradient-to-r from-red-500 to-rose-500 px-6 py-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Trash2 className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">Delete Session</h2>
-                  <p className="text-white/70 text-xs">Permanent action</p>
-                </div>
-              </div>
+      {/* Delete Session Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteId}
+        onClose={() => { setDeleteId(null); setDelInput(''); }}
+        maxWidth="max-w-sm"
+        showCloseButton={false}
+        footer={
+          <>
+            <ModalButton
+              variant="secondary"
+              onClick={() => { setDeleteId(null); setDelInput(''); }}
+            >
+              Cancel
+            </ModalButton>
+            <ModalButton
+              variant="danger"
+              onClick={doDelete}
+              disabled={delInput !== 'CONFIRM'}
+            >
+              Delete
+            </ModalButton>
+          </>
+        }
+      >
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-r from-red-500 to-rose-500 -mx-5 sm:-mx-6 -mt-4 sm:-mt-5 px-5 sm:px-6 py-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <Trash2 className="w-5 h-5 text-white" />
             </div>
-            <div className="p-6">
-              <p className="text-sm text-[#565c52] mb-4">Type <span className="font-mono font-bold text-[#1c1f1a] bg-[#f4f7f2] px-1.5 py-0.5 rounded">CONFIRM</span> to delete permanently.</p>
-              <input type="text" value={delInput} onChange={e=>setDelInput(e.target.value)} placeholder="Type CONFIRM"
-                className="w-full px-4 py-2.5 border border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 bg-[#f8faf6] focus:bg-white font-mono text-sm mb-4 transition-all"/>
-              <div className="flex gap-3">
-                <button onClick={()=>{setDeleteId(null);setDelInput('');}} className="flex-1 py-2.5 border border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-all">Cancel</button>
-                <button onClick={doDelete} disabled={delInput!=='CONFIRM'} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">Delete</button>
-              </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Delete Session</h2>
+              <p className="text-white/70 text-xs">Permanent action</p>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Message and Input */}
+        <p className="text-sm text-[#565c52] mb-4">Type <span className="font-mono font-bold text-[#1c1f1a] bg-[#f4f7f2] px-1.5 py-0.5 rounded">CONFIRM</span> to delete permanently.</p>
+        <input 
+          type="text" 
+          value={delInput} 
+          onChange={e => setDelInput(e.target.value)} 
+          placeholder="Type CONFIRM"
+          className="w-full px-4 py-3 min-h-[44px] border border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 bg-[#f8faf6] focus:bg-white font-mono text-sm transition-all"
+        />
+      </Modal>
     </div>
   );
 }

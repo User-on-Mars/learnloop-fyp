@@ -61,14 +61,16 @@ describe('ConfirmationDialog', () => {
     render(<ConfirmationDialog {...defaultProps} confirmStyle="danger" />);
     
     const confirmButton = screen.getByText('Confirm');
-    expect(confirmButton).toHaveClass('bg-red-600');
+    // Check for gradient classes used by ModalButton with danger variant
+    expect(confirmButton).toHaveClass('from-red-600');
   });
 
   it('applies primary style to confirm button by default', () => {
     render(<ConfirmationDialog {...defaultProps} />);
     
     const confirmButton = screen.getByText('Confirm');
-    expect(confirmButton).toHaveClass('bg-site-accent');
+    // Check for gradient classes used by ModalButton with primary variant
+    expect(confirmButton).toHaveClass('from-sky-600');
   });
 
   it('disables buttons and shows processing state during async operation', async () => {

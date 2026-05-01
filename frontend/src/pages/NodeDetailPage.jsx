@@ -14,6 +14,7 @@ import {
   Zap, BookOpen, Trophy, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { SkillIcon } from '../components/IconPicker';
+import Modal from '../components/Modal';
 
 const CONF_LABELS = ['', 'Not confident', 'Slightly', 'Moderate', 'Confident', 'Very confident'];
 const PER_PAGE = 5;
@@ -161,11 +162,11 @@ export default function NodeDetailPage() {
     <div className="fixed inset-0 bg-[#f8faf6] z-40 flex flex-col overflow-hidden">
 
       {/* ── Top bar - Beautiful & Visible ── */}
-      <header className="flex items-center justify-between px-4 sm:px-6 lg:px-10 py-3 border-b border-[#e8ebe4] flex-shrink-0 bg-white">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[#e8ebe4] flex-shrink-0 bg-white">
         {/* Back button with skill map icon */}
         <button 
           onClick={goBack} 
-          className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#f8faf6] to-[#f0f4ed] hover:from-[#edf5e9] hover:to-[#e5f0e0] border border-[#d4e8cc] hover:border-[#b8d4a8] text-[#2e5023] font-semibold text-[13px] transition-all shadow-sm hover:shadow group"
+          className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-[#f8faf6] to-[#f0f4ed] hover:from-[#edf5e9] hover:to-[#e5f0e0] border border-[#d4e8cc] hover:border-[#b8d4a8] text-[#2e5023] font-semibold text-[13px] transition-all shadow-sm hover:shadow group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
           <div 
@@ -174,7 +175,7 @@ export default function NodeDetailPage() {
           >
             <SkillIcon name={currentSkill?.icon || 'Map'} size={14} />
           </div>
-          <span className="font-bold">{currentSkill?.name || 'Back'}</span>
+          <span className="hidden sm:inline font-bold">{currentSkill?.name || 'Back'}</span>
         </button>
 
         {/* Node counter - Cute pill design */}
@@ -204,7 +205,7 @@ export default function NodeDetailPage() {
 
       {/* ── Scrollable content ── */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
 
           {/* ═══ ALERTS ═══ */}
           {ok && <div className="mb-4 flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-[13px] font-medium"><Zap className="w-4 h-4" />{ok}</div>}
@@ -289,17 +290,17 @@ export default function NodeDetailPage() {
                   {!isLocked && (
                     <div className="flex flex-col gap-2">
                       {isUnlocked && !isCompleted && !activeS && (
-                        <button onClick={() => setShowPractice(true)} className="flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-[#2e5023] text-white text-sm font-semibold rounded-xl hover:bg-[#3d6b30] transition-all shadow-lg shadow-[#2e5023]/15 active:scale-[0.98]">
+                        <button onClick={() => setShowPractice(true)} className="flex items-center justify-center gap-2 w-full px-6 py-3.5 min-h-[44px] bg-[#2e5023] text-white text-sm font-semibold rounded-xl hover:bg-[#3d6b30] transition-all shadow-lg shadow-[#2e5023]/15 active:scale-[0.98]">
                           <Play className="w-4 h-4" />Start Practice Session
                         </button>
                       )}
                       {isUnlocked && !isCompleted && hist.length > 0 && !activeS && (
-                        <button onClick={() => setShowMark(true)} className="flex items-center justify-center gap-2 w-full px-6 py-3 text-[#2e5023] text-sm font-semibold rounded-xl border-2 border-[#c8dbbe] hover:bg-[#edf5e9] transition-colors">
+                        <button onClick={() => setShowMark(true)} className="flex items-center justify-center gap-2 w-full px-6 py-3 min-h-[44px] text-[#2e5023] text-sm font-semibold rounded-xl border-2 border-[#c8dbbe] hover:bg-[#edf5e9] transition-colors">
                           <CheckCircle className="w-4 h-4" />Mark as Complete
                         </button>
                       )}
                       {isCompleted && (
-                        <div className="flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <div className="flex items-center justify-center gap-2 px-5 py-3.5 min-h-[44px] bg-emerald-50 border border-emerald-200 rounded-xl">
                           <Trophy className="w-5 h-5 text-emerald-600" />
                           <span className="text-sm font-semibold text-emerald-700">Node completed!</span>
                         </div>
@@ -327,9 +328,9 @@ export default function NodeDetailPage() {
                     )}
                   </div>
                   <div className="bg-[#fafbf8] border-t border-[#f0f2ec] px-5 py-3 flex gap-2">
-                    <button onClick={() => toggleSession(activeS.id)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.97] ${activeS.isRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{activeS.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{activeS.isRunning ? 'Pause' : 'Resume'}</button>
-                    <button onClick={() => resetSession(activeS.id)} className="px-3 py-2.5 border border-[#e8ebe4] text-[#565c52] rounded-xl hover:bg-white transition-colors"><RotateCcw className="w-4 h-4" /></button>
-                    <button onClick={() => openComp(activeS)} disabled={(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60; })()} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">{(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60 ? `${60 - e}s left` : 'Complete'; })()}</button>
+                    <button onClick={() => toggleSession(activeS.id)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-xl font-semibold text-sm transition-all active:scale-[0.97] ${activeS.isRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{activeS.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{activeS.isRunning ? 'Pause' : 'Resume'}</button>
+                    <button onClick={() => resetSession(activeS.id)} className="px-3 py-2.5 min-h-[44px] min-w-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl hover:bg-white transition-colors flex items-center justify-center"><RotateCcw className="w-4 h-4" /></button>
+                    <button onClick={() => openComp(activeS)} disabled={(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60; })()} className="flex-1 py-2.5 min-h-[44px] bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">{(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60 ? `${60 - e}s left` : 'Complete'; })()}</button>
                   </div>
                 </div>
               )}
@@ -402,10 +403,10 @@ export default function NodeDetailPage() {
                             <div className="mt-4 pt-3 border-t border-[#eef0ea]">
                               <p className={`text-4xl font-bold font-mono text-center py-4 rounded-xl mb-2 tracking-tight ${tplRunning ? 'bg-emerald-50 text-emerald-600' : 'bg-[#f5f7f2] text-[#1c1f1a]'}`}>{fmtTime(tplTimer)}</p>
                               <div className="flex gap-2">
-                                <button onClick={() => setTplRunning(r => !r)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm active:scale-[0.97] ${tplRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{tplRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{tplRunning ? 'Pause' : 'Start'}</button>
-                                <button onClick={() => { setTplTimer(0); setTplRunning(false); }} className="px-3 py-2.5 border border-[#eef0ea] text-[#565c52] rounded-xl hover:bg-[#f5f7f2]"><RotateCcw className="w-4 h-4" /></button>
+                                <button onClick={() => setTplRunning(r => !r)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-xl font-semibold text-sm active:scale-[0.97] ${tplRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{tplRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{tplRunning ? 'Pause' : 'Start'}</button>
+                                <button onClick={() => { setTplTimer(0); setTplRunning(false); }} className="px-3 py-2.5 min-h-[44px] min-w-[44px] border border-[#eef0ea] text-[#565c52] rounded-xl hover:bg-[#f5f7f2] flex items-center justify-center"><RotateCcw className="w-4 h-4" /></button>
                               </div>
-                              <button onClick={() => completeTplSession(i)} disabled={tplTimer < 60 || tplCompleting} className="w-full mt-2 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">{tplCompleting ? 'Completing...' : tplTimer < 60 ? `${60 - tplTimer}s until 1 min` : 'Complete Session'}</button>
+                              <button onClick={() => completeTplSession(i)} disabled={tplTimer < 60 || tplCompleting} className="w-full mt-2 py-2.5 min-h-[44px] bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">{tplCompleting ? 'Completing...' : tplTimer < 60 ? `${60 - tplTimer}s until 1 min` : 'Complete Session'}</button>
                             </div>
                           )}
                         </div>
@@ -539,8 +540,8 @@ export default function NodeDetailPage() {
         <h3 className="text-base font-bold text-[#1c1f1a] mb-1">Leave this page?</h3>
         <p className="text-[13px] text-[#565c52] mb-5">Session is running. Progress won't be saved.</p>
         <div className="flex gap-2">
-          <button onClick={() => setShowBackConfirm(false)} className="flex-1 py-2.5 border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Stay</button>
-          <button onClick={() => { setTplRunning(false); setShowBackConfirm(false); nav(`/skills/${skillId}`); }} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 text-sm transition-colors">Leave</button>
+          <button onClick={() => setShowBackConfirm(false)} className="flex-1 py-2.5 min-h-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Stay</button>
+          <button onClick={() => { setTplRunning(false); setShowBackConfirm(false); nav(`/skills/${skillId}`); }} className="flex-1 py-2.5 min-h-[44px] bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 text-sm transition-colors">Leave</button>
         </div>
       </div></div>)}
 
@@ -549,8 +550,8 @@ export default function NodeDetailPage() {
         <h3 className="text-base font-bold text-[#1c1f1a] mb-1">Discard session?</h3>
         <p className="text-[13px] text-[#565c52] mb-5">This removes the active session and unsaved progress.</p>
         <div className="flex gap-2">
-          <button onClick={() => setShowRemove(false)} className="flex-1 py-2.5 border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Keep</button>
-          <button onClick={removeActive} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 text-sm transition-colors">Discard</button>
+          <button onClick={() => setShowRemove(false)} className="flex-1 py-2.5 min-h-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Keep</button>
+          <button onClick={removeActive} className="flex-1 py-2.5 min-h-[44px] bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 text-sm transition-colors">Discard</button>
         </div>
       </div></div>)}
 
@@ -559,8 +560,8 @@ export default function NodeDetailPage() {
         <h3 className="text-base font-bold text-[#1c1f1a] mb-1">Mark as complete?</h3>
         <p className="text-[13px] text-[#565c52] mb-5"><span className="font-semibold">"{node?.title}"</span> will be marked done.</p>
         <div className="flex gap-2">
-          <button onClick={() => setShowMark(false)} className="flex-1 py-2.5 border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Cancel</button>
-          <button onClick={markDone} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 text-sm transition-colors">Complete</button>
+          <button onClick={() => setShowMark(false)} className="flex-1 py-2.5 min-h-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Cancel</button>
+          <button onClick={markDone} className="flex-1 py-2.5 min-h-[44px] bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 text-sm transition-colors">Complete</button>
         </div>
       </div></div>)}
 
@@ -569,52 +570,102 @@ export default function NodeDetailPage() {
         <p className="text-[12px] text-[#9aa094] mb-5">{node?.title}</p>
         <div className="mb-4">
           <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5">Session title *</label>
-          <input type="text" value={sessTitle} onChange={e => { if (e.target.value.length <= 20) setSessTitle(e.target.value); }} placeholder="e.g. Fundamentals review" maxLength={20} autoFocus className="w-full px-4 py-2.5 border border-[#e8ebe4] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none transition-all" />
+          <input type="text" value={sessTitle} onChange={e => { if (e.target.value.length <= 20) setSessTitle(e.target.value); }} placeholder="e.g. Fundamentals review" maxLength={20} autoFocus className="w-full px-4 py-2.5 min-h-[44px] border border-[#e8ebe4] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none transition-all" />
           <span className="text-[10px] text-[#b0b5ae] float-right mt-1">{sessTitle.length}/20</span>
         </div>
         <div className="flex gap-2 mb-4">
-          <button onClick={() => setCd(true)} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${cd ? 'bg-[#2e5023] text-white shadow-md' : 'bg-[#f5f7f2] text-[#565c52] border border-[#e8ebe4] hover:border-[#c8dbbe]'}`}>Countdown</button>
-          <button onClick={() => setCd(false)} className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${!cd ? 'bg-[#2e5023] text-white shadow-md' : 'bg-[#f5f7f2] text-[#565c52] border border-[#e8ebe4] hover:border-[#c8dbbe]'}`}>Stopwatch</button>
+          <button onClick={() => setCd(true)} className={`flex-1 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all ${cd ? 'bg-[#2e5023] text-white shadow-md' : 'bg-[#f5f7f2] text-[#565c52] border border-[#e8ebe4] hover:border-[#c8dbbe]'}`}>Countdown</button>
+          <button onClick={() => setCd(false)} className={`flex-1 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all ${!cd ? 'bg-[#2e5023] text-white shadow-md' : 'bg-[#f5f7f2] text-[#565c52] border border-[#e8ebe4] hover:border-[#c8dbbe]'}`}>Stopwatch</button>
         </div>
-        {cd && <div className="mb-5"><label className="block text-[12px] text-[#9aa094] mb-1.5">Duration (minutes)</label><input type="number" min={1} max={120} value={tgtM} onChange={e => setTgtM(Math.max(1, Math.min(120, parseInt(e.target.value) || 25)))} className="w-full px-4 py-2.5 border border-[#e8ebe4] rounded-xl text-sm text-center focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none" /></div>}
+        {cd && <div className="mb-5"><label className="block text-[12px] text-[#9aa094] mb-1.5">Duration (minutes)</label><input type="number" min={1} max={120} value={tgtM} onChange={e => setTgtM(Math.max(1, Math.min(120, parseInt(e.target.value) || 25)))} className="w-full px-4 py-2.5 min-h-[44px] border border-[#e8ebe4] rounded-xl text-sm text-center focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none" /></div>}
         <div className="flex gap-2">
-          <button onClick={startPractice} disabled={!sessTitle.trim()} className="flex-1 py-3 bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#3d6b30] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Start</button>
-          <button onClick={() => { setShowPractice(false); setSessTitle(''); }} className="flex-1 py-3 border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Cancel</button>
+          <button onClick={startPractice} disabled={!sessTitle.trim()} className="flex-1 py-3 min-h-[44px] bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#3d6b30] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Start</button>
+          <button onClick={() => { setShowPractice(false); setSessTitle(''); }} className="flex-1 py-3 min-h-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Cancel</button>
         </div>
       </div></div>)}
 
-      {showComp && compS && (<div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4"><div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold text-[#1c1f1a]">Complete Session</h3>
-          <button onClick={() => { setShowComp(false); setCompS(null); }} className="p-1.5 text-[#b0b5ae] hover:text-[#1c1f1a] rounded-lg hover:bg-[#f5f7f2] transition-colors"><X className="w-5 h-5" /></button>
+      <Modal
+        isOpen={showComp && compS}
+        onClose={() => { setShowComp(false); setCompS(null); }}
+        title="Complete Session"
+        maxWidth="max-w-md"
+        footer={
+          <button 
+            onClick={submitComp} 
+            disabled={sub} 
+            className="w-full py-3.5 min-h-[44px] bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-lg shadow-emerald-600/15"
+          >
+            {sub ? 'Saving...' : 'Save Practice Log'}
+          </button>
+        }
+      >
+        <div className="bg-[#f5f7f2] rounded-xl p-4 mb-5 border border-[#eef0ea]">
+          <p className="text-sm font-semibold text-[#1c1f1a]">{node?.title}</p>
+          {compS?.notes && <p className="text-[12px] text-[#565c52] mt-0.5">{compS.notes}</p>}
         </div>
-        <div className="bg-[#f5f7f2] rounded-xl p-4 mb-5 border border-[#eef0ea]"><p className="text-sm font-semibold text-[#1c1f1a]">{node?.title}</p>{compS.notes && <p className="text-[12px] text-[#565c52] mt-0.5">{compS.notes}</p>}</div>
+        
         <div className="mb-5">
           <label className="block text-[13px] font-semibold text-[#1c1f1a] mb-2.5">How confident do you feel?</label>
-          <div className="flex gap-2">{[1, 2, 3, 4, 5].map(n => (
-            <button key={n} onClick={() => setComp(p => ({ ...p, confidence: n }))} className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${comp.confidence === n ? 'bg-[#2e5023] text-white scale-[1.05] shadow-lg shadow-[#2e5023]/15' : 'bg-[#f5f7f2] text-[#565c52] border border-[#eef0ea] hover:border-[#c8dbbe]'}`}>
-              <Star className={`w-4 h-4 mx-auto mb-0.5 ${comp.confidence === n ? 'fill-white' : ''}`} />{n}
-            </button>
-          ))}</div>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map(n => (
+              <button 
+                key={n} 
+                onClick={() => setComp(p => ({ ...p, confidence: n }))} 
+                className={`flex-1 py-3 min-h-[44px] rounded-xl text-sm font-medium transition-all ${comp.confidence === n ? 'bg-[#2e5023] text-white scale-[1.05] shadow-lg shadow-[#2e5023]/15' : 'bg-[#f5f7f2] text-[#565c52] border border-[#eef0ea] hover:border-[#c8dbbe]'}`}
+              >
+                <Star className={`w-4 h-4 mx-auto mb-0.5 ${comp.confidence === n ? 'fill-white' : ''}`} />
+                {n}
+              </button>
+            ))}
+          </div>
           <p className="text-[11px] text-[#b0b5ae] mt-1.5 text-center">{CONF_LABELS[comp.confidence]}</p>
         </div>
+        
         <div className="mb-4">
           <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5">Notes</label>
-          <textarea value={comp.notes} onChange={e => { if (e.target.value.length <= 50) setComp(p => ({ ...p, notes: e.target.value })); }} rows={2} maxLength={50} className="w-full px-4 py-2.5 border border-[#eef0ea] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none" placeholder="What did you practice?" />
+          <textarea 
+            value={comp.notes} 
+            onChange={e => { if (e.target.value.length <= 50) setComp(p => ({ ...p, notes: e.target.value })); }} 
+            rows={2} 
+            maxLength={50} 
+            className="w-full px-4 py-2.5 min-h-[44px] border border-[#eef0ea] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none" 
+            placeholder="What did you practice?" 
+          />
           <span className="text-[10px] text-[#b0b5ae] float-right mt-0.5">{comp.notes.length}/50</span>
         </div>
+        
         <div className="mb-4">
-          <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-500" />Blockers</label>
-          <textarea value={comp.blockers} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({ ...p, blockers: e.target.value })); }} rows={2} maxLength={200} className="w-full px-4 py-2.5 border border-[#eef0ea] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none" placeholder="Any challenges?" />
+          <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+            Blockers
+          </label>
+          <textarea 
+            value={comp.blockers} 
+            onChange={e => { if (e.target.value.length <= 200) setComp(p => ({ ...p, blockers: e.target.value })); }} 
+            rows={2} 
+            maxLength={200} 
+            className="w-full px-4 py-2.5 min-h-[44px] border border-[#eef0ea] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none" 
+            placeholder="Any challenges?" 
+          />
           <span className="text-[10px] text-[#b0b5ae] float-right mt-0.5">{comp.blockers.length}/200</span>
         </div>
+        
         <div className="mb-6">
-          <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5 flex items-center gap-1.5"><ArrowRight className="w-3.5 h-3.5 text-[#2e5023]" />Next step</label>
-          <textarea value={comp.nextStep} onChange={e => { if (e.target.value.length <= 200) setComp(p => ({ ...p, nextStep: e.target.value })); }} rows={2} maxLength={200} className="w-full px-4 py-2.5 border border-[#eef0ea] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none" placeholder="What's next?" />
+          <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5 flex items-center gap-1.5">
+            <ArrowRight className="w-3.5 h-3.5 text-[#2e5023]" />
+            Next step
+          </label>
+          <textarea 
+            value={comp.nextStep} 
+            onChange={e => { if (e.target.value.length <= 200) setComp(p => ({ ...p, nextStep: e.target.value })); }} 
+            rows={2} 
+            maxLength={200} 
+            className="w-full px-4 py-2.5 min-h-[44px] border border-[#eef0ea] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none resize-none" 
+            placeholder="What's next?" 
+          />
           <span className="text-[10px] text-[#b0b5ae] float-right mt-0.5">{comp.nextStep.length}/200</span>
         </div>
-        <button onClick={submitComp} disabled={sub} className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-lg shadow-emerald-600/15">{sub ? 'Saving...' : 'Save Practice Log'}</button>
-      </div></div>)}
+      </Modal>
 
     </div>
   );

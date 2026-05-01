@@ -83,6 +83,13 @@ export const adminApi = {
     const qs = new URLSearchParams(params).toString();
     return request(`/admin/subscriptions${qs ? `?${qs}` : ''}`);
   },
+  getUserSubscription: (userId) => request(`/admin/subscription/${userId}`),
+  upgradeSubscription: (userId, periodEnd) => request(`/admin/subscription/${userId}/upgrade`, { 
+    method: 'POST', 
+    body: JSON.stringify({ periodEnd }) 
+  }),
+  downgradeSubscription: (userId) => request(`/admin/subscription/${userId}/downgrade`, { method: 'POST' }),
+  cancelSubscription: (userId) => request(`/admin/subscription/${userId}/cancel`, { method: 'POST' }),
   getRewards: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/admin/rewards${qs ? `?${qs}` : ''}`);

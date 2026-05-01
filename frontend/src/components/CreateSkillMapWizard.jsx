@@ -96,26 +96,30 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
 
         {/* Header with gradient */}
         <div
-          className="px-6 py-4 flex-shrink-0 transition-colors"
+          className="px-5 sm:px-6 py-4 flex-shrink-0 transition-colors"
           style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
                 <SkillIcon name={icon} size={20} className="text-white" />
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">{title || 'Create Skill Map'}</h2>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base sm:text-lg font-bold text-white truncate">{title || 'Create Skill Map'}</h2>
                 <p className="text-white/70 text-xs">Step {step} of {totalSteps} — {STEPS[step - 1].label}</p>
               </div>
             </div>
-            <button onClick={resetAndClose} className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors">
-              <X className="w-4 h-4" />
+            <button 
+              onClick={resetAndClose} 
+              className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg bg-white/20 hover:bg-white/30 active:bg-white/40 flex items-center justify-center text-white transition-colors flex-shrink-0 ml-2"
+              aria-label="Close wizard"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
           {/* Progress Bar */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-3 sm:mt-4">
             {STEPS.map((s) => (
               <div key={s.id} className={`h-1 flex-1 rounded-full transition-all ${s.id <= step ? 'bg-white' : 'bg-white/30'}`} />
             ))}
@@ -123,7 +127,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 sm:py-6">
 
           {/* Step 1: Basics */}
           {step === 1 && (
@@ -143,7 +147,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
                 <input type="text" value={title} onChange={e => setTitle(e.target.value.slice(0, 20))} maxLength={20}
                   placeholder="e.g. Python Basics, Guitar"
                   autoFocus
-                  className="w-full px-4 py-3.5 border-2 border-[#e2e6dc] rounded-xl focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/15 transition-all text-sm" />
+                  className="w-full px-4 py-3.5 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/15 transition-all text-sm" />
                 <div className="flex justify-between mt-1.5">
                   <div>
                     {attemptedNext[1] && !title.trim() && <p className="text-xs text-red-500">Title is required</p>}
@@ -159,7 +163,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
                 </label>
                 <textarea value={description} onChange={e => setDescription(e.target.value.slice(0, 120))} rows={2} maxLength={120}
                   placeholder="What will this skill map help you learn?"
-                  className="w-full px-4 py-3 border-2 border-[#e2e6dc] rounded-xl focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/15 transition-all text-sm resize-none" />
+                  className="w-full px-4 py-3 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/15 transition-all text-sm resize-none" />
                 <div className="flex justify-end mt-1.5">
                   <span className="text-[11px] text-[#9aa094]">{description.length}/120</span>
                 </div>
@@ -171,7 +175,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
                 </label>
                 <input type="text" value={goal} onChange={e => setGoal(e.target.value.slice(0, 16))} maxLength={16}
                   placeholder="e.g. Build a web app"
-                  className="w-full px-4 py-3.5 border-2 border-[#e2e6dc] rounded-xl focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/15 transition-all text-sm" />
+                  className="w-full px-4 py-3.5 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/15 transition-all text-sm" />
                 <div className="flex justify-between mt-1.5">
                   {attemptedNext[1] && !goal.trim() ? <p className="text-xs text-red-500">Goal is required</p> : <p className="text-[11px] text-[#9aa094]">Something concrete to keep you motivated</p>}
                   <span className="text-[11px] text-[#9aa094]">{goal.length}/16</span>
@@ -245,13 +249,15 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
               <div className="space-y-2">
                 {nodeInputs.map((val, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0" style={{ backgroundColor: color }}>{i + 1}</div>
+                    <div className="w-7 h-7 min-w-[28px] rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0" style={{ backgroundColor: color }}>{i + 1}</div>
                     <input type="text" value={val} onChange={e => updateNodeRow(i, e.target.value)} maxLength={16}
                       placeholder={`Node ${i + 1} title`}
-                      className="flex-1 px-3 py-2.5 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/15 bg-white text-sm transition-all" />
+                      className="flex-1 px-3 py-2.5 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/15 bg-white text-sm transition-all" />
                     <span className="text-[10px] text-[#c8cec0] w-8 text-right shrink-0">{val.length}/16</span>
                     <button type="button" onClick={() => removeNodeRow(i)} disabled={nodeInputs.length <= 1}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-[#c8cec0] hover:text-red-500 hover:bg-red-50 disabled:opacity-30 transition-all shrink-0">
+                      className="w-9 h-9 min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center text-[#c8cec0] hover:text-red-500 hover:bg-red-50 active:bg-red-100 disabled:opacity-30 transition-all shrink-0"
+                      aria-label={`Remove node ${i + 1}`}
+                    >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -259,7 +265,7 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
               </div>
 
               <button type="button" onClick={addNodeRow} disabled={nodeInputs.length >= maxNodes}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-indigo-600 hover:text-indigo-700 disabled:text-[#c8cec0] disabled:cursor-not-allowed transition-colors">
+                className="flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2.5 text-[12px] font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 disabled:text-[#c8cec0] disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors rounded-lg">
                 <Plus className="w-3.5 h-3.5" /> Add node ({nodeInputs.length}/{maxNodes})
               </button>
 
@@ -372,22 +378,22 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 px-6 py-4 bg-[#f8faf6] border-t border-[#e2e6dc]">
-          <div className="flex gap-3">
+        <div className="flex-shrink-0 px-5 sm:px-6 py-4 bg-[#f8faf6] border-t border-[#e2e6dc]">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button type="button" onClick={step === 1 ? resetAndClose : goBack} disabled={isSubmitting}
-              className="flex-1 py-3 border-2 border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 py-3 min-h-[44px] border-2 border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-white active:bg-[#f4f7f2] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {step === 1 ? (<><X className="w-4 h-4" /> Cancel</>) : (<><ArrowRight className="w-4 h-4 rotate-180" /> Back</>)}
             </button>
 
             {step < totalSteps ? (
               <button type="button" onClick={goNext} disabled={!canProceed() && attemptedNext[step]}
-                className="flex-1 py-3 text-white rounded-xl font-semibold text-sm transition-all shadow-lg flex items-center justify-center gap-2"
+                className="flex-1 py-3 min-h-[44px] text-white rounded-xl font-semibold text-sm transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
                 style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
                 Next <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <button type="button" onClick={handleCreate} disabled={isSubmitting}
-                className="flex-1 py-3 text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-50 shadow-lg flex items-center justify-center gap-2"
+                className="flex-1 py-3 min-h-[44px] text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-50 shadow-lg flex items-center justify-center gap-2"
                 style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
                 {isSubmitting ? (<><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>) : (<><Plus className="w-4 h-4" /> Create Skill Map</>)}
               </button>

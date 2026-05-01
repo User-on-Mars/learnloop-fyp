@@ -315,7 +315,7 @@ export default function ProgressionPathGamefied() {
       </div>
 
       {/* Main Content */}
-      <div className={`py-4 sm:py-8 px-3 sm:px-4 transition-all duration-300 relative z-10 ${isSidebarOpen ? 'lg:mr-80' : ''}`}>
+      <div className={`py-4 sm:py-8 px-4 sm:px-6 transition-all duration-300 relative z-10 ${isSidebarOpen ? 'lg:mr-80' : ''}`}>
         <div className="max-w-3xl mx-auto">
           <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
             <button
@@ -388,7 +388,7 @@ export default function ProgressionPathGamefied() {
                     {index > 0 && (
                       <div className={`w-1 h-10 rounded-full ${prevCompleted ? 'bg-green-400' : 'bg-gray-200'}`} />
                     )}
-                    <div className={`w-full flex ${isLeft ? 'justify-start pl-6 sm:pl-16' : 'justify-end pr-6 sm:pr-16'}`}>
+                    <div className={`w-full flex ${isLeft ? 'justify-start pl-4 sm:pl-16' : 'justify-end pr-4 sm:pr-16'}`}>
                       <div className="flex flex-col items-center cursor-pointer" onClick={() => handleNodeClick(node, index)}>
                         <div className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-[3px] flex items-center justify-center transition-all duration-300 shadow-lg hover:scale-105 ${outerCls}`}>
                           <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${innerCls}`}>
@@ -477,9 +477,9 @@ export default function ProgressionPathGamefied() {
 
       {/* Right Sidebar - Details Panel */}
       <div
-        className={`fixed lg:fixed top-16 right-0 h-[calc(100vh-4rem)] bg-white border-l border-[#e2e6dc] shadow-lg transition-transform duration-300 z-20 ${
+        className={`fixed top-16 right-0 h-[calc(100vh-4rem)] bg-white border-l border-[#e2e6dc] shadow-lg transition-transform duration-300 z-20 ${
           isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-        } w-80 flex flex-col`}
+        } w-full sm:w-80 flex flex-col`}
       >
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#e2e6dc] bg-[#f8faf6]">
@@ -487,11 +487,11 @@ export default function ProgressionPathGamefied() {
           <div className="flex items-center gap-1">
             {isEditing ? (
               <>
-                <button onClick={handleSaveEdit} disabled={isSaving || !editForm.name.trim()} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50" title="Save"><Check className="w-5 h-5" /></button>
-                <button onClick={() => setShowCancelConfirm(true)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Cancel"><X className="w-5 h-5" /></button>
+                <button onClick={handleSaveEdit} disabled={isSaving || !editForm.name.trim()} className="min-w-[44px] min-h-[44px] p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50" title="Save"><Check className="w-5 h-5" /></button>
+                <button onClick={() => setShowCancelConfirm(true)} className="min-w-[44px] min-h-[44px] p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Cancel"><X className="w-5 h-5" /></button>
               </>
             ) : !isTemplateMap ? (
-              <button onClick={handleEditClick} className="p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>
+              <button onClick={handleEditClick} className="min-w-[44px] min-h-[44px] p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>
             ) : null}
           </div>
         </div>
@@ -634,8 +634,8 @@ export default function ProgressionPathGamefied() {
                         <div className="flex items-center justify-between min-w-0">
                           <span className="font-semibold text-gray-700 truncate flex-1">{index + 1}. {node.title}</span>
                           <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => handleEditNodeName(node)} className="p-1 text-site-accent hover:text-site-accent-hover" title="Edit"><Pencil className="w-3 h-3" /></button>
-                            {index > 0 && <button onClick={() => setDeletingNodeId(node._id)} className="p-1 text-gray-400 hover:text-red-500" title="Delete"><Trash2 className="w-3 h-3" /></button>}
+                            <button onClick={() => handleEditNodeName(node)} className="min-w-[44px] min-h-[44px] p-2 text-site-accent hover:text-site-accent-hover" title="Edit"><Pencil className="w-3 h-3" /></button>
+                            {index > 0 && <button onClick={() => setDeletingNodeId(node._id)} className="min-w-[44px] min-h-[44px] p-2 text-gray-400 hover:text-red-500" title="Delete"><Trash2 className="w-3 h-3" /></button>}
                           </div>
                         </div>
                       )}
@@ -645,7 +645,7 @@ export default function ProgressionPathGamefied() {
                   {pendingAddNodes.map((title, i) => (
                     <div key={`pending-${i}`} className="bg-green-50 rounded p-2 border border-green-300 border-dashed text-xs flex items-center justify-between">
                       <span className="font-semibold text-green-700 truncate flex-1">+ {title}</span>
-                      <button onClick={() => setPendingAddNodes(prev => prev.filter((_, j) => j !== i))} className="p-1 text-gray-400 hover:text-red-500 shrink-0"><X className="w-3 h-3" /></button>
+                      <button onClick={() => setPendingAddNodes(prev => prev.filter((_, j) => j !== i))} className="min-w-[44px] min-h-[44px] p-2 text-gray-400 hover:text-red-500 shrink-0" aria-label="Remove"><X className="w-3 h-3" /></button>
                     </div>
                   ))}
                 </div>
@@ -788,7 +788,7 @@ export default function ProgressionPathGamefied() {
       {/* Toggle sidebar button - always visible at same position */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`fixed top-20 p-2 bg-white border border-[#e2e6dc] rounded-xl shadow-md hover:shadow-lg transition-all z-20 hover:bg-[#edf5e9] ${isSidebarOpen ? 'right-[20.5rem]' : 'right-4'}`}
+        className={`fixed top-20 p-2 bg-white border border-[#e2e6dc] rounded-xl shadow-md hover:shadow-lg transition-all z-20 hover:bg-[#edf5e9] ${isSidebarOpen ? 'right-[calc(100%-2.5rem)] sm:right-[20.5rem]' : 'right-4'}`}
         aria-label={isSidebarOpen ? 'Close details' : 'Open details'}
       >
         {isSidebarOpen ? <ChevronRight className="w-5 h-5 text-[#2e5023]" /> : <ChevronLeft className="w-5 h-5 text-[#2e5023]" />}
@@ -811,7 +811,7 @@ export default function ProgressionPathGamefied() {
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/30 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/30 z-10 sm:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -820,7 +820,7 @@ export default function ProgressionPathGamefied() {
       {showBackToTop && (
         <button
           onClick={() => { const m = document.querySelector('main'); if (m) m.scrollTo({ top: 0, behavior: 'smooth' }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-          className={`fixed bottom-6 w-11 h-11 bg-site-accent text-white rounded-full shadow-lg hover:bg-site-accent-hover transition-all z-50 flex items-center justify-center hover:scale-110 ${isSidebarOpen ? 'right-[21.5rem]' : 'right-6'}`}
+          className={`fixed bottom-6 w-11 h-11 bg-site-accent text-white rounded-full shadow-lg hover:bg-site-accent-hover transition-all z-50 flex items-center justify-center hover:scale-110 ${isSidebarOpen ? 'right-[calc(100%-2.5rem)] sm:right-[21.5rem]' : 'right-6'}`}
           aria-label="Back to top"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>

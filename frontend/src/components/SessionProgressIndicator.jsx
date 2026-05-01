@@ -234,7 +234,7 @@ function SessionProgressIndicator({
             type="button"
             onClick={() => onChange(index + 1)}
             className={`
-              w-8 h-8 border-2 transition-colors pixel-button
+              min-w-[44px] min-h-[44px] w-11 h-11 border-2 transition-colors pixel-button
               ${index < value 
                 ? 'bg-blue-500 border-blue-600' 
                 : 'bg-gray-200 border-gray-300 hover:bg-gray-300'
