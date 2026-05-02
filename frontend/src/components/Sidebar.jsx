@@ -145,12 +145,6 @@ export default function Sidebar() {
             </>
           )}
         </nav>
-        {isFree && (
-          <button onClick={() => navigate('/subscription')} title="Upgrade to Pro"
-            className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg flex items-center justify-center text-amber-500 hover:bg-amber-50 transition-colors mb-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l3.057-3L12 3.5 15.943 0 19 3l-2 7H7L5 3zM7 10h10l1 10H6l1-10z" /></svg>
-          </button>
-        )}
       </aside>
 
       {/* ═══ Modals ═══ */}

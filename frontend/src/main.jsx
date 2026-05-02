@@ -12,7 +12,7 @@ import { Provider } from 'react-redux';
 import "./index.css";
 
 // Pages (make sure these files exist)
-import Home from "./pages/Home";
+import Home from "./App";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import FeaturesPage from "./pages/FeaturesPage";
@@ -69,6 +69,7 @@ import AdminReflections from "./pages/admin/AdminReflections";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
+import AdminPublishRequests from "./pages/admin/AdminPublishRequests";
 
 // Protect routes that require auth
 function Protected({ children }) {
@@ -195,6 +196,7 @@ const router = createBrowserRouter([
           { path: "xp-leagues", element: <AdminXpLeagues /> },
           { path: "skill-maps", element: <AdminSkillMaps /> },
           { path: "templates", element: <AdminTemplates /> },
+          { path: "publish-requests", element: <AdminPublishRequests /> },
           { path: "reflections", element: <AdminReflections /> },
           { path: "audit-log", element: <AdminAuditLog /> },
           { path: "subscriptions", element: <AdminSubscriptions /> },

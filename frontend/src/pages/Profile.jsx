@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import AvatarPicker from "../components/AvatarPicker";
 import { useCustomAvatar } from "../context/AvatarContext";
+import MyPublishRequests from "../components/MyPublishRequests";
 
 export default function Profile() {
   const user = useAuth();
@@ -285,6 +286,9 @@ export default function Profile() {
               {nameUpdateMessage && <Alert variant={nameUpdateMessage.variant} description={nameUpdateMessage.text} />}
             </div>
           </div>
+
+          {/* My Publish Requests */}
+          <MyPublishRequests />
 
           {/* Security - Password */}
           <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden shadow-sm">

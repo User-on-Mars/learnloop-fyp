@@ -199,26 +199,45 @@ export const roomsAPI = {
 
 // ============ INVITATIONS API ============
 export const invitationsAPI = {
-  // Get user's pending invitations
-  getMyInvitations: () => client.get('/invitations'),
+  getInvitations: () => client.get('/invitations'),
+  acceptInvitation: (invitationId: string) => client.post(`/invitations/${invitationId}/accept`),
+  declineInvitation: (invitationId: string) => client.post(`/invitations/${invitationId}/decline`),
+  createInvitation: (roomId: string, email: string) => client.post('/invitations', { roomId, email }),
+  cancelInvitation: (invitationId: string) => client.delete(`/invitations/${invitationId}`),
+}
+
+// ============ PUBLISH REQUESTS API ============
+export const publishRequestsAPI = {
+  checkEligibility: () => client.get('/publish-requests/eligibility'),
+  submitRequest: (skillmapId: string) => client.post('/publish-requests', { skillmapId }),
+  getMyRequests: () => client.get('/publish-requests/my-requests'),
+  cancelRequest: (requestId: string) => client.delete(`/publish-requests/${requestId}`),
   
-  // Get recent notifications (last 10, all statuses)
-  getNotifications: () => client.get('/notifications'),
+  // Admin endpoints
+  getPendingRequests: () => client.get('/publish-requests/admin/pending'),
+  getRequestHistory: (status?: string, page?: number, limit?: number) => client.get('/publish-requests/admin/history', { params: { status, page, limit } }),
+  approveRequest: (requestId: string, adminNote?: string) => 
+    client.post(`/publish-requests/admin/${requestId}/approve`, { adminNote }),
+  rejectRequest: (requestId: string, adminNote: string) => 
+    client.post(`/publish-requests/admin/${requestId}/reject`, { adminNote }),
+}
+
+// ============ TEMPLATES API ============
+export const templatesAPI = {
+  // Get all published templates
+  getTemplates: () => client.get('/templates'),
   
-  // Get room's invitations (owner only)
-  getRoomInvitations: (roomId: string) => client.get(`/rooms/${roomId}/invitations`),
-  
-  // Create invitation (owner only)
-  createInvitation: (roomId: string, email: string) => 
-    client.post(`/rooms/${roomId}/invitations`, { invitedEmail: email }),
-  
-  // Accept invitation
-  acceptInvitation: (invitationId: string) => 
-    client.patch(`/invitations/${invitationId}/accept`),
-  
-  // Decline invitation
-  declineInvitation: (invitationId: string) => 
-    client.patch(`/invitations/${invitationId}/decline`),
+  // Get template by ID
+  getTemplate: (templateId: string) => client.get(`/templates/${templateId}`),
+}
+
+// ============ NOTIFICATIONS API ============
+export const notificationsAPI = {
+  getNotifications: (limit = 50) => client.get('/notifications', { params: { limit } }),
+  getUnreadCount: () => client.get('/notifications/unread-count'),
+  markAsRead: (notificationId: string) => client.patch(`/notifications/${notificationId}/read`),
+  markAllAsRead: () => client.post('/notifications/mark-all-read'),
+  deleteNotification: (notificationId: string) => client.delete(`/notifications/${notificationId}`),
 }
 
 export default client
