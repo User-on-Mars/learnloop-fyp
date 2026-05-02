@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Send,
 } from 'lucide-react'
 import LogoMark from '../LogoMark'
 
@@ -27,6 +28,7 @@ const adminNav = [
   { id: 'subscriptions', label: 'Subscriptions', icon: Crown, path: '/admin/subscriptions' },
   { id: 'skill-maps', label: 'Skill Maps', icon: BookOpen, path: '/admin/skill-maps' },
   { id: 'templates', label: 'Templates', icon: Layers, path: '/admin/templates' },
+  { id: 'publish-requests', label: 'Publish Requests', icon: Send, path: '/admin/publish-requests' },
   { id: 'reflections', label: 'Reflections', icon: MessageSquare, path: '/admin/reflections' },
   { id: 'audit-log', label: 'Audit Log', icon: FileText, path: '/admin/audit-log' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
@@ -135,21 +137,6 @@ export default function AdminSidebar({
         }`}
       >
         {renderNav(isCollapsed)}
-
-        {/* Collapse toggle — desktop only */}
-        <div className="border-t border-site-border p-2">
-          <button
-            onClick={onToggle}
-            className="w-full flex items-center justify-center p-2 text-site-muted hover:text-site-accent hover:bg-site-soft rounded-lg transition-colors"
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <ChevronLeft className="w-4 h-4" />
-            )}
-          </button>
-        </div>
       </aside>
 
       {/* ─── Mobile Sidebar Overlay ─── */}

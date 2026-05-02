@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSkillMap } from '../context/SkillMapContext';
 import SkillList from '../components/SkillList';
@@ -6,11 +5,10 @@ import ProgressionPathGamefied from '../components/ProgressionPathGamefied';
 
 export default function SkillMapPage() {
   const { skillId } = useParams();
-  const { loadSkills, isLoading, error } = useSkillMap();
+  const { isLoading, error, loadSkills } = useSkillMap();
 
-  useEffect(() => {
-    loadSkills();
-  }, [loadSkills]);
+  // Note: loadSkills is called by SkillList component on mount
+  // No need to call it here to avoid duplicate loading
 
   // Skill detail view
   if (skillId) {

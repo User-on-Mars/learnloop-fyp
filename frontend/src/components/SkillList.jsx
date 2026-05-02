@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Trash2, ChevronRight, ChevronLeft, Target, Palette, Check, X,
-  Crown, Sparkles, Search, Map, BarChart3, Layout, Loader2, ArrowRight,
+  Crown, Sparkles, Search, Map, BarChart3, Layout, Loader2,
 } from 'lucide-react';
 import { useSkillMap } from '../context/SkillMapContext';
 import { useToast } from '../context/ToastContext';
@@ -20,14 +20,25 @@ import Modal, { ModalButton } from './Modal';
 const PER_PAGE = 9;
 
 export default function SkillList() {
+  console.log('🎨 SkillList component rendering');
+  
   const navigate = useNavigate();
   const { showSuccess } = useToast();
-  const { skills, deleteSkill, loadSkills, updateSkillMap, isLoading } = useSkillMap();
+  const { skills, deleteSkill, loadSkills, forceReloadSkills, updateSkillMap, isLoading } = useSkillMap();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [applyingTemplate, setApplyingTemplate] = useState(null);
   const [previewTemplate, setPreviewTemplate] = useState(null);
+  const hasLoadedSkillsRef = useRef(false);
+  
+  const { limits, isFree } = useSubscription();
+  
+  // Memoize the max skill maps value to prevent unnecessary re-renders
+  const maxSkillMaps = useMemo(() => {
+    return limits?.maxSkillMaps === -1 ? Infinity : (limits?.maxSkillMaps ?? 3);
+  }, [limits?.maxSkillMaps]);
+  
   const [deletingSkillId, setDeletingSkillId] = useState(null);
   const [skillPendingDeleteId, setSkillPendingDeleteId] = useState(null);
   const [page, setPage] = useState(1);
@@ -38,8 +49,6 @@ export default function SkillList() {
   const [activeView, setActiveView] = useState('maps');
   const [templateSearch, setTemplateSearch] = useState('');
   const [templateSort, setTemplateSort] = useState('popular');
-  const { limits, isFree } = useSubscription();
-  const maxSkillMaps = limits?.maxSkillMaps === -1 ? Infinity : (limits?.maxSkillMaps ?? 3);
   const hasReachedSkillMapLimit = skills.length >= maxSkillMaps;
 
   const handleCreateClick = () => {
@@ -63,21 +72,20 @@ export default function SkillList() {
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
-  // Load skills with subscription limits on mount and when limits change
+  // Load skills ONLY ONCE on mount - never reload automatically
   useEffect(() => {
-    console.log('🔍 SkillList: useEffect triggered', { limits, isFree });
-    // Load skills - if subscription context isn't ready, load without limits
-    if (limits !== undefined && isFree !== undefined) {
-      const maxAllowed = limits.maxSkillMaps === -1 ? Infinity : (limits.maxSkillMaps ?? 3);
-      console.log('✅ SkillList: Loading with subscription limits', { maxSkillMaps: maxAllowed, isFree });
+    console.log('🔍 SkillList: Mount effect running, hasLoaded:', hasLoadedSkillsRef.current);
+    
+    if (!hasLoadedSkillsRef.current) {
+      hasLoadedSkillsRef.current = true;
+      
+      // Call loadSkills with current values
+      const maxAllowed = limits?.maxSkillMaps === -1 ? Infinity : (limits?.maxSkillMaps ?? 3);
+      console.log('✅ SkillList: Loading skills ONCE on mount', { maxSkillMaps: maxAllowed, isFree });
       loadSkills({ maxSkillMaps: maxAllowed, isFree });
-    } else {
-      console.log('⚠️ SkillList: Loading without limits (subscription context not ready)');
-      // Fallback: load without locking logic if subscription context not ready
-      loadSkills(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [limits?.maxSkillMaps, isFree]); // Only depend on the actual limit values from context
+  }, []); // EMPTY ARRAY - only run on mount, never again!
 
   const handleApplyTemplate = async (template) => {
     if (hasReachedSkillMapLimit && isFree) {
@@ -93,7 +101,7 @@ export default function SkillList() {
       const skill = data.skill;
       const id = skill._id ?? skill.id;
       showSuccess(`Skill map "${template.title}" created!`);
-      loadSkills({ maxSkillMaps, isFree });
+      forceReloadSkills({ maxSkillMaps, isFree });
       navigate(`/skills/${id}`);
     } catch (e) {
       showSuccess(e?.response?.data?.error || 'Failed to create skill map');
@@ -416,7 +424,7 @@ export default function SkillList() {
                 // Regular skill map card
                 return (
                   <div key={skill._id} onClick={() => navigate(`/skills/${skill._id}`)}
-                    className="group relative bg-[#f8faf6] rounded-xl p-5 transition-all duration-200 border border-[#e2e6dc] cursor-pointer hover:shadow-lg hover:border-[#c8cec0] hover:-translate-y-0.5">
+                    className={`group relative bg-[#f8faf6] rounded-xl p-5 transition-all duration-200 border border-[#e2e6dc] cursor-pointer hover:shadow-lg hover:border-[#c8cec0] hover:-translate-y-0.5 ${colorPickerOpen === skill._id ? 'z-[60]' : 'z-0'}`}>
                     {/* Header */}
                     <div className="flex items-start gap-3 mb-4">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm text-white shrink-0" style={{ backgroundColor: themeColor }}>
@@ -425,6 +433,18 @@ export default function SkillList() {
                       <div className="flex-1 min-w-0">
                         <h3 className="text-[15px] font-bold text-[#1c1f1a] truncate group-hover:text-indigo-600 transition-colors">{skill.name}</h3>
                         <p className="text-[12px] text-[#9aa094]">{skill.completedNodes || 0}/{skill.nodeCount || 0} nodes</p>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          {skill.fromTemplate && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-bold rounded uppercase tracking-wider border border-indigo-100">
+                              Template
+                            </span>
+                          )}
+                          <span className="text-[10px] text-[#9aa094]">
+                            {skill.fromTemplate
+                              ? `by ${skill.authorCredit || 'LearnLoop'}`
+                              : 'by you'}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={(e) => { e.stopPropagation(); setColorPickerOpen(colorPickerOpen === skill._id ? null : skill._id); }}
@@ -438,7 +458,7 @@ export default function SkillList() {
                       </div>
                       {/* Color Picker */}
                       {colorPickerOpen === skill._id && (
-                        <div className="absolute right-4 top-16 bg-white rounded-xl shadow-2xl border border-[#e2e6dc] p-4 z-50 w-60" onClick={e => e.stopPropagation()}>
+                        <div className="absolute right-4 top-16 bg-white rounded-xl shadow-2xl border border-[#e2e6dc] p-4 z-[100] w-60" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-sm font-semibold text-[#1c1f1a]">Choose Color</span>
                             <button onClick={e => { e.stopPropagation(); setColorPickerOpen(null); }} className="text-[#c8cec0] hover:text-[#1c1f1a]"><X className="w-4 h-4" /></button>
@@ -564,27 +584,28 @@ export default function SkillList() {
                   const nodeCount = t.nodes?.length || 0;
                   const uses = t.usageCount || 0;
                   const isTop = templateSort === 'popular' && idx < 3 && uses > 0;
+                  const tColor = t.color || '#4f46e5';
                   return (
-                    <div key={tid} onClick={() => !(hasReachedSkillMapLimit && isFree) && setPreviewTemplate(t)}
+                    <div key={tid} onClick={() => setPreviewTemplate(t)}
                       className={`group relative rounded-xl border p-5 transition-all cursor-pointer hover:shadow-lg hover:-translate-y-0.5 ${
-                        isTop ? 'bg-gradient-to-br from-indigo-50/50 to-violet-50/50 border-indigo-200 hover:border-indigo-400' : 'bg-[#f8faf6] border-[#e2e6dc] hover:border-indigo-300'
+                        isTop ? 'bg-white border-gray-200 hover:border-gray-300' : 'bg-[#f8faf6] border-[#e2e6dc] hover:border-gray-300'
                       }`}>
                       {isTop && (
-                        <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 bg-indigo-500 text-white text-[9px] font-bold rounded-full uppercase tracking-wider shadow-sm">
+                        <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 text-white text-[9px] font-bold rounded-full uppercase tracking-wider shadow-sm" style={{ backgroundColor: tColor }}>
                           Popular
                         </div>
                       )}
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-white shadow-sm bg-gradient-to-br from-indigo-600 to-violet-600">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-white shadow-sm" style={{ backgroundColor: tColor }}>
                           <SkillIcon name={t.icon} size={18} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-[14px] font-bold text-[#1c1f1a] truncate group-hover:text-indigo-600 transition-colors">{t.title}</h3>
+                          <h3 className="text-[14px] font-bold text-[#1c1f1a] truncate transition-colors" style={{ '--hover-color': tColor }}>{t.title}</h3>
                         </div>
                       </div>
                       <p className="text-[12px] text-[#565c52] line-clamp-2 leading-relaxed mb-4">{t.description}</p>
                       <div className="flex items-center gap-2 mb-4">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-semibold rounded-full border border-indigo-100">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full border" style={{ backgroundColor: `${tColor}10`, color: tColor, borderColor: `${tColor}30` }}>
                           {nodeCount} node{nodeCount !== 1 ? 's' : ''}
                         </span>
                         {uses > 0 && (
@@ -593,11 +614,18 @@ export default function SkillList() {
                           </span>
                         )}
                       </div>
-                      <div className="pt-3 border-t border-[#e8ece3] flex items-center justify-between">
-                        <span className="text-[11px] text-[#c8cec0] truncate">{t.goal || 'Ready to use'}</span>
-                        <span className="flex items-center gap-1 text-[12px] font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
-                          Use <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                        </span>
+                      <div className="pt-3 border-t border-[#e8ece3] flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {t.goal && (
+                              <span className="text-[11px] text-[#565c52]"><span className="font-semibold text-[#1c1f1a]">Goal:</span> {t.goal}</span>
+                            )}
+                          </div>
+                          <span className="flex items-center gap-1 text-[12px] font-semibold transition-colors shrink-0" style={{ color: tColor }}>
+                            Use <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[#565c52]"><span className="font-semibold text-[#1c1f1a]">Created by:</span> {t.authorCredit || 'LearnLoop'}</span>
                       </div>
                     </div>
                   );
@@ -611,7 +639,7 @@ export default function SkillList() {
       {/* Modals */}
       {createPortal(
         <CreateSkillMapWizard isOpen={isWizardOpen} onClose={() => setIsWizardOpen(false)}
-          onCreated={({ skillId, title }) => { showSuccess(`Skill map ${title} created!`); loadSkills({ maxSkillMaps, isFree }); navigate(`/skills/${skillId}`); }}
+          onCreated={({ skillId, title }) => { showSuccess(`Skill map ${title} created!`); forceReloadSkills({ maxSkillMaps, isFree }); navigate(`/skills/${skillId}`); }}
           onSwitchToTemplates={() => setIsWizardOpen(false)} />,
         document.body
       )}
@@ -625,6 +653,7 @@ export default function SkillList() {
               onApply={handleApplyTemplate}
               isApplying={!!applyingTemplate}
               error=""
+              hasReachedLimit={hasReachedSkillMapLimit && isFree}
             />
           </div>
         </div>,

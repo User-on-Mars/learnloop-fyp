@@ -130,7 +130,8 @@ router.post('/', requireAuth, requireAdmin, validateRequest(createTemplateSchema
       ...req.body,
       createdBy: req.user.id,
       isPublished: false,
-      isBuiltIn: false
+      isBuiltIn: false,
+      authorCredit: 'LearnLoop'
     });
     
     // Log to audit trail
@@ -285,6 +286,33 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
     }
     
     const templateTitle = template.title;
+    const sourceSkillmapId = template.sourceSkillmapId;
+    const createdByUserId = template.createdBy;
+
+    // If this template was created from a user's publish request,
+    // reset the skillmap's publishStatus so the user can re-publish
+    if (sourceSkillmapId) {
+      const Skill = (await import('../models/Skill.js')).default;
+      await Skill.updateOne(
+        { _id: sourceSkillmapId },
+        { publishStatus: 'draft', publishedAt: null }
+      );
+      console.log(`📝 Reset publishStatus to draft for skillmap ${sourceSkillmapId}`);
+
+      // Notify the user that their published template was removed
+      const NotificationService = (await import('../services/NotificationService.js')).default;
+      
+      // Find the original user who submitted the skillmap
+      const skill = await Skill.findById(sourceSkillmapId).select('userId').lean();
+      if (skill?.userId) {
+        await NotificationService.sendPublishedTemplateRemovedNotification(
+          skill.userId,
+          templateTitle
+        );
+        console.log(`📬 Notified user ${skill.userId} about template removal`);
+      }
+    }
+
     await template.deleteOne();
     
     // Log to audit trail
@@ -295,7 +323,8 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
       targetType: 'template',
       targetId: req.params.id,
       details: {
-        title: templateTitle
+        title: templateTitle,
+        wasUserSubmission: !!sourceSkillmapId
       }
     });
     

@@ -6,6 +6,7 @@ import { practiceAPI } from '../api/client';
 import { Pencil, Check, X, ChevronRight, ChevronLeft, FileText, Target, Rocket, Trophy, Lock, Unlock, CheckCircle, Trash2, Clock } from 'lucide-react';
 import SkillMapPageSkeleton from './SkillMapPageSkeleton';
 import IconPicker, { SkillIcon } from './IconPicker';
+import PublishRequestButton from './PublishRequestButton';
 
 export default function ProgressionPathGamefied() {
   const { skillId } = useParams();
@@ -336,13 +337,16 @@ export default function ProgressionPathGamefied() {
                 </div>
                 <h1 className="text-xl sm:text-2xl font-bold text-[#1c1f1a] truncate min-w-0">{currentSkill.name}</h1>
               </div>
-              <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors lg:hidden"
-                aria-label="Toggle details"
-              >
-                {isSidebarOpen ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-              </button>
+              <div className="flex items-center gap-2">
+                <PublishRequestButton skillmap={currentSkill} />
+                <button
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  className="p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors lg:hidden"
+                  aria-label="Toggle details"
+                >
+                  {isSidebarOpen ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
           </div>
 

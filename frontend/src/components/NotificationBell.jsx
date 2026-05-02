@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CheckCircle, XCircle, Clock, Users, X, CheckCheck } from "lucide-react";
-import { invitationsAPI } from "../api/client.ts";
+import { Bell, CheckCircle, XCircle, Clock, Users, X, CheckCheck, Sparkles, AlertCircle } from "lucide-react";
+import { invitationsAPI, notificationsAPI } from "../api/client.ts";
 
 export default function NotificationBell() {
+  const [invitations, setInvitations] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -22,16 +23,30 @@ export default function NotificationBell() {
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await invitationsAPI.getNotifications();
-      const notifs = res.data.notifications || [];
+      
+      // Fetch both invitations and general notifications
+      const [invitationsRes, notificationsRes] = await Promise.all([
+        invitationsAPI.getInvitations().catch(e => { console.error("Invitations fetch error:", e); return { data: { invitations: [] } }; }),
+        notificationsAPI.getNotifications(50).catch(e => { console.error("Notifications fetch error:", e); return { data: { notifications: [] } }; })
+      ]);
+      
+      const invites = invitationsRes.data.invitations || invitationsRes.data || [];
+      const notifs = notificationsRes.data.notifications || [];
+      
+      setInvitations(invites);
       setNotifications(notifs);
 
-      const unread = notifs.filter(
+      // Calculate unread count: unread invitations + unread notifications
+      const unreadInvites = invites.filter(
         (n) => !readIds.includes(n._id) && (n.status === "pending" ? new Date(n.expiresAt) > new Date() : true)
       ).length;
-      setUnreadCount(unread);
+      
+      const unreadNotifs = notifs.filter(n => !n.read).length;
+      
+      setUnreadCount(unreadInvites + unreadNotifs);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
+      setInvitations([]);
       setNotifications([]);
     } finally {
       setIsLoading(false);
@@ -49,10 +64,20 @@ export default function NotificationBell() {
     localStorage.setItem("notif_read_ids", JSON.stringify(ids));
   };
 
-  const handleMarkAllRead = () => {
-    const allIds = notifications.map((n) => n._id);
-    persistReadIds(allIds);
-    setUnreadCount(0);
+  const handleMarkAllRead = async () => {
+    try {
+      // Mark all invitations as read (local storage)
+      const allInviteIds = invitations.map((n) => n._id);
+      persistReadIds(allInviteIds);
+      
+      // Mark all general notifications as read (API)
+      await notificationsAPI.markAllAsRead();
+      
+      setUnreadCount(0);
+      await fetchNotifications();
+    } catch (err) {
+      console.error("Failed to mark all as read:", err);
+    }
   };
 
   const handleAccept = async (invitationId) => {
@@ -85,6 +110,15 @@ export default function NotificationBell() {
     }
   };
 
+  const handleDismissNotification = async (notificationId) => {
+    try {
+      await notificationsAPI.deleteNotification(notificationId);
+      await fetchNotifications();
+    } catch (err) {
+      console.error("Failed to dismiss notification:", err);
+    }
+  };
+
   const formatExpiration = (expiresAt) => {
     const now = new Date();
     const expiry = new Date(expiresAt);
@@ -110,6 +144,27 @@ export default function NotificationBell() {
     return d.toLocaleDateString();
   };
 
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'publish_request_approved':
+        return <Sparkles className="w-4 h-4 text-green-600" />;
+      case 'publish_request_rejected':
+        return <AlertCircle className="w-4 h-4 text-orange-600" />;
+      case 'published_template_removed':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'new_publish_request':
+        return <Sparkles className="w-4 h-4 text-indigo-600" />;
+      case 'weekly_reward_won':
+        return <span className="text-base">🏆</span>;
+      case 'subscription_upgraded':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'subscription_canceled':
+        return <XCircle className="w-4 h-4 text-gray-500" />;
+      default:
+        return <Bell className="w-4 h-4 text-teal-600" />;
+    }
+  };
+
   // Calculate dropdown position based on bell button
   const getDropdownStyle = () => {
     if (!bellRef.current) return { top: 8, right: 8 };
@@ -119,6 +174,16 @@ export default function NotificationBell() {
       right: Math.max(8, window.innerWidth - rect.right),
     };
   };
+
+  // Combine and sort all notifications by date
+  const allNotifications = [
+    ...invitations.map(inv => ({ ...inv, notifType: 'invitation' })),
+    ...notifications.map(notif => ({ ...notif, notifType: 'general' }))
+  ].sort((a, b) => {
+    const dateA = new Date(a.createdAt || a.submittedAt);
+    const dateB = new Date(b.createdAt || b.submittedAt);
+    return dateB - dateA;
+  });
 
   const dropdown = isOpen
     ? createPortal(
@@ -171,7 +236,7 @@ export default function NotificationBell() {
                   <div className="w-6 h-6 border-2 border-site-accent border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                   <p className="text-xs text-site-muted">Loading...</p>
                 </div>
-              ) : notifications.length === 0 ? (
+              ) : allNotifications.length === 0 ? (
                 <div className="p-8 text-center">
                   <Bell className="w-8 h-8 text-site-border mx-auto mb-2" />
                   <p className="text-sm text-site-muted">No notifications</p>
@@ -179,92 +244,141 @@ export default function NotificationBell() {
                 </div>
               ) : (
                 <div className="py-1">
-                  {notifications.map((inv) => {
-                    const isProcessing = processingId === inv._id;
-                    const roomName = inv.room?.name || "Unknown Room";
-                    const inviterName = inv.invitedByUser?.name || "Someone";
-                    const isRead = readIds.includes(inv._id);
-                    const isPending = inv.status === "pending" && new Date(inv.expiresAt) > new Date();
-                    const isAccepted = inv.status === "accepted";
-                    const isDeclined = inv.status === "declined";
-                    const isExpired = inv.status === "pending" && new Date(inv.expiresAt) <= new Date();
+                  {allNotifications.map((item) => {
+                    if (item.notifType === 'invitation') {
+                      // Render invitation notification
+                      const inv = item;
+                      const isProcessing = processingId === inv._id;
+                      const roomName = inv.room?.name || "Unknown Room";
+                      const inviterName = inv.invitedByUser?.name || "Someone";
+                      const isRead = readIds.includes(inv._id);
+                      const isPending = inv.status === "pending" && new Date(inv.expiresAt) > new Date();
+                      const isAccepted = inv.status === "accepted";
+                      const isDeclined = inv.status === "declined";
+                      const isExpired = inv.status === "pending" && new Date(inv.expiresAt) <= new Date();
 
-                    return (
-                      <div
-                        key={inv._id}
-                        className={`px-4 py-3 border-b border-site-border/50 last:border-b-0 transition-colors ${
-                          isRead ? "bg-transparent" : "bg-site-accent/5"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                            isAccepted ? "bg-green-50" : isDeclined ? "bg-red-50" : isExpired ? "bg-gray-100" : "bg-teal-50"
-                          }`}>
-                            {isAccepted ? (
-                              <CheckCircle className="w-4 h-4 text-green-600" />
-                            ) : isDeclined ? (
-                              <XCircle className="w-4 h-4 text-red-500" />
-                            ) : (
-                              <Users className="w-4 h-4 text-teal-600" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-site-ink">
-                              <span className="font-semibold">{inviterName}</span>
-                              {" invited you to "}
-                              <span className="font-semibold">{roomName}</span>
-                            </p>
-
-                            {isAccepted && (
-                              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium">
-                                <CheckCircle className="w-3 h-3" />
-                                Accepted
-                              </span>
-                            )}
-                            {isDeclined && (
-                              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-xs font-medium">
-                                <XCircle className="w-3 h-3" />
-                                Declined
-                              </span>
-                            )}
-                            {isExpired && (
-                              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs font-medium">
-                                <Clock className="w-3 h-3" />
-                                Expired
-                              </span>
-                            )}
-
-                            <div className="flex items-center gap-1 mt-1">
-                              <Clock className="w-3 h-3 text-site-faint" />
-                              <span className="text-xs text-site-faint">
-                                {isPending ? formatExpiration(inv.expiresAt) : formatTimeAgo(inv.updatedAt || inv.createdAt)}
-                              </span>
+                      return (
+                        <div
+                          key={inv._id}
+                          className={`px-4 py-3 border-b border-site-border/50 last:border-b-0 transition-colors ${
+                            isRead ? "bg-transparent" : "bg-site-accent/5"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                              isAccepted ? "bg-green-50" : isDeclined ? "bg-red-50" : isExpired ? "bg-gray-100" : "bg-teal-50"
+                            }`}>
+                              {isAccepted ? (
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                              ) : isDeclined ? (
+                                <XCircle className="w-4 h-4 text-red-500" />
+                              ) : (
+                                <Users className="w-4 h-4 text-teal-600" />
+                              )}
                             </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-site-ink">
+                                <span className="font-semibold">{inviterName}</span>
+                                {" invited you to "}
+                                <span className="font-semibold">{roomName}</span>
+                              </p>
 
-                            {isPending && (
-                              <div className="flex gap-2 mt-2">
-                                <button
-                                  onClick={() => handleAccept(inv._id)}
-                                  disabled={isProcessing}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-site-accent text-white rounded-lg text-xs font-medium hover:bg-site-accent-hover transition-colors disabled:opacity-50"
-                                >
+                              {isAccepted && (
+                                <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium">
                                   <CheckCircle className="w-3 h-3" />
-                                  {isProcessing ? "..." : "Accept"}
-                                </button>
-                                <button
-                                  onClick={() => handleDecline(inv._id)}
-                                  disabled={isProcessing}
-                                  className="flex items-center gap-1 px-3 py-1.5 border border-site-border text-site-muted rounded-lg text-xs font-medium hover:bg-site-bg transition-colors disabled:opacity-50"
-                                >
+                                  Accepted
+                                </span>
+                              )}
+                              {isDeclined && (
+                                <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-xs font-medium">
                                   <XCircle className="w-3 h-3" />
-                                  {isProcessing ? "..." : "Decline"}
-                                </button>
+                                  Declined
+                                </span>
+                              )}
+                              {isExpired && (
+                                <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs font-medium">
+                                  <Clock className="w-3 h-3" />
+                                  Expired
+                                </span>
+                              )}
+
+                              <div className="flex items-center gap-1 mt-1">
+                                <Clock className="w-3 h-3 text-site-faint" />
+                                <span className="text-xs text-site-faint">
+                                  {isPending ? formatExpiration(inv.expiresAt) : formatTimeAgo(inv.updatedAt || inv.createdAt)}
+                                </span>
                               </div>
-                            )}
+
+                              {isPending && (
+                                <div className="flex gap-2 mt-2">
+                                  <button
+                                    onClick={() => handleAccept(inv._id)}
+                                    disabled={isProcessing}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-site-accent text-white rounded-lg text-xs font-medium hover:bg-site-accent-hover transition-colors disabled:opacity-50"
+                                  >
+                                    <CheckCircle className="w-3 h-3" />
+                                    {isProcessing ? "..." : "Accept"}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDecline(inv._id)}
+                                    disabled={isProcessing}
+                                    className="flex items-center gap-1 px-3 py-1.5 border border-site-border text-site-muted rounded-lg text-xs font-medium hover:bg-site-bg transition-colors disabled:opacity-50"
+                                  >
+                                    <XCircle className="w-3 h-3" />
+                                    {isProcessing ? "..." : "Decline"}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
+                      );
+                    } else {
+                      // Render general notification
+                      const notif = item;
+                      const isRead = notif.read;
+
+                      return (
+                        <div
+                          key={notif._id}
+                          className={`px-4 py-3 border-b border-site-border/50 last:border-b-0 transition-colors ${
+                            isRead ? "bg-transparent" : "bg-site-accent/5"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                              notif.type === 'publish_request_approved' ? "bg-green-50" :
+                              notif.type === 'publish_request_rejected' ? "bg-orange-50" :
+                              notif.type === 'published_template_removed' ? "bg-red-50" :
+                              notif.type === 'new_publish_request' ? "bg-indigo-50" :
+                              notif.type === 'weekly_reward_won' ? "bg-yellow-50" :
+                              "bg-teal-50"
+                            }`}>
+                              {getNotificationIcon(notif.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-site-ink">{notif.title}</p>
+                              <p className="text-xs text-site-muted mt-0.5">{notif.message}</p>
+
+                              <div className="flex items-center justify-between mt-1">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-site-faint" />
+                                  <span className="text-xs text-site-faint">
+                                    {formatTimeAgo(notif.createdAt)}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => handleDismissNotification(notif._id)}
+                                  className="text-xs text-site-muted hover:text-site-ink transition-colors"
+                                >
+                                  Dismiss
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
                   })}
                 </div>
               )}

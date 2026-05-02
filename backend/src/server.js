@@ -30,6 +30,8 @@ import roomXpRoutes from "./routes/roomXp.js";
 import roomProgressRoutes from "./routes/roomProgress.js";
 import subscriptionRoutes from "./routes/subscription.js";
 import contactRoutes from "./routes/contact.js";
+import publishRequestRoutes from "./routes/publishRequests.js";
+import notificationRoutes from "./routes/notifications.js";
 import { requireAuth } from "./middleware/auth.js";
 import { checkSkillMapLimit } from "./middleware/subscription.js";
 import { 
@@ -141,8 +143,10 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/rooms", auditLogger(SECURITY_EVENTS.NODE_UPDATE), roomXpRoutes);
 app.use("/api/rooms", auditLogger(SECURITY_EVENTS.NODE_UPDATE), roomProgressRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api", auditLogger(SECURITY_EVENTS.UNAUTHORIZED_ACCESS), invitationRoutes);
 app.use("/api/subscription", subscriptionRoutes);
+app.use("/api/publish-requests", publishRequestRoutes);
 
 // Error handling middleware with security logging
 app.use((err, req, res, next) => {

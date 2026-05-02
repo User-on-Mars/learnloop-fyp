@@ -85,18 +85,28 @@ export default function RoomSpace() {
     fetchRooms();
   }, [fetchRooms]);
 
-  // Filter rooms
-  const filteredRooms = rooms.filter(room => {
-    const matchesSearch = !searchQuery || 
-      room.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      room.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilter = filterType === "all" || 
-      (filterType === "owned" && room.isOwner) ||
-      (filterType === "member" && !room.isOwner);
-    
-    return matchesSearch && matchesFilter;
-  });
+  // Filter and sort rooms (unlocked first, then locked)
+  const filteredRooms = rooms
+    .filter(room => {
+      const matchesSearch = !searchQuery || 
+        room.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        room.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesFilter = filterType === "all" || 
+        (filterType === "owned" && room.isOwner) ||
+        (filterType === "member" && !room.isOwner);
+      
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      // Sort unlocked rooms first, then locked rooms
+      if (a.isLocked === b.isLocked) {
+        // If both have same lock status, sort by creation date (newest first)
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      // Unlocked (false) comes before locked (true)
+      return a.isLocked ? 1 : -1;
+    });
 
   const handleRoomClick = (roomId, isLocked) => {
     if (isLocked) {

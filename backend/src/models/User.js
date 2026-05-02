@@ -21,7 +21,11 @@ const UserSchema = new mongoose.Schema({
   lastLoginAt: { type: Date, default: null },
   firebaseUid: { type: String, default: null },
   emailVerified: { type: Boolean, default: false },
-  avatar: { type: String, default: null }
+  avatar: { type: String, default: null },
+  // Publish request rate limiting
+  publishRequestsThisMonth: { type: Number, default: 0 },
+  pendingRequestCount: { type: Number, default: 0 },
+  monthlyQuotaReset: { type: Date, default: null }
 }, { timestamps: true })
 
 UserSchema.index({ role: 1 })

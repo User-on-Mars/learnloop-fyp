@@ -407,7 +407,11 @@ class SkillService {
         icon: skill.icon || 'Map',
         color: skill.color || '#2e5023',
         goal: skill.goal || '',
-        status: skill.status || 'active'
+        status: skill.status || 'active',
+        fromTemplate: skill.fromTemplate || false,
+        publishStatus: skill.publishStatus || 'draft',
+        publishedAt: skill.publishedAt || null,
+        authorCredit: skill.authorCredit || ''
       },
       nodes,
       progress: {
@@ -565,6 +569,15 @@ class SkillService {
         'SkillService.deleteSkill - delete skill'
       );
 
+      // Auto-cancel any pending publish requests for this skillmap
+      try {
+        const PublishRequestService = (await import('./PublishRequestService.js')).default;
+        await PublishRequestService.handleSkillmapDeletion(skillId);
+      } catch (error) {
+        console.error('Failed to auto-cancel publish requests:', error);
+        // Don't fail the deletion if this fails
+      }
+
       // Orphan cleanup: Check for any orphaned nodes (shouldn't happen, but defensive) - Requirement 14.3
       const orphanedNodes = await Node.find({
         skillId: { $exists: true }
@@ -701,6 +714,12 @@ class SkillService {
           if (templateDoc) {
             await templateDoc.trackUserUsage(userId);
             console.log(`✅ Tracked user ${userId} usage for template: ${templateId}`);
+            
+            // Store the template author credit on the skill map
+            if (templateDoc.authorCredit) {
+              skill.authorCredit = templateDoc.authorCredit;
+              await skill.save({ session });
+            }
           }
         } catch (templateError) {
           // Don't fail the whole operation if usage tracking fails

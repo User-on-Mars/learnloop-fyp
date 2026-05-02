@@ -16,6 +16,7 @@ export function SkillMapProvider({ children }) {
   const [error, setError] = useState(null);
   const [mapDetailError, setMapDetailError] = useState(null);
   const loadingSkillIdRef = useRef(null);
+  const hasAutoLoadedRef = useRef(false); // Track if we've auto-loaded skills
 
   const getAuthToken = async () => {
     const user = auth.currentUser;
@@ -38,6 +39,10 @@ export function SkillMapProvider({ children }) {
       description: skill_map.description,
       goal: skill_map.goal,
       status: skill_map.status,
+      fromTemplate: skill_map.fromTemplate || false,
+      publishStatus: skill_map.publishStatus || 'draft',
+      publishedAt: skill_map.publishedAt || null,
+      authorCredit: skill_map.authorCredit || '',
       nodeCount: nList.length,
       completionPercentage: progress.percent,
       completedNodes: progress.completed
@@ -152,6 +157,13 @@ export function SkillMapProvider({ children }) {
 
   const loadSkills = useCallback(async (subscriptionLimits = null) => {
     console.log('📥 loadSkills called with:', subscriptionLimits);
+    
+    // Prevent duplicate auto-loads - only allow explicit calls or first auto-load
+    if (subscriptionLimits && hasAutoLoadedRef.current) {
+      console.log('⏭️ Skipping duplicate auto-load, already loaded');
+      return;
+    }
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -188,6 +200,9 @@ export function SkillMapProvider({ children }) {
             locked: isLocked
           };
         });
+        
+        // Mark that we've completed an auto-load
+        hasAutoLoadedRef.current = true;
       }
 
       console.log('✅ Setting skills:', skillsData.length, 'skills');
@@ -562,6 +577,12 @@ export function SkillMapProvider({ children }) {
     setError(null);
     setMapDetailError(null);
   }, []);
+  
+  const forceReloadSkills = useCallback(async (subscriptionLimits = null) => {
+    console.log('🔄 Force reloading skills');
+    hasAutoLoadedRef.current = false; // Reset the flag to allow reload
+    await loadSkills(subscriptionLimits);
+  }, [loadSkills]);
 
   const value = {
     skills,
@@ -574,6 +595,7 @@ export function SkillMapProvider({ children }) {
     mapDetailError,
     createSkillMap,
     loadSkills,
+    forceReloadSkills,
     loadSkillNodes,
     loadSkillMapFull,
     deleteSkill,

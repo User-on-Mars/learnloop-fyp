@@ -1,4 +1,5 @@
 import { Menu } from 'lucide-react'
+import NotificationBell from '../NotificationBell'
 
 export default function AdminHeader({ onMenuToggle, adminName, adminAvatar }) {
   const initial = adminName ? adminName.charAt(0).toUpperCase() : '?'
@@ -19,7 +20,10 @@ export default function AdminHeader({ onMenuToggle, adminName, adminAvatar }) {
 
       {/* Right side — admin info */}
       <div className="flex items-center gap-3">
-        {/* Notification dot */}
+        {/* Notification Bell */}
+        <NotificationBell />
+
+        {/* Online dot */}
         <div className="relative">
           <span className="block w-2.5 h-2.5 rounded-full bg-green-500" />
         </div>

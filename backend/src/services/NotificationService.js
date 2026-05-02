@@ -99,30 +99,107 @@ class NotificationService {
   }
 
   /**
-   * Send in-app notification (placeholder for future implementation)
-   * In a real system, this would store notifications in a database
-   * and use WebSocket to push to connected clients
+   * Send in-app notification - stores in database for user to view
    * @param {string} userId - User ID to notify
-   * @param {Object} notification - Notification data
+   * @param {Object} notification - Notification data with type, title, message, data
    * @returns {Promise<Object>} Notification result
    * @private
    */
   async _sendInAppNotification(userId, notification) {
     try {
-      // TODO: Implement in-app notification storage and WebSocket push
-      // For now, just log the notification
-      console.log('[IN-APP NOTIFICATION]', {
+      const Notification = (await import('../models/Notification.js')).default;
+
+      // Generate title and message based on notification type
+      let title = '';
+      let message = '';
+
+      switch (notification.type) {
+        case 'publish_request_approved':
+          title = '🎉 Skillmap Published!';
+          message = `Your skillmap "${notification.skillmapName}" is now live in the Templates gallery.`;
+          break;
+        case 'publish_request_rejected':
+          title = 'Skillmap Review Update';
+          message = `Your skillmap "${notification.skillmapName}" was not approved. ${notification.adminNote || 'Please review and resubmit.'}`;
+          break;
+        case 'room_invitation_received':
+          title = 'Room Invitation';
+          message = `${notification.invitedBy} invited you to join "${notification.roomName}"`;
+          break;
+        case 'room_invitation_accepted':
+          title = 'Invitation Accepted';
+          message = `${notification.acceptedBy} accepted your invitation to "${notification.roomName}"`;
+          break;
+        case 'room_invitation_declined':
+          title = 'Invitation Declined';
+          message = `${notification.declinedBy} declined your invitation to "${notification.roomName}"`;
+          break;
+        case 'room_member_kicked':
+          title = 'Removed from Room';
+          message = `You were removed from "${notification.roomName}"`;
+          break;
+        case 'room_deleted':
+          title = 'Room Deleted';
+          message = `The room "${notification.roomName}" has been deleted`;
+          break;
+        case 'subscription_upgraded':
+          title = 'Welcome to Pro!';
+          message = 'Your Pro subscription is now active. Enjoy unlimited features!';
+          break;
+        case 'subscription_canceled':
+          title = 'Subscription Canceled';
+          message = 'Your Pro subscription has been canceled. Access continues until period end.';
+          break;
+        case 'weekly_reward_won':
+          title = `🏆 You Won ${notification.rewardLabel}!`;
+          message = `Congratulations! You placed #${notification.rank} on the weekly leaderboard.`;
+          break;
+        case 'payment_receipt':
+          title = 'Payment Received';
+          message = `Payment of Rs. ${notification.amount} received. Thank you!`;
+          break;
+        case 'published_template_removed':
+          title = 'Published Template Removed';
+          message = `Your published skillmap "${notification.skillmapName}" has been removed from the Templates gallery. You can resubmit it for review.`;
+          break;
+        case 'new_publish_request':
+          title = 'New Publish Request';
+          message = `${notification.userName} submitted "${notification.skillmapName}" for review.`;
+          break;
+        default:
+          title = 'Notification';
+          message = 'You have a new notification';
+      }
+
+      // Store notification in database
+      const newNotification = await Notification.create({
         userId,
-        ...notification
+        type: notification.type,
+        title,
+        message,
+        data: notification,
+        read: false
+      });
+
+      console.log('[IN-APP NOTIFICATION STORED]', {
+        userId,
+        type: notification.type,
+        notificationId: newNotification._id
       });
 
       await ErrorLoggingService.logSystemEvent('in_app_notification_sent', {
         userId,
         type: notification.type,
+        notificationId: newNotification._id.toString(),
         timestamp: new Date().toISOString()
       });
 
-      return { success: true, userId, type: notification.type };
+      return { 
+        success: true, 
+        userId, 
+        type: notification.type,
+        notificationId: newNotification._id 
+      };
     } catch (error) {
       await ErrorLoggingService.logError(error, {
         userId,
@@ -714,6 +791,396 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;l
       console.log(`🧾📧 Payment receipt sent to ${user.email} (Rs. ${payment.totalAmount})`);
     } catch (error) {
       console.error('Failed to send payment receipt notification:', error.message);
+    }
+  }
+
+  /**
+   * Send notification when publish request is approved
+   * @param {string} userId - User ID
+   * @param {string} skillmapName - Skillmap name
+   * @param {string} templateId - Created template ID
+   * @returns {Promise<Object>} Notification results
+   */
+  async sendPublishRequestApprovedNotification(userId, skillmapName, templateId) {
+    try {
+      const clientUrl = process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5173';
+      const templatesLink = `${clientUrl}/templates`;
+
+      // Get user email
+      const User = (await import('../models/User.js')).default;
+      const user = await User.findOne({ firebaseUid: userId }).select('name email').lean();
+      if (!user) {
+        console.warn('User not found for publish approval notification:', userId);
+        return { error: 'User not found' };
+      }
+
+      // In-app notification
+      const inAppResult = await this._sendInAppNotification(userId, {
+        type: 'publish_request_approved',
+        skillmapName,
+        templateId,
+        timestamp: new Date().toISOString()
+      });
+
+      // Email notification
+      const emailSubject = `🎉 Your skillmap "${skillmapName}" has been published!`;
+      const emailText = `
+Hi ${user.name},
+
+Great news! Your skillmap "${skillmapName}" has been approved and is now live in the Templates section.
+
+Other LearnLoop users can now discover and use your skillmap to guide their learning journey.
+
+View it in the templates gallery: ${templatesLink}
+
+Thank you for contributing to the LearnLoop community!
+The LearnLoop Team
+      `.trim();
+
+      const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f3f4f6; }
+    .container { max-width: 560px; margin: 40px auto; }
+    .card { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #2e5023, #4f7942); padding: 36px 32px; text-align: center; }
+    .header .icon { font-size: 48px; margin-bottom: 8px; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; font-weight: 800; }
+    .header p { color: rgba(255,255,255,0.9); font-size: 15px; margin: 8px 0 0; }
+    .content { padding: 32px; }
+    .skillmap-card { background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 14px; padding: 24px; margin: 20px 0; text-align: center; }
+    .skillmap-card .name { font-size: 22px; font-weight: 800; color: #2e5023; margin: 0; }
+    .skillmap-card .status { font-size: 14px; color: #15803d; margin: 8px 0 0; font-weight: 600; }
+    .cta-btn { display: block; width: 100%; padding: 14px 24px; background-color: #2e5023; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; text-align: center; margin: 24px 0 16px; box-sizing: border-box; }
+    .footer { text-align: center; padding: 24px 32px; font-size: 13px; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="icon">🎉</div>
+        <h1>Your Skillmap is Published!</h1>
+        <p>Congratulations on your contribution</p>
+      </div>
+      <div class="content">
+        <p>Hi <strong>${user.name}</strong>,</p>
+        
+        <div class="skillmap-card">
+          <p class="name">${skillmapName}</p>
+          <p class="status">✓ Now Live in Templates</p>
+        </div>
+
+        <p style="font-size: 14px; color: #4b5563;">Your skillmap has been approved and is now available in the Templates section. Other LearnLoop users can discover and use it to guide their learning journey.</p>
+
+        <p style="font-size: 14px; color: #4b5563;">Thank you for contributing to the LearnLoop community!</p>
+
+        <a href="${templatesLink}" class="cta-btn">View in Templates Gallery</a>
+      </div>
+      <div class="footer">
+        Keep creating! · The LearnLoop Team
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+      `.trim();
+
+      const emailResult = await this._sendEmail(
+        user.email,
+        emailSubject,
+        emailText,
+        emailHtml
+      );
+
+      return {
+        inApp: inAppResult,
+        email: emailResult
+      };
+    } catch (error) {
+      await ErrorLoggingService.logError(error, {
+        userId,
+        skillmapName,
+        operation: 'sendPublishRequestApprovedNotification',
+        timestamp: new Date().toISOString()
+      });
+
+      console.error('Failed to send publish request approved notification:', error.message);
+      return { error: error.message };
+    }
+  }
+
+  /**
+   * Send notification when publish request is rejected
+   * @param {string} userId - User ID
+   * @param {string} skillmapName - Skillmap name
+   * @param {string} adminNote - Rejection reason
+   * @returns {Promise<Object>} Notification results
+   */
+  async sendPublishRequestRejectedNotification(userId, skillmapName, adminNote) {
+    try {
+      const clientUrl = process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5173';
+      const dashboardLink = `${clientUrl}/dashboard`;
+
+      // Get user email
+      const User = (await import('../models/User.js')).default;
+      const user = await User.findOne({ firebaseUid: userId }).select('name email').lean();
+      if (!user) {
+        console.warn('User not found for publish rejection notification:', userId);
+        return { error: 'User not found' };
+      }
+
+      // In-app notification
+      const inAppResult = await this._sendInAppNotification(userId, {
+        type: 'publish_request_rejected',
+        skillmapName,
+        adminNote,
+        timestamp: new Date().toISOString()
+      });
+
+      // Email notification
+      const emailSubject = `Update on your skillmap "${skillmapName}"`;
+      const emailText = `
+Hi ${user.name},
+
+Thank you for submitting your skillmap "${skillmapName}" for publication.
+
+After review, we're unable to approve it at this time.
+
+${adminNote ? `Reason: ${adminNote}\n` : ''}
+You may revise your skillmap and resubmit it. We encourage you to:
+- Ensure all nodes have clear, descriptive titles
+- Add helpful descriptions to guide learners
+- Check that the learning path flows logically
+
+You can resubmit once per quota cycle (3 submissions per 30 days).
+
+View your skillmap: ${dashboardLink}
+
+Thank you for contributing to LearnLoop!
+The LearnLoop Team
+      `.trim();
+
+      const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f3f4f6; }
+    .container { max-width: 560px; margin: 40px auto; }
+    .card { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .header { background: #6b7280; padding: 32px 32px 24px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 22px; margin: 0; font-weight: 700; }
+    .header p { color: rgba(255,255,255,0.8); font-size: 14px; margin: 8px 0 0; }
+    .content { padding: 32px; }
+    .skillmap-card { background: #fef3c7; border: 1px solid #fde68a; border-radius: 12px; padding: 20px; margin: 20px 0; }
+    .skillmap-card .name { font-size: 18px; font-weight: 700; color: #92400e; margin: 0 0 8px; }
+    .skillmap-card .status { font-size: 14px; color: #78350f; margin: 0; }
+    .reason-box { background: #f9fafb; border-left: 4px solid #d97706; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .reason-box .label { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; margin: 0 0 4px; }
+    .reason-box .text { font-size: 14px; color: #1a1a1a; margin: 0; }
+    .tips { background: #f0fdf4; border-radius: 12px; padding: 16px; margin: 16px 0; }
+    .tips .title { font-size: 14px; font-weight: 700; color: #2e5023; margin: 0 0 8px; }
+    .tips ul { margin: 0; padding-left: 20px; font-size: 14px; color: #4b5563; }
+    .cta-btn { display: block; width: 100%; padding: 14px 24px; background-color: #2e5023; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; text-align: center; margin: 24px 0 16px; box-sizing: border-box; }
+    .footer { text-align: center; padding: 24px 32px; font-size: 13px; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>Skillmap Review Update</h1>
+        <p>Thank you for your submission</p>
+      </div>
+      <div class="content">
+        <p>Hi <strong>${user.name}</strong>,</p>
+        
+        <div class="skillmap-card">
+          <p class="name">${skillmapName}</p>
+          <p class="status">Not approved at this time</p>
+        </div>
+
+        ${adminNote ? `
+        <div class="reason-box">
+          <p class="label">Feedback</p>
+          <p class="text">${adminNote}</p>
+        </div>
+        ` : ''}
+
+        <div class="tips">
+          <p class="title">Tips for resubmission:</p>
+          <ul>
+            <li>Ensure all nodes have clear, descriptive titles</li>
+            <li>Add helpful descriptions to guide learners</li>
+            <li>Check that the learning path flows logically</li>
+            <li>Include at least 5 well-structured nodes</li>
+          </ul>
+        </div>
+
+        <p style="font-size: 14px; color: #4b5563;">You can revise and resubmit your skillmap. Remember, you have 3 submission attempts per 30-day period.</p>
+
+        <a href="${dashboardLink}" class="cta-btn">View Your Skillmap</a>
+      </div>
+      <div class="footer">
+        Keep creating! · The LearnLoop Team
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+      `.trim();
+
+      const emailResult = await this._sendEmail(
+        user.email,
+        emailSubject,
+        emailText,
+        emailHtml
+      );
+
+      return {
+        inApp: inAppResult,
+        email: emailResult
+      };
+    } catch (error) {
+      await ErrorLoggingService.logError(error, {
+        userId,
+        skillmapName,
+        operation: 'sendPublishRequestRejectedNotification',
+        timestamp: new Date().toISOString()
+      });
+
+      console.error('Failed to send publish request rejected notification:', error.message);
+      return { error: error.message };
+    }
+  }
+
+  /**
+   * Send notification when admin removes a published template
+   * @param {string} userId - User ID (firebaseUid)
+   * @param {string} skillmapName - Skillmap name
+   * @returns {Promise<Object>} Notification results
+   */
+  async sendPublishedTemplateRemovedNotification(userId, skillmapName) {
+    try {
+      const clientUrl = process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5173';
+      const dashboardLink = `${clientUrl}/dashboard`;
+
+      const User = (await import('../models/User.js')).default;
+      const user = await User.findOne({ firebaseUid: userId }).select('name email').lean();
+      if (!user) {
+        console.warn('User not found for template removal notification:', userId);
+        return { error: 'User not found' };
+      }
+
+      // In-app notification
+      const inAppResult = await this._sendInAppNotification(userId, {
+        type: 'published_template_removed',
+        skillmapName,
+        timestamp: new Date().toISOString()
+      });
+
+      // Email notification
+      const emailSubject = `Your published skillmap "${skillmapName}" has been removed`;
+      const emailText = `
+Hi ${user.name},
+
+Your skillmap "${skillmapName}" has been removed from the Templates gallery by an administrator.
+
+You can revise your skillmap and resubmit it for review from your dashboard.
+
+View your skillmap: ${dashboardLink}
+
+The LearnLoop Team
+      `.trim();
+
+      const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f3f4f6; }
+    .container { max-width: 560px; margin: 40px auto; }
+    .card { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .header { background: #6b7280; padding: 32px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 22px; margin: 0; font-weight: 700; }
+    .header p { color: rgba(255,255,255,0.8); font-size: 14px; margin: 8px 0 0; }
+    .content { padding: 32px; }
+    .skillmap-card { background: #fef3c7; border: 1px solid #fde68a; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center; }
+    .skillmap-card .name { font-size: 18px; font-weight: 700; color: #92400e; margin: 0 0 4px; }
+    .skillmap-card .status { font-size: 14px; color: #78350f; margin: 0; }
+    .cta-btn { display: block; width: 100%; padding: 14px 24px; background-color: #2e5023; color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; text-align: center; margin: 24px 0 16px; box-sizing: border-box; }
+    .footer { text-align: center; padding: 24px 32px; font-size: 13px; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>Template Removed</h1>
+        <p>An update about your published skillmap</p>
+      </div>
+      <div class="content">
+        <p>Hi <strong>${user.name}</strong>,</p>
+        <div class="skillmap-card">
+          <p class="name">${skillmapName}</p>
+          <p class="status">Removed from Templates</p>
+        </div>
+        <p style="font-size: 14px; color: #4b5563;">Your skillmap has been removed from the Templates gallery by an administrator. You can revise it and resubmit for review.</p>
+        <a href="${dashboardLink}" class="cta-btn">Go to Dashboard</a>
+      </div>
+      <div class="footer">The LearnLoop Team</div>
+    </div>
+  </div>
+</body>
+</html>
+      `.trim();
+
+      const emailResult = await this._sendEmail(user.email, emailSubject, emailText, emailHtml);
+
+      return { inApp: inAppResult, email: emailResult };
+    } catch (error) {
+      console.error('Failed to send template removed notification:', error.message);
+      return { error: error.message };
+    }
+  }
+
+  /**
+   * Send notification to all admins when a user submits a publish request
+   * @param {string} userName - Name of the user who submitted
+   * @param {string} skillmapName - Skillmap name
+   * @param {string} requestId - Publish request ID
+   * @returns {Promise<Object>} Notification results
+   */
+  async sendNewPublishRequestNotification(userName, skillmapName, requestId) {
+    try {
+      const User = (await import('../models/User.js')).default;
+      const admins = await User.find({ role: 'admin' }).select('firebaseUid name email').lean();
+
+      if (admins.length === 0) {
+        console.warn('No admins found to notify about new publish request');
+        return { error: 'No admins found' };
+      }
+
+      const results = await Promise.all(
+        admins.map(admin =>
+          this._sendInAppNotification(admin.firebaseUid, {
+            type: 'new_publish_request',
+            userName,
+            skillmapName,
+            requestId,
+            timestamp: new Date().toISOString()
+          })
+        )
+      );
+
+      console.log(`📬 Notified ${admins.length} admin(s) about new publish request from ${userName}`);
+      return { success: true, notifiedAdmins: admins.length, results };
+    } catch (error) {
+      console.error('Failed to send new publish request notification to admins:', error.message);
+      return { error: error.message };
     }
   }
 }
