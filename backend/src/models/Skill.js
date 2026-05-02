@@ -50,6 +50,22 @@ const SkillSchema = new mongoose.Schema({
   fromTemplate: {
     type: Boolean,
     default: false
+  },
+  // Publish status fields
+  publishStatus: {
+    type: String,
+    enum: ['draft', 'pending', 'published', 'rejected'],
+    default: 'draft'
+  },
+  publishedAt: {
+    type: Date,
+    default: null
+  },
+  authorCredit: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 100
   }
 }, {
   timestamps: true

@@ -111,6 +111,18 @@ const SkillMapTemplateSchema = new mongoose.Schema({
   usedByUsers: {
     type: [String], // Array of user IDs who have used this template
     default: []
+  },
+  // Link to original skillmap if published from user submission
+  sourceSkillmapId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Skill',
+    default: null
+  },
+  authorCredit: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 100
   }
 }, { 
   timestamps: true 
