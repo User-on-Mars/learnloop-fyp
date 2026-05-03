@@ -345,12 +345,12 @@ export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwi
                   <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-2">Learning Path</p>
                   <div className="space-y-0">
                     {filledSketchTitles.map((t, i) => (
-                      <div key={i} className="flex items-center gap-3">
+                      <div key={i} className="flex items-start gap-3">
                         <div className="flex flex-col items-center">
-                          <div className="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center" style={{ backgroundColor: color }}>{i + 1}</div>
+                          <div className="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0" style={{ backgroundColor: color }}>{i + 1}</div>
                           {i < filledSketchTitles.length - 1 && <div className="w-0.5 h-4" style={{ backgroundColor: color + '40' }} />}
                         </div>
-                        <p className="text-[13px] font-medium text-[#1c1f1a] py-1.5">{t}</p>
+                        <p className="text-[13px] font-medium text-[#1c1f1a] leading-6">{t}</p>
                       </div>
                     ))}
                   </div>

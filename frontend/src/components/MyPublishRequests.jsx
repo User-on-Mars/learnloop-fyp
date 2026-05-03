@@ -3,14 +3,18 @@ import { publishRequestsAPI } from '../api/client';
 import { PublishStatusBadge } from './PublishStatusBadge';
 import { useToast } from '../context/ToastContext';
 import { auth } from '../firebase';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const PER_PAGE = 5;
 
 /**
- * MyPublishRequests - Shows user's publish request history
+ * MyPublishRequests - Shows user's publish request history with pagination
  */
 export function MyPublishRequests() {
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [page, setPage] = useState(1);
   const { showSuccess, showError } = useToast();
 
   // Monitor authentication state
@@ -70,12 +74,18 @@ export function MyPublishRequests() {
     );
   }
 
+  const totalPages = Math.ceil(requests.length / PER_PAGE);
+  const paged = requests.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-site-ink">My Publish Requests</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-site-ink">My Publish Requests</h3>
+        <span className="text-xs text-site-muted">{requests.length} request{requests.length !== 1 ? 's' : ''}</span>
+      </div>
       
       <div className="space-y-3">
-        {requests.map((request) => (
+        {paged.map((request) => (
           <div
             key={request._id}
             className="bg-site-surface border border-site-border rounded-lg p-4 hover:shadow-md transition"
@@ -135,6 +145,29 @@ export function MyPublishRequests() {
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="flex items-center gap-1 text-xs text-site-muted hover:text-site-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" /> Previous
+          </button>
+          <span className="text-xs text-site-muted">
+            Page <span className="font-bold text-site-ink">{page}</span> of <span className="font-bold text-site-ink">{totalPages}</span>
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="flex items-center gap-1 text-xs text-site-muted hover:text-site-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Next <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { publishRequestsAPI } from '../api/client';
-import { Upload, CheckCircle, Clock } from 'lucide-react';
+import { Upload, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { auth } from '../firebase';
 
@@ -13,6 +14,7 @@ export function PublishRequestButton({ skillmap }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const { showSuccess, showError } = useToast();
 
   const skillColor = skillmap?.color || '#2e5023';
@@ -59,8 +61,18 @@ export function PublishRequestButton({ skillmap }) {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!eligibility?.canSubmit || !skillmap) return;
+  const handlePublishClick = () => {
+    if (!skillmap) return;
+
+    if (publishStatus === 'published') {
+      showError('This skill map has already been published.');
+      return;
+    }
+
+    if (publishStatus === 'pending') {
+      showError('This skill map already has a pending publish request.');
+      return;
+    }
 
     if (isFromTemplate) {
       showError('Template-based skill maps cannot be published. Only original skill maps can be submitted.');
@@ -73,6 +85,11 @@ export function PublishRequestButton({ skillmap }) {
       return;
     }
 
+    setShowConfirm(true);
+  };
+
+  const handleConfirmPublish = async () => {
+    setShowConfirm(false);
     try {
       setIsLoading(true);
       await publishRequestsAPI.submitRequest(skillmap._id);
@@ -86,15 +103,59 @@ export function PublishRequestButton({ skillmap }) {
     }
   };
 
+  // Confirmation modal rendered via portal to cover sidebar, navbar, and details panel
+  const confirmModal = showConfirm ? createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="flex flex-col items-center text-center">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: skillColor + '15' }}>
+            <AlertTriangle className="w-6 h-6" style={{ color: skillColor }} />
+          </div>
+          <h3 className="text-lg font-bold text-[#1c1f1a] mb-2">
+            {publishStatus === 'rejected' ? 'Resubmit this skill map?' : 'Publish this skill map?'}
+          </h3>
+          <p className="text-sm text-[#6b7260] mb-6">
+            Your skill map <span className="font-semibold text-[#1c1f1a]">{skillmap?.name}</span>{' '}
+            {publishStatus === 'rejected'
+              ? 'will be resubmitted for review.'
+              : 'will be submitted for review. Once approved, it will be available as a template for other users.'}
+          </p>
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="flex-1 py-2.5 px-4 border-2 border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-[#f4f7f2] transition-colors"
+            >
+              No
+            </button>
+            <button
+              onClick={handleConfirmPublish}
+              disabled={isLoading}
+              className="flex-1 py-2.5 px-4 text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+              style={{ backgroundColor: skillColor }}
+            >
+              {isLoading ? 'Submitting...' : (publishStatus === 'rejected' ? 'Resubmit' : 'Publish')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   // Don't render if skillmap is not loaded yet or user not authenticated
   if (!skillmap || !skillmap._id || !isAuthenticated) return null;
 
-  // ── PUBLISHED: show locked "Published" badge ──
+  // ── PUBLISHED: show clear "Published" badge with message ──
   if (publishStatus === 'published') {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-white text-sm font-semibold shadow-sm" style={{ backgroundColor: skillColor }}>
-        <CheckCircle className="w-4 h-4" />
-        Published
+      <div className="flex flex-col items-end gap-1">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm" style={{ backgroundColor: skillColor }}>
+          <CheckCircle className="w-4 h-4" />
+          Published
+        </div>
+        <p className="text-xs text-green-700 font-medium">
+          This skill map has been published as a template
+        </p>
       </div>
     );
   }
@@ -109,28 +170,32 @@ export function PublishRequestButton({ skillmap }) {
     );
   }
 
-  // ── REJECTED: show "Not Approved" with optional resubmit ──
+  // ── REJECTED: show "Not Approved" badge with compact resubmit ──
   if (publishStatus === 'rejected') {
+    const canResubmit = !isFromTemplate && !isChecking;
     return (
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-          <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          <span className="text-sm font-semibold text-red-700">Not Approved</span>
+      <>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+            <svg className="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span className="text-sm font-semibold text-red-700 whitespace-nowrap">Not Approved</span>
+          </div>
+          {canResubmit && (
+            <button
+              onClick={handlePublishClick}
+              disabled={isLoading || isChecking}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              style={{ backgroundColor: skillColor }}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              {isLoading ? 'Submitting...' : 'Resubmit'}
+            </button>
+          )}
         </div>
-        {!isFromTemplate && eligibility?.canSubmit && (
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading || isChecking}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: skillColor }}
-          >
-            <Upload className="w-4 h-4" />
-            {isLoading ? 'Submitting...' : 'Resubmit'}
-          </button>
-        )}
-      </div>
+        {confirmModal}
+      </>
     );
   }
 
@@ -192,15 +257,18 @@ export function PublishRequestButton({ skillmap }) {
 
   // ── READY TO PUBLISH ──
   return (
-    <button
-      onClick={handleSubmit}
-      disabled={isLoading}
-      className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-      style={{ backgroundColor: skillColor }}
-    >
-      <Upload className="w-4 h-4" />
-      {isLoading ? 'Submitting...' : 'Publish'}
-    </button>
+    <>
+      <button
+        onClick={handlePublishClick}
+        disabled={isLoading}
+        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ backgroundColor: skillColor }}
+      >
+        <Upload className="w-4 h-4" />
+        {isLoading ? 'Submitting...' : 'Publish'}
+      </button>
+      {confirmModal}
+    </>
   );
 }
 
