@@ -215,7 +215,7 @@ export default function FeaturesPage() {
             <h2 className="text-lg font-bold text-[#1c1f1a]">Want unlimited access?</h2>
           </div>
           <p className="text-sm text-[#565c52] mb-5 max-w-md mx-auto">
-            Free accounts get 3 skill maps and 5 nodes each. Upgrade to Pro for unlimited maps, rooms, sessions, and PDF export.
+            Free accounts get 3 skill maps, 5 nodes each, and 1 publish request per month. Upgrade to Pro for unlimited maps, rooms, sessions, 5 publish requests per month, and PDF export.
           </p>
           <Link to="/signup" className="inline-block px-6 py-2.5 bg-[#2e5023] text-white text-sm font-semibold rounded-lg hover:bg-[#4f7942] transition-colors">
             Get started

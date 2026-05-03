@@ -463,6 +463,61 @@ export default function LogPractice() {
                 <>
                   <DataTable
                     data={paged}
+                    expandedIndex={paged.findIndex(item => item._id === expandedId)}
+                    renderExpand={(p) => {
+                      return (
+                        <div className="space-y-5">
+                          <div className="grid sm:grid-cols-2 gap-5">
+                            <div className="space-y-4">
+                              {p.confidence && (
+                                <div>
+                                  <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Confidence</p>
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} className={`w-4 h-4 ${n<=p.confidence?'text-amber-400 fill-amber-400':'text-gray-200'}`}/>)}</div>
+                                    <span className="text-sm text-[#565c52] font-medium">{CONF[p.confidence]}</span>
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Duration</p>
+                                <p className="text-sm text-[#1c1f1a] font-medium">{p.minutesPracticed} minutes</p>
+                              </div>
+                              {p.tags?.length > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Tags</p>
+                                  <div className="flex flex-wrap gap-1.5">{p.tags.map(t=><span key={t} className="px-2.5 py-0.5 bg-[#edf5e9] text-[#2e5023] text-xs font-medium rounded-full border border-[#d4e8cc]">{t}</span>)}</div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="space-y-4">
+                              {p.notes && (
+                                <div>
+                                  <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Notes</p>
+                                  <p className="text-sm text-[#1c1f1a] leading-relaxed">{p.notes}</p>
+                                </div>
+                              )}
+                              {p.blockers && (
+                                <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
+                                  <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Blockers</p>
+                                  <p className="text-sm text-amber-900">{p.blockers}</p>
+                                </div>
+                              )}
+                              {p.nextStep && (
+                                <div className="bg-[#edf5e9] rounded-xl p-3 border border-[#d4e8cc]">
+                                  <p className="text-[11px] font-semibold text-[#2e5023] uppercase tracking-wider mb-1 flex items-center gap-1"><ArrowRight className="w-3 h-3"/>Next Step</p>
+                                  <p className="text-sm text-[#2e5023]">{p.nextStep}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="pt-3 border-t border-[#e2e6dc] flex justify-end">
+                            <button onClick={()=>{setDeleteId(p._id);setDelInput('');}} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg font-semibold transition-colors">
+                              <Trash2 className="w-3.5 h-3.5"/>Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }}
                     columns={[
                       {
                         key: 'skill',
@@ -589,64 +644,6 @@ export default function LogPractice() {
                       setExpandedId(open ? null : p._id);
                     }}
                   />
-
-                  {/* Expanded detail section - shown below table/cards */}
-                  {expandedId && (() => {
-                    const p = paged.find(item => item._id === expandedId);
-                    if (!p) return null;
-                    return (
-                      <div className="px-5 pb-5 bg-[#f8faf6] border-t border-[#e8ece3]">
-                        <div className="grid sm:grid-cols-2 gap-5 pt-5">
-                          <div className="space-y-4">
-                            {p.confidence && (
-                              <div>
-                                <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Confidence</p>
-                                <div className="flex items-center gap-2.5">
-                                  <div className="flex gap-0.5">{[1,2,3,4,5].map(n=><Star key={n} className={`w-4 h-4 ${n<=p.confidence?'text-amber-400 fill-amber-400':'text-gray-200'}`}/>)}</div>
-                                  <span className="text-sm text-[#565c52] font-medium">{CONF[p.confidence]}</span>
-                                </div>
-                              </div>
-                            )}
-                            <div>
-                              <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Duration</p>
-                              <p className="text-sm text-[#1c1f1a] font-medium">{p.minutesPracticed} minutes</p>
-                            </div>
-                            {p.tags?.length > 0 && (
-                              <div>
-                                <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Tags</p>
-                                <div className="flex flex-wrap gap-1.5">{p.tags.map(t=><span key={t} className="px-2.5 py-0.5 bg-[#edf5e9] text-[#2e5023] text-xs font-medium rounded-full border border-[#d4e8cc]">{t}</span>)}</div>
-                              </div>
-                            )}
-                          </div>
-                          <div className="space-y-4">
-                            {p.notes && (
-                              <div>
-                                <p className="text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider mb-1.5">Notes</p>
-                                <p className="text-sm text-[#1c1f1a] leading-relaxed">{p.notes}</p>
-                              </div>
-                            )}
-                            {p.blockers && (
-                              <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
-                                <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/>Blockers</p>
-                                <p className="text-sm text-amber-900">{p.blockers}</p>
-                              </div>
-                            )}
-                            {p.nextStep && (
-                              <div className="bg-[#edf5e9] rounded-xl p-3 border border-[#d4e8cc]">
-                                <p className="text-[11px] font-semibold text-[#2e5023] uppercase tracking-wider mb-1 flex items-center gap-1"><ArrowRight className="w-3 h-3"/>Next Step</p>
-                                <p className="text-sm text-[#2e5023]">{p.nextStep}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-4 pt-3 border-t border-[#e2e6dc] flex justify-end">
-                          <button onClick={()=>{setDeleteId(p._id);setDelInput('');}} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg font-semibold transition-colors">
-                            <Trash2 className="w-3.5 h-3.5"/>Delete
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })()}
 
                   {/* Pagination */}
                   {totPages > 1 && (

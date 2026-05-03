@@ -12,7 +12,7 @@ import { Provider } from 'react-redux';
 import "./index.css";
 
 // Pages (make sure these files exist)
-import Home from "./App";
+import Home from "./pages/Home";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import FeaturesPage from "./pages/FeaturesPage";
