@@ -16,6 +16,7 @@ const TIER_LIMITS = {
     maxRooms: 1,
     maxRoomMembers: 3,
     canExportPdf: false,
+    maxPublishRequestsPerMonth: 1,
   },
   pro: {
     maxSkillMaps: Infinity,
@@ -24,6 +25,7 @@ const TIER_LIMITS = {
     maxRooms: Infinity,
     maxRoomMembers: Infinity,
     canExportPdf: true,
+    maxPublishRequestsPerMonth: 5,
   }
 };
 
