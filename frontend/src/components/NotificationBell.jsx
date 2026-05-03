@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CheckCircle, XCircle, Clock, Users, X, CheckCheck, Sparkles, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, CheckCircle, XCircle, Clock, Users, X, CheckCheck, Sparkles, AlertCircle, ExternalLink, Award } from "lucide-react";
 import { invitationsAPI, notificationsAPI } from "../api/client.ts";
+import { useAdmin } from "../hooks/useAdmin";
 
 export default function NotificationBell() {
   const [invitations, setInvitations] = useState([]);
@@ -19,6 +21,70 @@ export default function NotificationBell() {
     }
   });
   const bellRef = useRef(null);
+  const navigate = useNavigate();
+  const { isAdmin } = useAdmin();
+
+  /**
+   * Get the redirect path for a notification based on its type and data.
+   * Returns null for non-clickable notifications.
+   */
+  const getNotificationLink = (notif) => {
+    const data = notif.data || {};
+    switch (notif.type) {
+      // Room-related: go to the specific room if we have the ID, otherwise rooms list
+      case 'room_invitation_received':
+        return '/roomspace';
+      case 'room_invitation_accepted':
+      case 'room_invitation_declined':
+        return data.roomId ? `/roomspace/${data.roomId}` : '/roomspace';
+      case 'room_member_kicked':
+      case 'room_deleted':
+        return '/roomspace';
+
+      // Publish request outcomes: user goes to their skill maps
+      case 'publish_request_approved':
+      case 'publish_request_rejected':
+      case 'published_template_removed':
+        return '/skills';
+
+      // Admin-only: new publish request → admin review page
+      case 'new_publish_request':
+        return isAdmin ? '/admin/publish-requests' : '/dashboard';
+
+      // Subscription & payment
+      case 'subscription_upgraded':
+      case 'subscription_canceled':
+      case 'payment_receipt':
+        return '/subscription';
+
+      // Leaderboard reward
+      case 'weekly_reward_won':
+        return '/leaderboard';
+
+      default:
+        return null;
+    }
+  };
+
+  /**
+   * Handle clicking on a notification — mark as read and navigate.
+   */
+  const handleNotificationClick = async (notif) => {
+    const link = getNotificationLink(notif);
+    if (!link) return;
+
+    // Mark as read
+    if (!notif.read) {
+      try {
+        await notificationsAPI.markAsRead(notif._id);
+      } catch (err) {
+        console.error("Failed to mark notification as read:", err);
+      }
+    }
+
+    setIsOpen(false);
+    navigate(link);
+  };
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -144,6 +210,36 @@ export default function NotificationBell() {
     return d.toLocaleDateString();
   };
 
+  /**
+   * Get the redirect path for an invitation notification.
+   * Returns null for non-clickable states.
+   */
+  const getInvitationLink = (inv) => {
+    if (inv.status === 'accepted' && inv.room?._id) {
+      return `/roomspace/${inv.room._id}`;
+    }
+    return '/roomspace';
+  };
+
+  /**
+   * Handle clicking on an invitation notification — mark as read and navigate.
+   */
+  const handleInvitationClick = (inv) => {
+    // Don't navigate for pending invitations (they have Accept/Decline buttons)
+    if (inv.status === 'pending' && new Date(inv.expiresAt) > new Date()) return;
+
+    const link = getInvitationLink(inv);
+    if (!link) return;
+
+    if (!readIds.includes(inv._id)) {
+      const newReadIds = [...readIds, inv._id];
+      persistReadIds(newReadIds);
+    }
+
+    setIsOpen(false);
+    navigate(link);
+  };
+
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'publish_request_approved':
@@ -155,7 +251,7 @@ export default function NotificationBell() {
       case 'new_publish_request':
         return <Sparkles className="w-4 h-4 text-indigo-600" />;
       case 'weekly_reward_won':
-        return <span className="text-base">🏆</span>;
+        return <Award className="w-4 h-4 text-yellow-600" />;
       case 'subscription_upgraded':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'subscription_canceled':
@@ -256,13 +352,18 @@ export default function NotificationBell() {
                       const isAccepted = inv.status === "accepted";
                       const isDeclined = inv.status === "declined";
                       const isExpired = inv.status === "pending" && new Date(inv.expiresAt) <= new Date();
+                      const isClickable = !isPending;
 
                       return (
                         <div
                           key={inv._id}
+                          onClick={() => isClickable && handleInvitationClick(inv)}
+                          role={isClickable ? "button" : undefined}
+                          tabIndex={isClickable ? 0 : undefined}
+                          onKeyDown={(e) => { if (isClickable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleInvitationClick(inv); } }}
                           className={`px-4 py-3 border-b border-site-border/50 last:border-b-0 transition-colors ${
                             isRead ? "bg-transparent" : "bg-site-accent/5"
-                          }`}
+                          } ${isClickable ? "cursor-pointer hover:bg-site-accent/10" : ""}`}
                         >
                           <div className="flex items-start gap-3">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
@@ -312,7 +413,7 @@ export default function NotificationBell() {
                               {isPending && (
                                 <div className="flex gap-2 mt-2">
                                   <button
-                                    onClick={() => handleAccept(inv._id)}
+                                    onClick={(e) => { e.stopPropagation(); handleAccept(inv._id); }}
                                     disabled={isProcessing}
                                     className="flex items-center gap-1 px-3 py-1.5 bg-site-accent text-white rounded-lg text-xs font-medium hover:bg-site-accent-hover transition-colors disabled:opacity-50"
                                   >
@@ -320,7 +421,7 @@ export default function NotificationBell() {
                                     {isProcessing ? "..." : "Accept"}
                                   </button>
                                   <button
-                                    onClick={() => handleDecline(inv._id)}
+                                    onClick={(e) => { e.stopPropagation(); handleDecline(inv._id); }}
                                     disabled={isProcessing}
                                     className="flex items-center gap-1 px-3 py-1.5 border border-site-border text-site-muted rounded-lg text-xs font-medium hover:bg-site-bg transition-colors disabled:opacity-50"
                                   >
@@ -337,13 +438,19 @@ export default function NotificationBell() {
                       // Render general notification
                       const notif = item;
                       const isRead = notif.read;
+                      const notifLink = getNotificationLink(notif);
+                      const isClickable = !!notifLink;
 
                       return (
                         <div
                           key={notif._id}
+                          onClick={() => isClickable && handleNotificationClick(notif)}
+                          role={isClickable ? "button" : undefined}
+                          tabIndex={isClickable ? 0 : undefined}
+                          onKeyDown={(e) => { if (isClickable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleNotificationClick(notif); } }}
                           className={`px-4 py-3 border-b border-site-border/50 last:border-b-0 transition-colors ${
                             isRead ? "bg-transparent" : "bg-site-accent/5"
-                          }`}
+                          } ${isClickable ? "cursor-pointer hover:bg-site-accent/10" : ""}`}
                         >
                           <div className="flex items-start gap-3">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
@@ -367,12 +474,20 @@ export default function NotificationBell() {
                                     {formatTimeAgo(notif.createdAt)}
                                   </span>
                                 </div>
-                                <button
-                                  onClick={() => handleDismissNotification(notif._id)}
-                                  className="text-xs text-site-muted hover:text-site-ink transition-colors"
-                                >
-                                  Dismiss
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  {isClickable && (
+                                    <span className="flex items-center gap-0.5 text-xs text-site-accent">
+                                      <ExternalLink className="w-3 h-3" />
+                                      View
+                                    </span>
+                                  )}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDismissNotification(notif._id); }}
+                                    className="text-xs text-site-muted hover:text-site-ink transition-colors"
+                                  >
+                                    Dismiss
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 
 /**
  * DataTable - Responsive table component with mobile card fallback
@@ -12,6 +12,8 @@ import { memo } from "react";
  *   Each column: { key, label, span, align?, render? }
  * @param {Function} props.renderMobileCard - Function to render mobile card for each item
  * @param {Function} props.onRowClick - Optional click handler for rows/cards
+ * @param {number|null} props.expandedIndex - Index of the currently expanded row (null = none)
+ * @param {Function} props.renderExpand - Function(item, index) that returns the expand panel JSX
  * @param {string} props.emptyMessage - Message to show when no data
  * @param {React.ReactNode} props.emptyIcon - Icon to show when no data
  * @param {React.ReactNode} props.emptyAction - Action button/link for empty state
@@ -22,11 +24,19 @@ const DataTable = memo(function DataTable({
   columns = [],
   renderMobileCard,
   onRowClick,
+  expandedIndex = null,
+  renderExpand,
   emptyMessage = "No data available",
   emptyIcon = null,
   emptyAction = null,
   className = "",
 }) {
+  // Compute total spans to use as grid template
+  const totalSpans = useMemo(
+    () => columns.reduce((sum, col) => sum + (col.span || 1), 0),
+    [columns]
+  );
+
   // Empty state
   if (data.length === 0) {
     return (
@@ -43,17 +53,21 @@ const DataTable = memo(function DataTable({
       {/* Desktop Table View */}
       <div className="hidden sm:block">
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-3 px-3 pt-4 pb-2 text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider">
+        <div
+          className="grid gap-3 px-3 pt-4 pb-2 text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider"
+          style={{ gridTemplateColumns: `repeat(${totalSpans}, minmax(0, 1fr))` }}
+        >
           {columns.map((col) => (
             <span
               key={col.key}
-              className={`col-span-${col.span} ${
+              style={{ gridColumn: `span ${col.span || 1}` }}
+              className={
                 col.align === "center"
                   ? "text-center"
                   : col.align === "right"
                   ? "text-right"
                   : ""
-              }`}
+              }
             >
               {col.label}
             </span>
@@ -62,54 +76,82 @@ const DataTable = memo(function DataTable({
 
         {/* Table Rows */}
         <div className="divide-y divide-[#f0f2eb]">
-          {data.map((item, index) => (
-            <div
-              key={item.id || item._id || index}
-              onClick={() => onRowClick?.(item, index)}
-              className={`grid grid-cols-12 gap-3 items-center px-3 py-3 transition-colors ${
-                onRowClick
-                  ? "hover:bg-[#f8faf6] cursor-pointer group"
-                  : ""
-              }`}
-              style={{ minHeight: "44px" }}
-            >
-              {columns.map((col) => (
+          {data.map((item, index) => {
+            const isActive = expandedIndex === index;
+            return (
+              <div key={item.id || item._id || index}>
+                {/* Row */}
                 <div
-                  key={col.key}
-                  className={`col-span-${col.span} ${
-                    col.align === "center"
-                      ? "text-center"
-                      : col.align === "right"
-                      ? "text-right"
-                      : ""
-                  } ${col.className || ""}`}
+                  onClick={() => onRowClick?.(item, index)}
+                  className={`grid gap-3 items-center px-3 py-3 transition-colors ${
+                    onRowClick ? "cursor-pointer group" : ""
+                  } ${isActive ? "bg-[#f0f5ed]" : onRowClick ? "hover:bg-[#f8faf6]" : ""}`}
+                  style={{
+                    gridTemplateColumns: `repeat(${totalSpans}, minmax(0, 1fr))`,
+                    minHeight: "44px",
+                  }}
                 >
-                  {col.render ? col.render(item, index) : item[col.key]}
+                  {columns.map((col) => (
+                    <div
+                      key={col.key}
+                      style={{ gridColumn: `span ${col.span || 1}` }}
+                      className={`${
+                        col.align === "center"
+                          ? "text-center"
+                          : col.align === "right"
+                          ? "text-right"
+                          : ""
+                      } ${col.className || ""}`}
+                    >
+                      {col.render ? col.render(item, index) : item[col.key]}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ))}
+                {/* Inline Expand Panel */}
+                {isActive && renderExpand && (
+                  <div className="bg-[#f8faf6] border-t border-[#e2e6dc] px-5 py-4">
+                    {renderExpand(item, index)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Mobile Card View */}
       <div className="sm:hidden space-y-3">
-        {data.map((item, index) => (
-          <div
-            key={item.id || item._id || index}
-            onClick={() => onRowClick?.(item, index)}
-            className={`bg-white rounded-xl border border-[#e2e6dc] p-4 transition-colors ${
-              onRowClick ? "active:bg-[#f8faf6] cursor-pointer" : ""
-            }`}
-            style={{ minHeight: "44px" }}
-          >
-            {renderMobileCard ? renderMobileCard(item, index) : (
-              <div className="text-sm text-[#565c52]">
-                {JSON.stringify(item)}
+        {data.map((item, index) => {
+          const isActive = expandedIndex === index;
+          return (
+            <div
+              key={item.id || item._id || index}
+              className={`bg-white rounded-xl border overflow-hidden transition-colors ${
+                isActive ? "border-[#c8dbbe]" : "border-[#e2e6dc]"
+              }`}
+            >
+              <div
+                onClick={() => onRowClick?.(item, index)}
+                className={`p-4 transition-colors ${
+                  onRowClick ? "cursor-pointer" : ""
+                } ${isActive ? "bg-[#f0f5ed]" : onRowClick ? "active:bg-[#f8faf6]" : ""}`}
+                style={{ minHeight: "44px" }}
+              >
+                {renderMobileCard ? renderMobileCard(item, index) : (
+                  <div className="text-sm text-[#565c52]">
+                    {JSON.stringify(item)}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+              {/* Inline Expand Panel (Mobile) */}
+              {isActive && renderExpand && (
+                <div className="bg-[#f8faf6] border-t border-[#e2e6dc] px-4 py-3">
+                  {renderExpand(item, index)}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </>
   );

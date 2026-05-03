@@ -115,7 +115,7 @@ class NotificationService {
 
       switch (notification.type) {
         case 'publish_request_approved':
-          title = '🎉 Skillmap Published!';
+          title = 'Skillmap Published';
           message = `Your skillmap "${notification.skillmapName}" is now live in the Templates gallery.`;
           break;
         case 'publish_request_rejected':
@@ -151,7 +151,7 @@ class NotificationService {
           message = 'Your Pro subscription has been canceled. Access continues until period end.';
           break;
         case 'weekly_reward_won':
-          title = `🏆 You Won ${notification.rewardLabel}!`;
+          title = `Weekly Reward: ${notification.rewardLabel}`;
           message = `Congratulations! You placed #${notification.rank} on the weekly leaderboard.`;
           break;
         case 'payment_receipt':

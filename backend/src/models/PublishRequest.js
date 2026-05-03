@@ -73,6 +73,7 @@ PublishRequestSchema.statics.getUserMonthlySubmissions = async function(userId) 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
+  // All submissions count against quota, including rejected ones
   return this.countDocuments({
     userId,
     submittedAt: { $gte: thirtyDaysAgo }

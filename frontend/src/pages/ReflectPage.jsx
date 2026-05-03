@@ -239,6 +239,58 @@ export default function ReflectPage() {
               <div className="px-5 py-4">
                 <DataTable
                   data={paged.map((r, i) => ({ ...r, index: (page - 1) * PER_PAGE + i + 1 }))}
+                  expandedIndex={paged.findIndex(item => item._id === expandedId)}
+                  renderExpand={(r) => {
+                    const m = MOOD_MAP[r.mood];
+                    const MoodIcon = m?.icon;
+                    return (
+                      <div className="rounded-xl bg-white border border-[#e2e6dc] shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              {r.title && <h3 className="text-[17px] font-bold text-[#1c1f1a] mb-1">{r.title}</h3>}
+                              <p className="text-[12px] text-[#9aa094]">{fmtDate(r.createdAt)} at {fmtTime(r.createdAt)}</p>
+                            </div>
+                            {m && (
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${m.bg} ${m.text} border ${m.border} flex-shrink-0`}>
+                                <MoodIcon className="w-3.5 h-3.5" /> {m.label}
+                              </span>
+                            )}
+                          </div>
+                          {r.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-3">
+                              {r.tags.map(t => (
+                                <span key={t} className="px-2.5 py-0.5 bg-white text-emerald-700 text-[11px] font-medium rounded-full border border-emerald-200">
+                                  {t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="px-5 py-5">
+                          <p className="text-[14px] text-[#1c1f1a] whitespace-pre-wrap leading-relaxed">{r.content}</p>
+                        </div>
+                        <div className="px-5 py-3 bg-[#f8faf6] border-t border-[#e2e6dc] flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              if (isFree) { navigate('/subscription'); return; }
+                              handleExport(r._id);
+                            }}
+                            disabled={exporting === r._id}
+                            className={`flex items-center gap-2 px-4 py-2 text-[12px] rounded-lg font-semibold disabled:opacity-50 transition-all border ${
+                              isFree ? 'text-gray-400 bg-gray-50 border-gray-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                            }`}
+                          >
+                            {exporting === r._id ? <Loader2 className="w-4 h-4 animate-spin" /> : isFree ? <><Download className="w-4 h-4 opacity-40" /><Lock className="w-3.5 h-3.5 text-amber-500" /></> : <Download className="w-4 h-4" />}
+                            Export PDF
+                          </button>
+                          <button onClick={() => setDeleteId(r._id)} className="flex items-center gap-2 px-4 py-2 text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-lg font-semibold hover:bg-red-100 transition-all">
+                            <Trash2 className="w-4 h-4" /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }}
                   columns={[
                     {
                       key: 'date',
@@ -408,78 +460,6 @@ export default function ReflectPage() {
                   }}
                   onRowClick={(r) => setExpandedId(expandedId === r._id ? null : r._id)}
                 />
-                
-                {/* Expanded Detail - Rendered outside DataTable */}
-                {paged.map((r) => {
-                  const open = expandedId === r._id;
-                  if (!open) return null;
-                  
-                  const m = MOOD_MAP[r.mood];
-                  const MoodIcon = m?.icon;
-                  
-                  return (
-                    <div key={`expanded-${r._id}`} className="mt-3 rounded-xl bg-white border border-[#e2e6dc] shadow-sm overflow-hidden">
-                      <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            {r.title && <h3 className="text-[17px] font-bold text-[#1c1f1a] mb-1">{r.title}</h3>}
-                            <p className="text-[12px] text-[#9aa094]">{fmtDate(r.createdAt)} at {fmtTime(r.createdAt)}</p>
-                          </div>
-                          {m && (
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${m.bg} ${m.text} border ${m.border} flex-shrink-0`}>
-                              <MoodIcon className="w-3.5 h-3.5" /> {m.label}
-                            </span>
-                          )}
-                        </div>
-                        {r.tags?.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-3">
-                            {r.tags.map(t => (
-                              <span key={t} className="px-2.5 py-0.5 bg-white text-emerald-700 text-[11px] font-medium rounded-full border border-emerald-200">
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="px-5 py-5">
-                        <p className="text-[14px] text-[#1c1f1a] whitespace-pre-wrap leading-relaxed">{r.content}</p>
-                      </div>
-                      <div className="px-5 py-3 bg-[#f8faf6] border-t border-[#e2e6dc] flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => {
-                            if (isFree) {
-                              navigate('/subscription');
-                              return;
-                            }
-                            handleExport(r._id);
-                          }}
-                          disabled={exporting === r._id}
-                          className={`flex items-center gap-2 px-4 py-2 text-[12px] rounded-lg font-semibold disabled:opacity-50 transition-all border ${
-                            isFree ? 'text-gray-400 bg-gray-50 border-gray-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
-                          }`}
-                        >
-                          {exporting === r._id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : isFree ? (
-                            <>
-                              <Download className="w-4 h-4 opacity-40" />
-                              <Lock className="w-3.5 h-3.5 text-amber-500" />
-                            </>
-                          ) : (
-                            <Download className="w-4 h-4" />
-                          )}
-                          Export PDF
-                        </button>
-                        <button
-                          onClick={() => setDeleteId(r._id)}
-                          className="flex items-center gap-2 px-4 py-2 text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-lg font-semibold hover:bg-red-100 transition-all"
-                        >
-                          <Trash2 className="w-4 h-4" /> Delete
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
                 
                 {/* Pagination */}
                 {totalPages > 1 && (

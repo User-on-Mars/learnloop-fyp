@@ -5,6 +5,7 @@ import Node from '../models/Node.js';
 import SkillMapTemplate from '../models/SkillMapTemplate.js';
 import NotificationService from './NotificationService.js';
 import ErrorLoggingService from './ErrorLoggingService.js';
+import SubscriptionService from './SubscriptionService.js';
 
 /**
  * PublishRequestService - Manages skillmap publish requests
@@ -31,6 +32,10 @@ class PublishRequestService {
         };
       }
 
+      // Get tier-based limit
+      const { limits } = await SubscriptionService.getLimits(userId);
+      const maxPerMonth = limits.maxPublishRequestsPerMonth || 1;
+
       // Check monthly quota
       const now = new Date();
       let quotaReset = user.monthlyQuotaReset;
@@ -49,10 +54,10 @@ class PublishRequestService {
       }
 
       const monthlySubmissions = await PublishRequest.getUserMonthlySubmissions(userId);
-      if (monthlySubmissions >= 3) {
+      if (monthlySubmissions >= maxPerMonth) {
         return {
           canSubmit: false,
-          reason: 'You have reached your monthly submission limit (3 requests per 30 days).',
+          reason: `You have reached your monthly submission limit (${maxPerMonth} request${maxPerMonth > 1 ? 's' : ''} per 30 days).`,
           resetDate: quotaReset
         };
       }
@@ -126,6 +131,18 @@ class PublishRequestService {
    */
   async submitPublishRequest(userId, skillmapId) {
     try {
+      // Check if skillmap is already published or pending
+      const existingSkillmap = await Skill.findById(skillmapId).select('publishStatus').lean();
+      if (!existingSkillmap) {
+        throw new Error('Skill map not found.');
+      }
+      if (existingSkillmap.publishStatus === 'published') {
+        throw new Error('This skill map has already been published.');
+      }
+      if (existingSkillmap.publishStatus === 'pending') {
+        throw new Error('This skill map already has a pending publish request.');
+      }
+
       // Check eligibility
       const eligibility = await this.checkSubmissionEligibility(userId);
       if (!eligibility.canSubmit) {

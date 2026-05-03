@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Crown, Check, X, Zap, Users, Map, FileText,
+  Crown, Check, X, Zap, Users, Map, FileText, Upload,
   CreditCard, Loader2, Receipt, Gift, Clock, Star, Shield, Sparkles,
 } from "lucide-react";
 import Modal, { ModalButton } from "../components/Modal";
@@ -20,6 +20,7 @@ const FEATURES = [
   { name: "Sessions per Node", icon: Zap, free: "5", pro: "Unlimited" },
   { name: "Rooms", icon: Users, free: "1", pro: "Unlimited" },
   { name: "Room Members", icon: Users, free: "3", pro: "Unlimited" },
+  { name: "Publish Requests / month", icon: Upload, free: "1", pro: "5" },
   { name: "PDF Export", icon: FileText, free: false, pro: true },
 ];
 

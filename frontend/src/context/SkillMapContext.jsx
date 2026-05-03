@@ -150,7 +150,12 @@ export function SkillMapProvider({ children }) {
       }, ...prev]);
       return { skill, nodes };
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to create skill map';
+      let errorMessage = err.response?.data?.message || err.message || 'Failed to create skill map';
+      // Include specific field errors from validation
+      if (err.response?.data?.errors?.length) {
+        const details = err.response.data.errors.map(e => e.message).join('. ');
+        errorMessage = details;
+      }
       throw new Error(errorMessage);
     }
   }, []);

@@ -13,7 +13,7 @@ export const createSkillMapSchema = z.object({
   icon: z.string().trim().min(1, 'Icon is required').max(30),
   color: z.string().trim().max(20).optional(),
   goal: z.string().trim().min(1, 'Goal is required').max(200, 'Goal must be 200 characters or less'),
-  sketchTitles: z.array(z.string()).max(6).optional().default([])
+  sketchTitles: z.array(z.string()).max(15).optional().default([])
 }).superRefine((data, ctx) => {
   const titles = (data.sketchTitles || []).map((t) => String(t).trim()).filter(Boolean);
   const seen = new Set();
