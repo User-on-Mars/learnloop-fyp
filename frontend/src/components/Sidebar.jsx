@@ -45,7 +45,7 @@ export default function Sidebar() {
 
   const { activeSessions, clearAllSessions, toggleSession } = useActiveSessions();
   const { isAdmin } = useAdmin();
-  const { isFree } = useSubscription();
+  const { isFree, isPro } = useSubscription();
   const hasActiveSessions = activeSessions.length > 0;
   const runningSessions = activeSessions.filter(s => s.isRunning);
 
@@ -98,7 +98,7 @@ export default function Sidebar() {
           {/* Profile */}
           <div className="relative ml-1" ref={menuRef}>
             <button onClick={() => setShowUserMenu(!showUserMenu)} className="relative">
-              <Avatar photoURL={user?.photoURL} displayName={user?.displayName} email={user?.email} size="sm" />
+              <Avatar photoURL={user?.photoURL} displayName={user?.displayName} email={user?.email} size="sm" isPro={isPro} />
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-[1.5px] border-white rounded-full" />
             </button>
             {showUserMenu && (

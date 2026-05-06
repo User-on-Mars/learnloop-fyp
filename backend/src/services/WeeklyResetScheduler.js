@@ -125,14 +125,42 @@ class WeeklyResetScheduler {
         return [];
       }
 
+      // Deduplicate by userId (safety net — shouldn't happen with unique index)
+      const seen = new Set();
+      const uniqueTopUsers = topUsers.filter(u => {
+        if (seen.has(u.userId)) return false;
+        seen.add(u.userId);
+        return true;
+      });
+
       const weekEndDate = new Date(); // The moment before reset
       const rewards = [];
 
-      for (let i = 0; i < Math.min(topUsers.length, REWARD_CONFIG.length); i++) {
-        const profile = topUsers[i];
+      // Only award as many rewards as there are actual unique users
+      // e.g. if only 1 person earned XP, only rank 1 reward is given
+      console.log(`📊 ${uniqueTopUsers.length} unique user(s) with weekly XP — awarding top ${uniqueTopUsers.length} reward(s)`);
+
+      for (let i = 0; i < Math.min(uniqueTopUsers.length, REWARD_CONFIG.length); i++) {
+        const profile = uniqueTopUsers[i];
         const config = REWARD_CONFIG[i];
 
         try {
+          // Guard: skip if this user already has a reward for this week
+          // (prevents duplicates if reset runs twice, e.g. catch-up + scheduled)
+          const existingReward = await WeeklyReward.findOne({
+            userId: profile.userId,
+            weekEndDate: {
+              $gte: new Date(weekEndDate.getTime() - 24 * 60 * 60 * 1000), // within last 24h
+              $lte: weekEndDate
+            }
+          }).lean();
+
+          if (existingReward) {
+            console.log(`⚠️ User ${profile.userId} already has a reward for this week (rank ${existingReward.rank}) — skipping`);
+            rewards.push(existingReward);
+            continue;
+          }
+
           // Get user info
           const user = await User.findOne({ firebaseUid: profile.userId }).select('name email firebaseUid').lean();
           const userName = user?.name || user?.email?.split('@')[0] || 'Unknown';

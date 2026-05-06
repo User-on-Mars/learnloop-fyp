@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { practiceAPI, skillsAPI } from '../api/client';
 import { useActiveSessions } from '../context/ActiveSessionContext';
@@ -665,8 +666,8 @@ export default function LogPractice() {
           </div>
 
       {/* ═══ New Session Modal ═══ */}
-      {showNew && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {showNew && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
             {/* Header */}
             <div className="px-6 py-4 flex-shrink-0 bg-gradient-to-r from-orange-600 to-amber-600">
@@ -740,7 +741,7 @@ export default function LogPractice() {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* ═══ Complete Session Modal ═══ */}
       <Modal

@@ -55,6 +55,7 @@ import WeeklyResetScheduler from "./services/WeeklyResetScheduler.js";
 import DailyStreakResetScheduler from "./services/DailyStreakResetScheduler.js";
 import InvitationExpiryScheduler from "./services/InvitationExpiryScheduler.js";
 import RoomWeeklyStreakResetScheduler from "./services/RoomWeeklyStreakResetScheduler.js";
+import PaymentCleanupScheduler from "./services/PaymentCleanupScheduler.js";
 
 dotenv.config();
 const app = express();
@@ -222,6 +223,10 @@ async function startServer() {
     RoomWeeklyStreakResetScheduler.start();
     console.log('✅ Room weekly streak reset scheduler started');
     
+    // Start payment cleanup scheduler (expires stale PENDING payments)
+    PaymentCleanupScheduler.start();
+    console.log('✅ Payment cleanup scheduler started');
+    
     // Start the server
     const serverInstance = server.listen(PORT, () => {
       console.log(`🚀 API running on http://localhost:${PORT}`);
@@ -261,6 +266,10 @@ process.on('SIGINT', async () => {
     // Stop room weekly streak reset scheduler
     RoomWeeklyStreakResetScheduler.stop();
     console.log('✅ Room weekly streak reset scheduler stopped');
+    
+    // Stop payment cleanup scheduler
+    PaymentCleanupScheduler.stop();
+    console.log('✅ Payment cleanup scheduler stopped');
     
     // Stop system monitoring
     SystemMonitoringService.stop();
@@ -303,6 +312,10 @@ process.on('SIGTERM', async () => {
     // Stop room weekly streak reset scheduler
     RoomWeeklyStreakResetScheduler.stop();
     console.log('✅ Room weekly streak reset scheduler stopped');
+    
+    // Stop payment cleanup scheduler
+    PaymentCleanupScheduler.stop();
+    console.log('✅ Payment cleanup scheduler stopped');
     
     // Stop system monitoring
     SystemMonitoringService.stop();

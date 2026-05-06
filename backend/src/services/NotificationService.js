@@ -166,6 +166,10 @@ class NotificationService {
           title = 'New Publish Request';
           message = `${notification.userName} submitted "${notification.skillmapName}" for review.`;
           break;
+        case 'template_used':
+          title = 'Template Used';
+          message = `${notification.userName} used your template "${notification.templateName}". You earned 10 XP!`;
+          break;
         default:
           title = 'Notification';
           message = 'You have a new notification';
@@ -1180,6 +1184,32 @@ The LearnLoop Team
       return { success: true, notifiedAdmins: admins.length, results };
     } catch (error) {
       console.error('Failed to send new publish request notification to admins:', error.message);
+      return { error: error.message };
+    }
+  }
+
+  /**
+   * Send notification to template author when someone uses their template
+   * @param {string} authorUserId - Template author's user ID (firebaseUid)
+   * @param {string} userName - Name of the user who used the template
+   * @param {string} templateName - Template name
+   * @param {string} templateId - Template ID
+   * @returns {Promise<Object>} Notification result
+   */
+  async sendTemplateUsedNotification(authorUserId, userName, templateName, templateId) {
+    try {
+      const inAppResult = await this._sendInAppNotification(authorUserId, {
+        type: 'template_used',
+        userName,
+        templateName,
+        templateId,
+        timestamp: new Date().toISOString()
+      });
+
+      console.log(`📬 Notified template author ${authorUserId}: ${userName} used "${templateName}"`);
+      return { inApp: inAppResult };
+    } catch (error) {
+      console.error('Failed to send template used notification:', error.message);
       return { error: error.message };
     }
   }

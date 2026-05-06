@@ -69,6 +69,8 @@ import AdminReflections from "./pages/admin/AdminReflections";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
+import AdminWeeklyRewards from "./pages/admin/AdminWeeklyRewards";
+import AdminBillingHistory from "./pages/admin/AdminBillingHistory";
 import AdminPublishRequests from "./pages/admin/AdminPublishRequests";
 
 // Protect routes that require auth
@@ -200,6 +202,8 @@ const router = createBrowserRouter([
           { path: "reflections", element: <AdminReflections /> },
           { path: "audit-log", element: <AdminAuditLog /> },
           { path: "subscriptions", element: <AdminSubscriptions /> },
+          { path: "billing-history", element: <AdminBillingHistory /> },
+          { path: "weekly-rewards", element: <AdminWeeklyRewards /> },
           { path: "settings", element: <AdminSettings /> },
         ],
       },

@@ -14,12 +14,14 @@ import {
 } from "lucide-react";
 import AvatarPicker from "../components/AvatarPicker";
 import { useCustomAvatar } from "../context/AvatarContext";
+import { useSubscription } from "../context/SubscriptionContext";
 import MyPublishRequests from "../components/MyPublishRequests";
 
 export default function Profile() {
   const user = useAuth();
   const navigate = useNavigate();
   const { customAvatar, setCustomAvatar } = useCustomAvatar();
+  const { isPro } = useSubscription();
 
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState(null);
@@ -209,7 +211,7 @@ export default function Profile() {
             <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-5">
               {/* Avatar */}
               <div className="relative flex-shrink-0">
-                <Avatar photoURL={user?.photoURL} displayName={user?.displayName} email={user?.email} size="xl" />
+                <Avatar photoURL={user?.photoURL} displayName={user?.displayName} email={user?.email} size="xl" isPro={isPro} />
                 <button onClick={() => setShowAvatarPicker(true)}
                   className="absolute -bottom-1 -right-1 w-7 h-7 bg-gradient-to-br from-rose-600 to-pink-600 rounded-full flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:scale-110 transition-transform">
                   <Camera className="w-3 h-3 text-white" />

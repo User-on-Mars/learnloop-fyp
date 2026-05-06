@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, ChevronLeft, ChevronRight, ShieldOff, ShieldCheck, UserX, Crown } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, ShieldOff, ShieldCheck, UserX, Crown, Filter, X } from 'lucide-react'
 import { adminApi } from '../../api/adminApi'
 import PageTransition from '../../components/admin/PageTransition'
 import ErrorState from '../../components/admin/ErrorState'
@@ -20,6 +20,12 @@ export default function AdminUsers() {
   const [limit, setLimit] = useState(20)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+  const [planFilter, setPlanFilter] = useState('')
+  const [leagueFilter, setLeagueFilter] = useState('')
+  const [joinedFrom, setJoinedFrom] = useState('')
+  const [joinedTo, setJoinedTo] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [actionModal, setActionModal] = useState(null)
@@ -35,6 +41,11 @@ export default function AdminUsers() {
       const params = { page, limit }
       if (search) params.search = search
       if (statusFilter) params.status = statusFilter
+      if (roleFilter) params.role = roleFilter
+      if (planFilter) params.plan = planFilter
+      if (leagueFilter) params.league = leagueFilter
+      if (joinedFrom) params.joinedFrom = joinedFrom
+      if (joinedTo) params.joinedTo = joinedTo
       const data = await adminApi.getUsers(params)
       setUsers(data.users)
       setTotal(data.total)
@@ -45,9 +56,20 @@ export default function AdminUsers() {
     } finally {
       setLoading(false)
     }
-  }, [page, limit, search, statusFilter])
+  }, [page, limit, search, statusFilter, roleFilter, planFilter, leagueFilter, joinedFrom, joinedTo])
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
+
+  const hasActiveFilters = statusFilter || roleFilter || planFilter || leagueFilter || joinedFrom || joinedTo
+  const clearFilters = () => {
+    setStatusFilter('')
+    setRoleFilter('')
+    setPlanFilter('')
+    setLeagueFilter('')
+    setJoinedFrom('')
+    setJoinedTo('')
+    setPage(1)
+  }
 
   const handleAction = async () => {
     if (!actionModal) return
@@ -127,44 +149,126 @@ export default function AdminUsers() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-6">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-site-faint" />
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              value={search}
-              onChange={e => {
-                setSearch(e.target.value)
-                setPage(1)
-                clearTimeout(searchTimeoutRef.current)
-                searchTimeoutRef.current = setTimeout(() => {
-                  // Debounced search will trigger via useEffect dependency
-                }, 300)
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-site-border rounded-lg text-sm bg-site-surface text-site-ink focus:outline-none focus:ring-2 focus:ring-site-accent/20 focus:border-site-accent"
-            />
+        <div className="bg-site-surface rounded-xl border border-site-border p-4 mb-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-site-faint" />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={search}
+                onChange={e => {
+                  setSearch(e.target.value)
+                  setPage(1)
+                  clearTimeout(searchTimeoutRef.current)
+                  searchTimeoutRef.current = setTimeout(() => {}, 300)
+                }}
+                className="w-full pl-10 pr-4 py-2 border border-site-border rounded-lg text-sm bg-site-bg text-site-ink focus:outline-none focus:ring-2 focus:ring-site-accent/20 focus:border-site-accent"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                showFilters || hasActiveFilters
+                  ? 'bg-site-accent/10 text-site-accent border-site-accent/30'
+                  : 'bg-site-surface text-site-ink border-site-border hover:bg-site-bg'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+              {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-site-accent" />}
+            </button>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="text-xs text-site-muted hover:text-red-600 transition-colors flex items-center gap-1">
+                <X className="w-3 h-3" /> Clear all
+              </button>
+            )}
+            <select
+              value={limit}
+              onChange={e => { setLimit(Number(e.target.value)); setPage(1) }}
+              className="px-3 py-2 border border-site-border rounded-lg text-sm bg-site-bg text-site-ink focus:outline-none focus:ring-2 focus:ring-site-accent/20"
+            >
+              <option value="10">10 per page</option>
+              <option value="20">20 per page</option>
+              <option value="50">50 per page</option>
+              <option value="100">100 per page</option>
+            </select>
           </div>
-          <select
-            value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-            className="px-3 py-2 border border-site-border rounded-lg text-sm bg-site-surface text-site-ink focus:outline-none focus:ring-2 focus:ring-site-accent/20"
-          >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-            <option value="banned">Banned</option>
-          </select>
-          <select
-            value={limit}
-            onChange={e => { setLimit(Number(e.target.value)); setPage(1) }}
-            className="px-3 py-2 border border-site-border rounded-lg text-sm bg-site-surface text-site-ink focus:outline-none focus:ring-2 focus:ring-site-accent/20"
-          >
-            <option value="10">10 per page</option>
-            <option value="20">20 per page</option>
-            <option value="50">50 per page</option>
-            <option value="100">100 per page</option>
-          </select>
+
+          {/* Expanded Filters */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-site-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-site-muted mb-1">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
+                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm bg-site-bg focus:outline-none focus:ring-2 focus:ring-site-accent/20"
+                >
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="banned">Banned</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-site-muted mb-1">Role</label>
+                <select
+                  value={roleFilter}
+                  onChange={e => { setRoleFilter(e.target.value); setPage(1) }}
+                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm bg-site-bg focus:outline-none focus:ring-2 focus:ring-site-accent/20"
+                >
+                  <option value="">All Roles</option>
+                  <option value="admin">Admin</option>
+                  <option value="user">User</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-site-muted mb-1">Plan</label>
+                <select
+                  value={planFilter}
+                  onChange={e => { setPlanFilter(e.target.value); setPage(1) }}
+                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm bg-site-bg focus:outline-none focus:ring-2 focus:ring-site-accent/20"
+                >
+                  <option value="">All Plans</option>
+                  <option value="pro">Pro</option>
+                  <option value="free">Free</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-site-muted mb-1">League</label>
+                <select
+                  value={leagueFilter}
+                  onChange={e => { setLeagueFilter(e.target.value); setPage(1) }}
+                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm bg-site-bg focus:outline-none focus:ring-2 focus:ring-site-accent/20"
+                >
+                  <option value="">All Leagues</option>
+                  <option value="Gold">Gold</option>
+                  <option value="Silver">Silver</option>
+                  <option value="Bronze">Bronze</option>
+                  <option value="Newcomer">Newcomer</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-site-muted mb-1">Joined From</label>
+                <input
+                  type="date"
+                  value={joinedFrom}
+                  onChange={e => { setJoinedFrom(e.target.value); setPage(1) }}
+                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm bg-site-bg focus:outline-none focus:ring-2 focus:ring-site-accent/20"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-site-muted mb-1">Joined To</label>
+                <input
+                  type="date"
+                  value={joinedTo}
+                  onChange={e => { setJoinedTo(e.target.value); setPage(1) }}
+                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm bg-site-bg focus:outline-none focus:ring-2 focus:ring-site-accent/20"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Error State */}

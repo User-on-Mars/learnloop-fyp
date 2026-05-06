@@ -186,10 +186,23 @@ class AdminService {
       if (filter.status) query.accountStatus = filter.status
       if (filter.role) query.role = filter.role
 
+      // Date range filter for join date
+      if (filter.joinedRange) {
+        query.createdAt = {}
+        if (filter.joinedRange.from) query.createdAt.$gte = new Date(filter.joinedRange.from)
+        if (filter.joinedRange.to) query.createdAt.$lte = new Date(filter.joinedRange.to + 'T23:59:59.999Z')
+        if (!query.createdAt.$gte && !query.createdAt.$lte) delete query.createdAt
+      }
+
+      // Determine sort
+      const sortField = filter.sortBy || 'createdAt'
+      const sortDir = filter.sortOrder === 'asc' ? 1 : -1
+      const sortObj = { [sortField]: sortDir }
+
       const [users, total] = await Promise.all([
         User.find(query)
           .select('-passwordHash')
-          .sort({ createdAt: -1 })
+          .sort(sortObj)
           .skip(skip)
           .limit(limit)
           .lean(),
@@ -235,7 +248,19 @@ class AdminService {
         }
       }))
 
-      return { users: enriched, total, page, pages: Math.ceil(total / limit) }
+      // Post-query filters (plan and league require enriched data)
+      let filtered = enriched
+      if (filter.plan) {
+        filtered = filtered.filter(u => u.plan === filter.plan)
+      }
+      if (filter.league) {
+        filtered = filtered.filter(u => u.leagueTier === filter.league)
+      }
+
+      // If post-query filters are applied, adjust total
+      const finalTotal = (filter.plan || filter.league) ? filtered.length : total
+
+      return { users: filtered, total: finalTotal, page, pages: Math.ceil(finalTotal / limit) }
     } catch (error) {
       console.error('AdminService.getUsers error:', error)
       throw error

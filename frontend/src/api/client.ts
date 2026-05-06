@@ -151,7 +151,14 @@ export const subscriptionAPI = {
   getPayments: () => client.get('/subscription/payments'),
   getRewards: () => client.get('/subscription/rewards'),
   getLatestRewards: () => client.get('/subscription/rewards/latest'),
-  getBillingHistory: () => client.get('/subscription/billing-history'),
+  getBillingHistory: (params: Record<string, any> = {}) => {
+    const cleanParams: Record<string, string> = {};
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== '' && val !== null && val !== undefined) cleanParams[key] = String(val);
+    });
+    const qs = new URLSearchParams(cleanParams).toString();
+    return client.get(`/subscription/billing-history${qs ? `?${qs}` : ''}`);
+  },
   cancel: () => client.post('/subscription/cancel'),
   // eSewa payment
   esewaInitiate: (planId: string) => client.post('/subscription/esewa/initiate', { planId }),

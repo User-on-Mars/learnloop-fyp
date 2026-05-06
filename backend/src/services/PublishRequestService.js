@@ -412,7 +412,7 @@ class PublishRequestService {
         })),
         isPublished: true,
         isBuiltIn: false,
-        createdBy: 'user-submission',
+        createdBy: request.userId,
         sourceSkillmapId: request.skillmapId,
         authorCredit
       });

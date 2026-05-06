@@ -15,6 +15,9 @@ import {
 import NodeService from './NodeService.js';
 import ErrorLoggingService from './ErrorLoggingService.js';
 import cacheService from './CacheService.js';
+import XpService from './XpService.js';
+import NotificationService from './NotificationService.js';
+import User from '../models/User.js';
 
 class SkillService {
   /**
@@ -712,6 +715,9 @@ class SkillService {
           const SkillMapTemplate = mongoose.model('SkillMapTemplate');
           const templateDoc = await SkillMapTemplate.findById(templateId);
           if (templateDoc) {
+            // Check if this is a new unique user (not already in usedByUsers)
+            const isNewUser = !templateDoc.usedByUsers.includes(userId);
+            
             await templateDoc.trackUserUsage(userId);
             console.log(`✅ Tracked user ${userId} usage for template: ${templateId}`);
             
@@ -719,6 +725,52 @@ class SkillService {
             if (templateDoc.authorCredit) {
               skill.authorCredit = templateDoc.authorCredit;
               await skill.save({ session });
+            }
+
+            // Award 10 XP to template author if:
+            // 1. This is a new unique user (not already tracked)
+            // 2. The user is NOT the template author (owner doesn't get XP from own template)
+            // Determine the actual author userId
+            let authorUserId = templateDoc.createdBy;
+            
+            // If createdBy is 'user-submission' (legacy), look up the actual author from sourceSkillmapId
+            if (authorUserId === 'user-submission' && templateDoc.sourceSkillmapId) {
+              const sourceSkill = await Skill.findById(templateDoc.sourceSkillmapId).select('userId').lean();
+              if (sourceSkill?.userId) {
+                authorUserId = sourceSkill.userId;
+              }
+            }
+
+            if (isNewUser && authorUserId && authorUserId !== 'user-submission' && authorUserId !== userId) {
+              try {
+                // Award 10 XP to the template author
+                await XpService.awardXp(
+                  authorUserId,
+                  'template_usage',
+                  10,
+                  {
+                    referenceId: templateId,
+                    templateTitle: templateDoc.title,
+                    usedByUserId: userId
+                  }
+                );
+                console.log(`✅ Awarded 10 XP to template author ${authorUserId} for template usage by ${userId}`);
+
+                // Get the name of the user who used the template
+                const usingUser = await User.findOne({ firebaseUid: userId }).select('name').lean();
+                const userName = usingUser?.name || 'Someone';
+
+                // Send notification to template author
+                await NotificationService.sendTemplateUsedNotification(
+                  authorUserId,
+                  userName,
+                  templateDoc.title,
+                  templateId
+                );
+              } catch (xpError) {
+                // Don't fail the whole operation if XP/notification fails
+                console.error('⚠️ Failed to award template usage XP:', xpError.message);
+              }
             }
           }
         } catch (templateError) {

@@ -39,7 +39,7 @@ const PaymentSchema = new mongoose.Schema({
   // Payment status from eSewa
   status: {
     type: String,
-    enum: ['PENDING', 'COMPLETE', 'FAILED', 'CANCELED', 'AMBIGUOUS', 'FULL_REFUND', 'PARTIAL_REFUND', 'NOT_FOUND'],
+    enum: ['PENDING', 'COMPLETE', 'FAILED', 'CANCELED', 'AMBIGUOUS', 'FULL_REFUND', 'PARTIAL_REFUND', 'NOT_FOUND', 'EXPIRED'],
     default: 'PENDING'
   },
   // eSewa reference ID (returned after successful payment)

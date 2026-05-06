@@ -80,7 +80,11 @@ export const adminApi = {
 
   // Subscriptions
   getSubscriptions: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
+    const cleanParams = {};
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== '' && val !== null && val !== undefined) cleanParams[key] = val;
+    });
+    const qs = new URLSearchParams(cleanParams).toString();
     return request(`/admin/subscriptions${qs ? `?${qs}` : ''}`);
   },
   getUserSubscription: (userId) => request(`/admin/subscription/${userId}`),
@@ -91,8 +95,21 @@ export const adminApi = {
   downgradeSubscription: (userId) => request(`/admin/subscription/${userId}/downgrade`, { method: 'POST' }),
   cancelSubscription: (userId) => request(`/admin/subscription/${userId}/cancel`, { method: 'POST' }),
   getRewards: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
+    // Clean empty params before sending
+    const cleanParams = {};
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== '' && val !== null && val !== undefined) cleanParams[key] = val;
+    });
+    const qs = new URLSearchParams(cleanParams).toString();
     return request(`/admin/rewards${qs ? `?${qs}` : ''}`);
   },
   getLatestRewards: () => request('/admin/rewards/latest'),
+  getBillingHistory: (params = {}) => {
+    const cleanParams = {};
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== '' && val !== null && val !== undefined) cleanParams[key] = val;
+    });
+    const qs = new URLSearchParams(cleanParams).toString();
+    return request(`/admin/billing-history${qs ? `?${qs}` : ''}`);
+  },
 }

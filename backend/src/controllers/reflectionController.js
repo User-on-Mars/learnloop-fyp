@@ -14,8 +14,8 @@ export async function createReflection(userId, reflectionData) {
     if (typeof title !== 'string') {
       throw new Error('Title must be a string')
     }
-    if (title.length > 200) {
-      throw new Error('Title must not exceed 200 characters')
+    if (title.length > 20) {
+      throw new Error('Title must not exceed 20 characters')
     }
   }
 

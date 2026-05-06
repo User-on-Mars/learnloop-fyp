@@ -35,17 +35,29 @@ export default function Subscription() {
   const [cancelConfirmInput, setCancelConfirmInput] = useState("");
   const [billingHistory, setBillingHistory] = useState([]);
   const [billingLoading, setBillingLoading] = useState(true);
+  const [billingPage, setBillingPage] = useState(1);
+  const [billingPages, setBillingPages] = useState(1);
+  const [billingTotal, setBillingTotal] = useState(0);
+  const [billingType, setBillingType] = useState('');
+  const [billingStartDate, setBillingStartDate] = useState('');
+  const [billingEndDate, setBillingEndDate] = useState('');
 
   const plan = PLANS.find(p => p.id === selectedPlan) || PLANS[1];
 
   const fetchBillingHistory = useCallback(async () => {
     try {
       setBillingLoading(true);
-      const res = await subscriptionAPI.getBillingHistory();
+      const params = { page: billingPage, limit: 5 };
+      if (billingType) params.type = billingType;
+      if (billingStartDate) params.startDate = billingStartDate;
+      if (billingEndDate) params.endDate = billingEndDate;
+      const res = await subscriptionAPI.getBillingHistory(params);
       setBillingHistory(res.data.history || []);
+      setBillingPages(res.data.pages || 1);
+      setBillingTotal(res.data.total || 0);
     } catch { setBillingHistory([]); }
     finally { setBillingLoading(false); }
-  }, []);
+  }, [billingPage, billingType, billingStartDate, billingEndDate]);
 
   useEffect(() => { fetchBillingHistory(); }, [fetchBillingHistory]);
 
@@ -323,9 +335,41 @@ export default function Subscription() {
               </div>
               <div>
                 <h2 className="text-base font-bold text-[#1c1f1a]">Billing History</h2>
-                <p className="text-[11px] text-[#9aa094]">Your payments and rewards</p>
+                <p className="text-[11px] text-[#9aa094]">Your payments and rewards{billingTotal > 0 && ` • ${billingTotal} total`}</p>
               </div>
             </div>
+
+            {/* Billing Filters */}
+            <div className="px-5 pt-4 pb-2 flex flex-wrap items-center gap-2 border-b border-[#f0f2eb]">
+              <div className="flex gap-1">
+                <button onClick={() => { setBillingType(''); setBillingPage(1) }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${!billingType ? 'bg-violet-100 text-violet-700' : 'bg-[#f8faf6] text-[#9aa094] hover:bg-[#f0f2eb]'}`}>
+                  All
+                </button>
+                <button onClick={() => { setBillingType('payment'); setBillingPage(1) }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${billingType === 'payment' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#f8faf6] text-[#9aa094] hover:bg-[#f0f2eb]'}`}>
+                  Payments
+                </button>
+                <button onClick={() => { setBillingType('reward'); setBillingPage(1) }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${billingType === 'reward' ? 'bg-amber-100 text-amber-700' : 'bg-[#f8faf6] text-[#9aa094] hover:bg-[#f0f2eb]'}`}>
+                  Rewards
+                </button>
+              </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <input type="date" value={billingStartDate} onChange={e => { setBillingStartDate(e.target.value); setBillingPage(1) }}
+                  className="px-2 py-1.5 border border-[#e2e6dc] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-[#f8faf6]" />
+                <span className="text-xs text-[#9aa094]">to</span>
+                <input type="date" value={billingEndDate} onChange={e => { setBillingEndDate(e.target.value); setBillingPage(1) }}
+                  className="px-2 py-1.5 border border-[#e2e6dc] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-[#f8faf6]" />
+              </div>
+              {(billingType || billingStartDate || billingEndDate) && (
+                <button onClick={() => { setBillingType(''); setBillingStartDate(''); setBillingEndDate(''); setBillingPage(1) }}
+                  className="text-xs text-[#9aa094] hover:text-red-500 transition-colors">
+                  Clear
+                </button>
+              )}
+            </div>
+
             <div className="p-5">
               {billingLoading ? (
                 <div className="space-y-3">
@@ -346,7 +390,9 @@ export default function Subscription() {
                     <Receipt className="w-8 h-8 text-emerald-400" />
                   </div>
                   <h3 className="text-base font-bold text-[#1c1f1a] mb-1">No billing history</h3>
-                  <p className="text-sm text-[#9aa094]">Purchases and rewards will appear here</p>
+                  <p className="text-sm text-[#9aa094]">
+                    {billingType || billingStartDate || billingEndDate ? 'No results match your filters' : 'Purchases and rewards will appear here'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -399,6 +445,29 @@ export default function Subscription() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {billingPages > 1 && (
+                <div className="flex items-center justify-center gap-3 mt-5 pt-4 border-t border-[#f0f2eb]">
+                  <button
+                    onClick={() => setBillingPage(p => Math.max(1, p - 1))}
+                    disabled={billingPage === 1}
+                    className="px-3 py-1.5 border border-[#e2e6dc] rounded-lg text-xs font-medium text-[#1c1f1a] hover:bg-[#f8faf6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs text-[#9aa094]">
+                    Page {billingPage} of {billingPages}
+                  </span>
+                  <button
+                    onClick={() => setBillingPage(p => Math.min(billingPages, p + 1))}
+                    disabled={billingPage === billingPages}
+                    className="px-3 py-1.5 border border-[#e2e6dc] rounded-lg text-xs font-medium text-[#1c1f1a] hover:bg-[#f8faf6] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
                 </div>
               )}
             </div>

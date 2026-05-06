@@ -16,6 +16,6 @@ const WeeklyRewardSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 WeeklyRewardSchema.index({ weekEndDate: -1 });
-WeeklyRewardSchema.index({ userId: 1, weekEndDate: -1 });
+WeeklyRewardSchema.index({ userId: 1, weekEndDate: -1 }, { unique: true });
 
 export default mongoose.model('WeeklyReward', WeeklyRewardSchema);

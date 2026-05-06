@@ -14,6 +14,7 @@ import XpSettings from '../models/XpSettings.js'
 import SubscriptionService from '../services/SubscriptionService.js'
 import Subscription from '../models/Subscription.js'
 import WeeklyReward from '../models/WeeklyReward.js'
+import Payment from '../models/Payment.js'
 
 const router = Router()
 
@@ -61,11 +62,26 @@ router.get('/users', async (req, res) => {
     const search = req.query.search || ''
     const status = req.query.status || ''
     const role = req.query.role || ''
+    const plan = req.query.plan || ''
+    const league = req.query.league || ''
+    const joinedFrom = req.query.joinedFrom || ''
+    const joinedTo = req.query.joinedTo || ''
+    const sortBy = req.query.sortBy || 'createdAt'
+    const sortOrder = req.query.sortOrder || 'desc'
 
     const filter = {}
     if (search) filter.search = search
     if (status) filter.status = status
     if (role) filter.role = role
+    if (plan) filter.plan = plan
+    if (league) filter.league = league
+    if (joinedFrom || joinedTo) {
+      filter.joinedRange = {}
+      if (joinedFrom) filter.joinedRange.from = joinedFrom
+      if (joinedTo) filter.joinedRange.to = joinedTo
+    }
+    filter.sortBy = sortBy
+    filter.sortOrder = sortOrder
 
     const result = await AdminService.getUsers(page, limit, filter)
     res.json(result)
@@ -659,12 +675,23 @@ router.post('/subscription/:userId/cancel', requireAuth, requireAdmin, async (re
 router.get('/subscriptions', requireAuth, requireAdmin, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const tier = req.query.tier || '';
+    const search = req.query.search || '';
+    const status = req.query.status || '';
     const skip = (page - 1) * limit;
 
     // Get all real users (with Firebase UID, excluding local test users)
     const userFilter = { firebaseUid: { $ne: null }, email: { $not: /@learnloop\.local$/i } };
+    
+    // Apply search filter at DB level
+    if (search) {
+      userFilter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+    }
+    
     const allUsers = await User.find(userFilter).select('name email firebaseUid').sort({ createdAt: -1 }).lean();
 
     // Get all subscriptions
@@ -694,6 +721,11 @@ router.get('/subscriptions', requireAuth, requireAdmin, async (req, res) => {
       merged = merged.filter(s => s.effectiveTier === tier);
     }
 
+    // Filter by subscription status
+    if (status) {
+      merged = merged.filter(s => s.status === status);
+    }
+
     const total = merged.length;
     const paged = merged.slice(skip, skip + limit);
 
@@ -706,19 +738,74 @@ router.get('/subscriptions', requireAuth, requireAdmin, async (req, res) => {
 
 // ─── Weekly Rewards (Admin) ───────────────────────────────
 
-// GET /api/admin/rewards - List all weekly rewards
+// GET /api/admin/rewards - List all weekly rewards with filters
 router.get('/rewards', requireAuth, requireAdmin, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 30));
     const skip = (page - 1) * limit;
 
+    // Build filter query
+    const filter = {};
+
+    // Date range filter (weekEndDate)
+    if (req.query.startDate || req.query.endDate) {
+      filter.weekEndDate = {};
+      if (req.query.startDate) filter.weekEndDate.$gte = new Date(req.query.startDate);
+      if (req.query.endDate) filter.weekEndDate.$lte = new Date(req.query.endDate);
+    }
+
+    // Rank filter (1, 2, or 3)
+    if (req.query.rank) {
+      const rank = parseInt(req.query.rank);
+      if ([1, 2, 3].includes(rank)) filter.rank = rank;
+    }
+
+    // User search (name or email)
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      filter.$or = [
+        { userName: searchRegex },
+        { userEmail: searchRegex },
+      ];
+    }
+
+    // Reward duration filter
+    if (req.query.rewardDays) {
+      const days = parseInt(req.query.rewardDays);
+      if ([30, 90, 180].includes(days)) filter.rewardDays = days;
+    }
+
     const [rewards, total] = await Promise.all([
-      WeeklyReward.find().sort({ weekEndDate: -1, rank: 1 }).skip(skip).limit(limit).lean(),
-      WeeklyReward.countDocuments(),
+      WeeklyReward.find(filter).sort({ weekEndDate: -1, rank: 1 }).skip(skip).limit(limit).lean(),
+      WeeklyReward.countDocuments(filter),
     ]);
 
-    res.json({ rewards, total, page, pages: Math.ceil(total / limit) });
+    // Also get summary stats
+    const stats = await WeeklyReward.aggregate([
+      { $match: filter },
+      { $group: {
+        _id: null,
+        totalRewards: { $sum: 1 },
+        totalDaysGiven: { $sum: '$rewardDays' },
+        uniqueUsers: { $addToSet: '$userId' },
+        avgXp: { $avg: '$weeklyXp' },
+      }},
+      { $project: {
+        totalRewards: 1,
+        totalDaysGiven: 1,
+        uniqueUsers: { $size: '$uniqueUsers' },
+        avgXp: { $round: ['$avgXp', 0] },
+      }}
+    ]);
+
+    res.json({
+      rewards,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      stats: stats[0] || { totalRewards: 0, totalDaysGiven: 0, uniqueUsers: 0, avgXp: 0 },
+    });
   } catch (error) {
     console.error('Admin list rewards error:', error);
     res.status(500).json({ message: 'Failed to list rewards' });
@@ -728,11 +815,150 @@ router.get('/rewards', requireAuth, requireAdmin, async (req, res) => {
 // GET /api/admin/rewards/latest - Get the most recent week's rewards
 router.get('/rewards/latest', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const latest = await WeeklyReward.find().sort({ weekEndDate: -1 }).limit(3).lean();
+    // First find the most recent weekEndDate
+    const mostRecent = await WeeklyReward.findOne().sort({ weekEndDate: -1 }).lean();
+    if (!mostRecent) {
+      return res.json({ rewards: [] });
+    }
+
+    // Then fetch all rewards for that specific week, sorted by rank
+    const latest = await WeeklyReward.find({ weekEndDate: mostRecent.weekEndDate })
+      .sort({ rank: 1 })
+      .lean();
+
     res.json({ rewards: latest });
   } catch (error) {
     console.error('Admin latest rewards error:', error);
     res.status(500).json({ message: 'Failed to get latest rewards' });
+  }
+});
+
+// ─── Admin Billing History ────────────────────────────────────
+// GET /api/admin/billing-history - All payments + rewards across all users
+router.get('/billing-history', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const type = req.query.type || ''; // 'payment' | 'reward' | ''
+    const status = req.query.status || ''; // 'COMPLETE' | 'PENDING' | 'FAILED' etc.
+    const search = req.query.search || '';
+    const startDate = req.query.startDate || '';
+    const endDate = req.query.endDate || '';
+    const plan = req.query.plan || '';
+
+    // Build payment query
+    const paymentFilter = {};
+    if (status) paymentFilter.status = status;
+    if (plan) paymentFilter.plan = plan;
+    if (startDate || endDate) {
+      paymentFilter.createdAt = {};
+      if (startDate) paymentFilter.createdAt.$gte = new Date(startDate);
+      if (endDate) paymentFilter.createdAt.$lte = new Date(endDate + 'T23:59:59.999Z');
+    }
+
+    // Build reward query
+    const rewardFilter = {};
+    if (startDate || endDate) {
+      rewardFilter.createdAt = {};
+      if (startDate) rewardFilter.createdAt.$gte = new Date(startDate);
+      if (endDate) rewardFilter.createdAt.$lte = new Date(endDate + 'T23:59:59.999Z');
+    }
+
+    // Fetch data based on type filter
+    let payments = [];
+    let rewards = [];
+
+    if (type !== 'reward') {
+      payments = await Payment.find(paymentFilter).sort({ createdAt: -1 }).lean();
+    }
+    if (type !== 'payment') {
+      rewards = await WeeklyReward.find(rewardFilter).sort({ createdAt: -1 }).lean();
+    }
+
+    // Get user names for payments
+    const paymentUserIds = [...new Set(payments.map(p => p.userId))];
+    const rewardUserIds = [...new Set(rewards.map(r => r.userId))];
+    const allUserIds = [...new Set([...paymentUserIds, ...rewardUserIds])];
+    const users = await User.find({ firebaseUid: { $in: allUserIds } }).select('name email firebaseUid').lean();
+    const userMap = users.reduce((m, u) => { m[u.firebaseUid] = u; return m; }, {});
+
+    // Normalize into unified format
+    let history = [
+      ...payments.map(p => ({
+        id: p._id,
+        type: 'payment',
+        date: p.createdAt,
+        userId: p.userId,
+        userName: userMap[p.userId]?.name || 'Unknown',
+        userEmail: userMap[p.userId]?.email || '',
+        plan: p.plan,
+        amount: p.totalAmount,
+        status: p.status,
+        transactionId: p.transactionUuid,
+        refId: p.refId,
+        durationDays: p.durationDays,
+        method: 'eSewa',
+        label: { pro_1month: '1 Month', pro_3month: '3 Months', pro_6month: '6 Months', pro_monthly: '1 Month' }[p.plan] || p.plan,
+        applied: p.applied,
+      })),
+      ...rewards.map(r => ({
+        id: r._id,
+        type: 'reward',
+        date: r.createdAt,
+        userId: r.userId,
+        userName: r.userName || userMap[r.userId]?.name || 'Unknown',
+        userEmail: r.userEmail || userMap[r.userId]?.email || '',
+        plan: `reward_rank${r.rank}`,
+        amount: 0,
+        status: 'COMPLETE',
+        transactionId: null,
+        refId: null,
+        durationDays: r.rewardDays,
+        method: 'Weekly Reward',
+        label: `${r.rewardLabel} Pro (Rank #${r.rank})`,
+        rank: r.rank,
+        weeklyXp: r.weeklyXp,
+        applied: true,
+      })),
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Apply search filter (name or email)
+    if (search) {
+      const searchLower = search.toLowerCase();
+      history = history.filter(h =>
+        h.userName.toLowerCase().includes(searchLower) ||
+        h.userEmail.toLowerCase().includes(searchLower) ||
+        (h.transactionId && h.transactionId.toLowerCase().includes(searchLower))
+      );
+    }
+
+    const total = history.length;
+    const paged = history.slice(skip, skip + limit);
+
+    // Summary stats
+    const totalRevenue = payments.filter(p => p.status === 'COMPLETE').reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+    const completedPayments = payments.filter(p => p.status === 'COMPLETE').length;
+    const pendingPayments = payments.filter(p => p.status === 'PENDING').length;
+    const failedPayments = payments.filter(p => p.status === 'FAILED').length;
+
+    res.json({
+      history: paged,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      stats: {
+        totalRevenue,
+        completedPayments,
+        pendingPayments,
+        failedPayments,
+        totalRewards: rewards.length,
+      },
+    });
+  } catch (error) {
+    console.error('Admin billing history error:', error);
+    res.status(500).json({ message: 'Failed to fetch billing history' });
   }
 });
 

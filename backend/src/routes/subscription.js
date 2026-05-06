@@ -31,8 +31,19 @@ router.get('/plan', (req, res) => {
  */
 router.get('/rewards/latest', async (req, res) => {
   try {
-    const latest = await WeeklyReward.find()
-      .sort({ weekEndDate: -1, rank: 1 })
+    // First, find the most recent weekEndDate so we only show ONE week's winners
+    const mostRecent = await WeeklyReward.findOne()
+      .sort({ weekEndDate: -1 })
+      .select('weekEndDate')
+      .lean();
+
+    if (!mostRecent) {
+      return res.json({ rewards: [] });
+    }
+
+    // Get all rewards from that specific week only, sorted by rank
+    const latest = await WeeklyReward.find({ weekEndDate: mostRecent.weekEndDate })
+      .sort({ rank: 1 })
       .limit(3)
       .lean();
 
@@ -195,16 +206,23 @@ router.get('/rewards', async (req, res) => {
 /**
  * GET /api/subscription/billing-history
  * Unified billing history: payments + rewards, sorted by date.
+ * Supports pagination and filters.
  */
 router.get('/billing-history', async (req, res) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+    const type = req.query.type || ''; // 'payment' | 'reward' | ''
+    const startDate = req.query.startDate || '';
+    const endDate = req.query.endDate || '';
+
     const [payments, rewards] = await Promise.all([
       EsewaService.getPaymentHistory(req.user.id),
-      WeeklyReward.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(20).lean(),
+      WeeklyReward.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(50).lean(),
     ]);
 
     // Normalize into a unified format
-    const history = [
+    let history = [
       ...payments.map(p => ({
         id: p._id,
         type: 'payment',
@@ -236,7 +254,25 @@ router.get('/billing-history', async (req, res) => {
       })),
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    res.json({ history });
+    // Apply type filter
+    if (type) {
+      history = history.filter(h => h.type === type);
+    }
+
+    // Apply date range filter
+    if (startDate) {
+      history = history.filter(h => new Date(h.date) >= new Date(startDate));
+    }
+    if (endDate) {
+      history = history.filter(h => new Date(h.date) <= new Date(endDate + 'T23:59:59.999Z'));
+    }
+
+    const total = history.length;
+    const pages = Math.ceil(total / limit);
+    const skip = (page - 1) * limit;
+    const paged = history.slice(skip, skip + limit);
+
+    res.json({ history: paged, total, page, pages });
   } catch (error) {
     console.error('❌ Error getting billing history:', error.message);
     res.status(500).json({ message: 'Failed to get billing history' });

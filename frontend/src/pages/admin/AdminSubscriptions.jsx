@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Crown, Users, Calendar, AlertCircle, Check, X } from 'lucide-react'
+import { Crown, Users, Calendar, AlertCircle, Check, X, Search } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { adminApi } from '../../api/adminApi'
 import PageTransition from '../../components/admin/PageTransition'
@@ -268,12 +268,15 @@ export default function AdminSubscriptions() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all') // 'all' | 'pro' | 'free'
+  const [statusFilter, setStatusFilter] = useState('') // '' | 'active' | 'canceled'
+  const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     fetchSubscriptions()
-  }, [page, filter])
+  }, [page, filter, statusFilter, search])
 
   const fetchSubscriptions = async () => {
     try {
@@ -281,9 +284,12 @@ export default function AdminSubscriptions() {
       setError(null)
       const params = { page, limit: 20 }
       if (filter !== 'all') params.tier = filter
+      if (statusFilter) params.status = statusFilter
+      if (search) params.search = search
       const data = await adminApi.getSubscriptions(params)
       setSubscriptions(data.subscriptions || [])
       setTotalPages(data.pages || 1)
+      setTotal(data.total || 0)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -292,7 +298,7 @@ export default function AdminSubscriptions() {
   }
 
   const stats = {
-    total: subscriptions.length,
+    total,
     pro: subscriptions.filter(s => s.effectiveTier === 'pro').length,
     free: subscriptions.filter(s => s.effectiveTier === 'free').length,
   }
@@ -335,42 +341,81 @@ export default function AdminSubscriptions() {
       <div className="p-6 lg:p-8 max-w-7xl">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-site-ink">Subscriptions</h1>
-          <p className="text-site-muted mt-1">Manage user subscription tiers</p>
+          <p className="text-site-muted mt-1">Manage user subscription tiers • {total} total</p>
         </div>
 
         {/* Stats */}
         <AnimatedList className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <StatCard icon={Users} label="Total Users" value={stats.total} />
+          <StatCard icon={Users} label="Total Users" value={total} />
           <StatCard icon={Crown} label="Pro Users" value={stats.pro} color="text-amber-600" bgColor="bg-amber-50" />
           <StatCard icon={Check} label="Free Users" value={stats.free} color="text-gray-600" bgColor="bg-gray-50" />
         </AnimatedList>
 
         {/* Filters */}
-        <div className="mb-6 flex gap-2">
-          <button
-            onClick={() => { setFilter('all'); setPage(1) }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'all' ? 'bg-site-accent text-white' : 'bg-site-surface text-site-ink border border-site-border hover:bg-site-bg'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => { setFilter('pro'); setPage(1) }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'pro' ? 'bg-amber-500 text-white' : 'bg-site-surface text-site-ink border border-site-border hover:bg-site-bg'
-            }`}
-          >
-            Pro Only
-          </button>
-          <button
-            onClick={() => { setFilter('free'); setPage(1) }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'free' ? 'bg-gray-500 text-white' : 'bg-site-surface text-site-ink border border-site-border hover:bg-site-bg'
-            }`}
-          >
-            Free Only
-          </button>
+        <div className="bg-site-surface rounded-xl border border-site-border p-4 mb-6">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px] max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-site-faint" />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+                className="w-full pl-9 pr-3 py-2 border border-site-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-site-accent/30 bg-site-bg"
+              />
+            </div>
+
+            {/* Tier Filter */}
+            <div className="flex gap-1">
+              <button
+                onClick={() => { setFilter('all'); setPage(1) }}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  filter === 'all' ? 'bg-site-accent text-white' : 'bg-site-bg text-site-ink border border-site-border hover:bg-site-bg'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => { setFilter('pro'); setPage(1) }}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  filter === 'pro' ? 'bg-amber-500 text-white' : 'bg-site-bg text-site-ink border border-site-border hover:bg-site-bg'
+                }`}
+              >
+                Pro
+              </button>
+              <button
+                onClick={() => { setFilter('free'); setPage(1) }}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  filter === 'free' ? 'bg-gray-500 text-white' : 'bg-site-bg text-site-ink border border-site-border hover:bg-site-bg'
+                }`}
+              >
+                Free
+              </button>
+            </div>
+
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
+              className="px-3 py-2 border border-site-border rounded-lg text-sm bg-site-bg text-site-ink focus:outline-none focus:ring-2 focus:ring-site-accent/20"
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="canceled">Canceled</option>
+              <option value="trialing">Trialing</option>
+            </select>
+
+            {/* Clear */}
+            {(search || filter !== 'all' || statusFilter) && (
+              <button
+                onClick={() => { setSearch(''); setFilter('all'); setStatusFilter(''); setPage(1) }}
+                className="text-xs text-site-muted hover:text-red-600 transition-colors"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Subscriptions List */}

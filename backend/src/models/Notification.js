@@ -25,7 +25,8 @@ const NotificationSchema = new mongoose.Schema({
       'subscription_upgraded',
       'subscription_canceled',
       'weekly_reward_won',
-      'payment_receipt'
+      'payment_receipt',
+      'template_used'
     ],
     index: true
   },

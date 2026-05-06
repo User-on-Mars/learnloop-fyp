@@ -16,6 +16,8 @@ import {
   ChevronRight,
   X,
   Send,
+  Gift,
+  Receipt,
 } from 'lucide-react'
 import LogoMark from '../LogoMark'
 
@@ -26,6 +28,8 @@ const adminNav = [
   { id: 'activity', label: 'Activity', icon: Activity, path: '/admin/activity' },
   { id: 'xp-leagues', label: 'XP Leaderboard', icon: TrendingUp, path: '/admin/xp-leagues' },
   { id: 'subscriptions', label: 'Subscriptions', icon: Crown, path: '/admin/subscriptions' },
+  { id: 'billing-history', label: 'Billing History', icon: Receipt, path: '/admin/billing-history' },
+  { id: 'weekly-rewards', label: 'Weekly Rewards', icon: Gift, path: '/admin/weekly-rewards' },
   { id: 'skill-maps', label: 'Skill Maps', icon: BookOpen, path: '/admin/skill-maps' },
   { id: 'templates', label: 'Templates', icon: Layers, path: '/admin/templates' },
   { id: 'publish-requests', label: 'Publish Requests', icon: Send, path: '/admin/publish-requests' },

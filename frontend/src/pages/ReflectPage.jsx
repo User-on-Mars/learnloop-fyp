@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../useAuth';
 import { useToast } from '../context/ToastContext';
@@ -67,6 +68,7 @@ export default function ReflectPage() {
 
   const handleSave = async () => {
     if (!title.trim()) { setError('Title is required.'); setTimeout(() => setError(null), 4000); return; }
+    if (title.trim().length > 20) { setError('Title must be 20 characters or less.'); setTimeout(() => setError(null), 4000); return; }
     if (!content.trim()) { setError('Content is required.'); setTimeout(() => setError(null), 4000); return; }
     if (!mood) { setError('Please select a mood.'); setTimeout(() => setError(null), 4000); return; }
     setSaving(true); setError(null); setSuccess(false);
@@ -488,8 +490,8 @@ export default function ReflectPage() {
           </div>
 
       {/* New Reflection Modal - Step by Step */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {showForm && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col border border-[#e2e6dc]">
 
             {/* Header */}
@@ -534,8 +536,13 @@ export default function ReflectPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">Title <span className="text-red-500">*</span></label>
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Give your reflection a title" maxLength={200} autoFocus
+                    <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
+                      Title <span className="text-red-500">*</span>
+                      <span className={`text-xs font-normal ml-2 ${title.length > 20 ? 'text-red-500' : 'text-[#9aa094]'}`}>
+                        {title.length}/20
+                      </span>
+                    </label>
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Give your reflection a title" maxLength={20} autoFocus
                       className="w-full px-4 py-3.5 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15 transition-all text-sm" />
                   </div>
 
@@ -670,6 +677,7 @@ export default function ReflectPage() {
                   <button type="button"
                     onClick={() => {
                       if (formStep === 1 && (!title.trim() || !content.trim())) { setError('Title and content are required.'); setTimeout(() => setError(null), 3000); return; }
+                      if (formStep === 1 && title.trim().length > 20) { setError('Title must be 20 characters or less.'); setTimeout(() => setError(null), 3000); return; }
                       if (formStep === 2 && !mood) { setError('Please select a mood.'); setTimeout(() => setError(null), 3000); return; }
                       setFormStep(s => s + 1);
                     }}
@@ -686,7 +694,7 @@ export default function ReflectPage() {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Delete Confirm Modal */}
       <Modal
