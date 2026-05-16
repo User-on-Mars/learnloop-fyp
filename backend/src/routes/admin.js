@@ -29,6 +29,11 @@ router.get('/xp-settings', async (req, res) => {
   }
 })
 
+// ─── Admin Verify (check if current user is admin) ───────────
+router.get('/verify', requireAuth, requireAdmin, (req, res) => {
+  res.json({ admin: true })
+})
+
 // ─── Dashboard Stats (requires admin role) ───────────────
 router.get('/stats', requireAuth, requireAdmin, async (req, res) => {
   try {

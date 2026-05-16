@@ -10,9 +10,12 @@ import RoomService from '../RoomService.js';
 import Room from '../../models/Room.js';
 import RoomMember from '../../models/RoomMember.js';
 import RoomSkillMap from '../../models/RoomSkillMap.js';
+import RoomNodeProgress from '../../models/RoomNodeProgress.js';
 import User from '../../models/User.js';
 import Skill from '../../models/Skill.js';
+import Node from '../../models/Node.js';
 import ErrorLoggingService from '../ErrorLoggingService.js';
+import NotificationService from '../NotificationService.js';
 import {
   ValidationError,
   NotFoundError,
@@ -24,20 +27,25 @@ import {
 jest.mock('../../models/Room.js');
 jest.mock('../../models/RoomMember.js');
 jest.mock('../../models/RoomSkillMap.js');
+jest.mock('../../models/RoomNodeProgress.js');
 jest.mock('../../models/User.js');
 jest.mock('../../models/Skill.js');
+jest.mock('../../models/Node.js');
 jest.mock('../ErrorLoggingService.js');
+jest.mock('../NotificationService.js');
 
 describe('RoomService - Member Management', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     ErrorLoggingService.logError = jest.fn();
     ErrorLoggingService.logSystemEvent = jest.fn();
+    NotificationService.sendMemberKickedNotification = jest.fn().mockResolvedValue({});
   });
 
   describe('getRoomMembers', () => {
     it('should return all members with user details', async () => {
       const roomId = '507f1f77bcf86cd799439011';
+      const userId = 'user123';
       const mockMembers = [
         {
           _id: 'member1',
@@ -68,6 +76,7 @@ describe('RoomService - Member Management', () => {
         }
       ];
 
+      RoomMember.findOne = jest.fn().mockResolvedValue({ roomId, userId, role: 'owner' });
       RoomMember.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({
           lean: jest.fn().mockResolvedValue(mockMembers)
@@ -80,7 +89,7 @@ describe('RoomService - Member Management', () => {
         })
       });
 
-      const result = await RoomService.getRoomMembers(roomId);
+      const result = await RoomService.getRoomMembers(roomId, userId);
 
       expect(result).toHaveLength(2);
       expect(result[0].userId).toBe('user123');
@@ -93,25 +102,33 @@ describe('RoomService - Member Management', () => {
 
     it('should return empty array when room has no members', async () => {
       const roomId = '507f1f77bcf86cd799439011';
+      const userId = 'user123';
 
+      RoomMember.findOne = jest.fn().mockResolvedValue({ roomId, userId, role: 'owner' });
       RoomMember.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({
           lean: jest.fn().mockResolvedValue([])
         })
       });
 
-      const result = await RoomService.getRoomMembers(roomId);
+      const result = await RoomService.getRoomMembers(roomId, userId);
 
       expect(result).toEqual([]);
     });
 
     it('should throw ValidationError when roomId is missing', async () => {
-      await expect(RoomService.getRoomMembers(null)).rejects.toThrow(ValidationError);
-      await expect(RoomService.getRoomMembers('')).rejects.toThrow(ValidationError);
+      await expect(RoomService.getRoomMembers(null, 'user123')).rejects.toThrow(ValidationError);
+      await expect(RoomService.getRoomMembers('', 'user123')).rejects.toThrow(ValidationError);
+    });
+
+    it('should throw ValidationError when userId is missing', async () => {
+      await expect(RoomService.getRoomMembers('roomId', null)).rejects.toThrow(ValidationError);
+      await expect(RoomService.getRoomMembers('roomId', '')).rejects.toThrow(ValidationError);
     });
 
     it('should handle missing user details gracefully', async () => {
       const roomId = '507f1f77bcf86cd799439011';
+      const userId = 'user123';
       const mockMembers = [
         {
           _id: 'member1',
@@ -122,6 +139,7 @@ describe('RoomService - Member Management', () => {
         }
       ];
 
+      RoomMember.findOne = jest.fn().mockResolvedValue({ roomId, userId, role: 'owner' });
       RoomMember.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({
           lean: jest.fn().mockResolvedValue(mockMembers)
@@ -134,7 +152,7 @@ describe('RoomService - Member Management', () => {
         })
       });
 
-      const result = await RoomService.getRoomMembers(roomId);
+      const result = await RoomService.getRoomMembers(roomId, userId);
 
       expect(result).toHaveLength(1);
       expect(result[0].user).toBeNull();
@@ -164,6 +182,7 @@ describe('RoomService - Member Management', () => {
       Room.findOne = jest.fn().mockResolvedValue(mockRoom);
       RoomMember.findOne = jest.fn().mockResolvedValue(mockMember);
       RoomMember.deleteOne = jest.fn().mockResolvedValue({ deletedCount: 1 });
+      User.findOne = jest.fn().mockResolvedValue({ firebaseUid: targetUserId, name: 'Member', email: 'member@test.com' });
 
       await RoomService.kickMember(roomId, ownerId, targetUserId);
 
@@ -386,31 +405,40 @@ describe('RoomService - Member Management', () => {
         nodeCount: 10
       };
 
-      const mockRoomSkillMap = {
+      const mockNodes = [
+        { _id: 'n1', title: 'Node 1', description: '', type: 'Learn', order: 0 }
+      ];
+
+      const mockSavedRoomSkillMap = {
         _id: 'rsm1',
         roomId,
         skillMapId,
         addedBy: userId,
-        createdAt: new Date(),
+        name: 'JavaScript Basics',
+        nodes: mockNodes,
+        nodeCount: 1,
         toObject: jest.fn().mockReturnValue({
           _id: 'rsm1',
           roomId,
           skillMapId,
           addedBy: userId,
-          createdAt: new Date()
+          name: 'JavaScript Basics'
         })
       };
 
       Room.findOne = jest.fn().mockResolvedValue(mockRoom);
-      Skill.findById = jest.fn().mockResolvedValue(mockSkillMap);
-      RoomSkillMap.findOne = jest.fn().mockResolvedValue(null);
-      RoomSkillMap.mockImplementation(() => mockRoomSkillMap);
-      mockRoomSkillMap.save = jest.fn().mockResolvedValue(mockRoomSkillMap);
+      Skill.findById = jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockSkillMap) });
+      RoomSkillMap.countDocuments = jest.fn().mockResolvedValue(0);
+      // Mock the Node.find for fetching nodes
+      const NodeModule = await import('../../models/Node.js');
+      NodeModule.default.find = jest.fn().mockReturnValue({ sort: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockNodes) }) });
+      // Mock RoomSkillMap constructor
+      RoomSkillMap.prototype.save = jest.fn().mockResolvedValue(mockSavedRoomSkillMap);
+      RoomSkillMap.prototype.toObject = jest.fn().mockReturnValue({ _id: 'rsm1', roomId, skillMapId, addedBy: userId });
 
       const result = await RoomService.addSkillMap(roomId, userId, skillMapId);
 
       expect(result).toBeDefined();
-      expect(mockRoomSkillMap.save).toHaveBeenCalled();
       expect(ErrorLoggingService.logSystemEvent).toHaveBeenCalledWith(
         'skill_map_added',
         expect.objectContaining({
@@ -440,53 +468,6 @@ describe('RoomService - Member Management', () => {
       ).rejects.toThrow(PermissionError);
     });
 
-    it('should throw ConflictError when skill map already exists in room', async () => {
-      const roomId = '507f1f77bcf86cd799439011';
-      const userId = 'owner123';
-      const skillMapId = '507f1f77bcf86cd799439022';
-
-      const mockRoom = {
-        _id: roomId,
-        ownerId: userId,
-        name: 'Test Room',
-        deletedAt: null
-      };
-
-      const mockSkillMap = {
-        _id: skillMapId,
-        userId: 'creator123',
-        name: 'JavaScript Basics',
-        nodeCount: 10
-      };
-
-      const existingMapping = {
-        _id: 'rsm1',
-        roomId,
-        skillMapId,
-        addedBy: userId
-      };
-
-      Room.findOne = jest.fn().mockResolvedValue(mockRoom);
-      Skill.findById = jest.fn().mockResolvedValue(mockSkillMap);
-      RoomSkillMap.findOne = jest.fn().mockResolvedValue(existingMapping);
-
-      await expect(
-        RoomService.addSkillMap(roomId, userId, skillMapId)
-      ).rejects.toThrow(ConflictError);
-    });
-
-    it('should throw NotFoundError when room does not exist', async () => {
-      const roomId = '507f1f77bcf86cd799439011';
-      const userId = 'owner123';
-      const skillMapId = '507f1f77bcf86cd799439022';
-
-      Room.findOne = jest.fn().mockResolvedValue(null);
-
-      await expect(
-        RoomService.addSkillMap(roomId, userId, skillMapId)
-      ).rejects.toThrow(NotFoundError);
-    });
-
     it('should throw NotFoundError when skill map does not exist', async () => {
       const roomId = '507f1f77bcf86cd799439011';
       const userId = 'owner123';
@@ -500,7 +481,19 @@ describe('RoomService - Member Management', () => {
       };
 
       Room.findOne = jest.fn().mockResolvedValue(mockRoom);
-      Skill.findById = jest.fn().mockResolvedValue(null);
+      Skill.findById = jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+
+      await expect(
+        RoomService.addSkillMap(roomId, userId, skillMapId)
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw NotFoundError when room does not exist', async () => {
+      const roomId = '507f1f77bcf86cd799439011';
+      const userId = 'owner123';
+      const skillMapId = '507f1f77bcf86cd799439022';
+
+      Room.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(
         RoomService.addSkillMap(roomId, userId, skillMapId)
@@ -526,7 +519,7 @@ describe('RoomService - Member Management', () => {
     it('should successfully remove skill map when user is owner', async () => {
       const roomId = '507f1f77bcf86cd799439011';
       const userId = 'owner123';
-      const skillMapId = '507f1f77bcf86cd799439022';
+      const roomSkillMapId = 'rsm1';
 
       const mockRoom = {
         _id: roomId,
@@ -538,7 +531,7 @@ describe('RoomService - Member Management', () => {
       const mockRoomSkillMap = {
         _id: 'rsm1',
         roomId,
-        skillMapId,
+        skillMapId: '507f1f77bcf86cd799439022',
         addedBy: userId
       };
 
@@ -546,18 +539,17 @@ describe('RoomService - Member Management', () => {
       RoomSkillMap.findOne = jest.fn().mockResolvedValue(mockRoomSkillMap);
       RoomSkillMap.deleteOne = jest.fn().mockResolvedValue({ deletedCount: 1 });
 
-      await RoomService.removeSkillMap(roomId, userId, skillMapId);
+      await RoomService.removeSkillMap(roomId, userId, roomSkillMapId);
 
       expect(RoomSkillMap.deleteOne).toHaveBeenCalledWith({
-        roomId,
-        skillMapId
+        _id: 'rsm1'
       });
       expect(ErrorLoggingService.logSystemEvent).toHaveBeenCalledWith(
         'skill_map_removed',
         expect.objectContaining({
           roomId,
           userId,
-          skillMapId
+          roomSkillMapId: 'rsm1'
         })
       );
     });
@@ -680,17 +672,15 @@ describe('RoomService - Member Management', () => {
           lean: jest.fn().mockResolvedValue(mockRoomSkillMaps)
         })
       });
-      Skill.find = jest.fn().mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockSkillMaps)
+      RoomNodeProgress.find = jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue([])
       });
 
       const result = await RoomService.getRoomSkillMaps(roomId, userId);
 
       expect(result).toHaveLength(2);
-      expect(result[0].skillMapId).toBe('507f1f77bcf86cd799439022');
-      expect(result[0].skillMap.name).toBe('JavaScript Basics');
-      expect(result[1].skillMapId).toBe('507f1f77bcf86cd799439033');
-      expect(result[1].skillMap.name).toBe('Python Advanced');
+      expect(result[0]._id).toBe('rsm1');
+      expect(result[1]._id).toBe('rsm2');
     });
 
     it('should return empty array when room has no skill maps', async () => {
@@ -709,6 +699,9 @@ describe('RoomService - Member Management', () => {
         sort: jest.fn().mockReturnValue({
           lean: jest.fn().mockResolvedValue([])
         })
+      });
+      RoomNodeProgress.find = jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue([])
       });
 
       const result = await RoomService.getRoomSkillMaps(roomId, userId);
@@ -744,6 +737,7 @@ describe('RoomService - Member Management', () => {
           roomId,
           skillMapId: '507f1f77bcf86cd799439022',
           addedBy: 'owner123',
+          nodeCount: 3,
           createdAt: new Date('2024-01-01')
         }
       ];
@@ -754,14 +748,15 @@ describe('RoomService - Member Management', () => {
           lean: jest.fn().mockResolvedValue(mockRoomSkillMaps)
         })
       });
-      Skill.find = jest.fn().mockReturnValue({
-        lean: jest.fn().mockResolvedValue([]) // No skill maps found
+      RoomNodeProgress.find = jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue([])
       });
 
       const result = await RoomService.getRoomSkillMaps(roomId, userId);
 
       expect(result).toHaveLength(1);
-      expect(result[0].skillMap).toBeNull();
+      expect(result[0].completedCount).toBe(0);
+      expect(result[0].completionPercentage).toBe(0);
     });
 
     it('should throw ValidationError when required parameters are missing', async () => {

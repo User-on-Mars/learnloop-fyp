@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { SECURITY_EVENTS } from './security.js'
 import User from '../models/User.js'
+import admin from '../config/firebase.js'
 
 // Auth middleware that accepts both JWT and Firebase tokens
 export async function requireAuth(req, res, next) {
@@ -28,49 +29,58 @@ export async function requireAuth(req, res, next) {
       console.log('🔄 Auth: JWT failed, trying Firebase token...')
     }
 
-    // For Firebase tokens, decode and extract user info
-    // Firebase tokens are JWTs that we can decode to get the user ID
+    // For Firebase tokens, verify using Firebase Admin SDK
     try {
-      const parts = token.split('.')
-      if (parts.length !== 3) {
-        throw new Error('Invalid token format')
+      let userId, email, emailVerified, displayName
+
+      // Use Firebase Admin SDK for cryptographic verification (preferred)
+      if (admin && admin.apps?.length > 0) {
+        const decodedToken = await admin.auth().verifyIdToken(token)
+        userId = decodedToken.uid
+        email = decodedToken.email
+        emailVerified = decodedToken.email_verified || false
+        displayName = decodedToken.name || null
+        console.log('✅ Auth: Firebase token verified (Admin SDK), user:', userId, 'email:', email)
+      } else {
+        // Fallback: manual decode (less secure, for development only)
+        console.warn('⚠️ Auth: Firebase Admin SDK not available, using manual decode (INSECURE)')
+        const parts = token.split('.')
+        if (parts.length !== 3) {
+          throw new Error('Invalid token format')
+        }
+
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'))
+        userId = payload.user_id || payload.sub
+        email = payload.email
+        emailVerified = payload.email_verified || false
+        displayName = payload.name || null
+
+        if (!userId) {
+          throw new Error('No user ID in token')
+        }
+
+        // Verify expiry manually
+        const now = Math.floor(Date.now() / 1000)
+        if (payload.exp && payload.exp < now) {
+          console.log('❌ Auth: Token expired')
+          logSecurityEvent(SECURITY_EVENTS.AUTH_FAILED, req, 'Token expired')
+          return res.status(401).json({ message: 'Token expired' })
+        }
+
+        // Verify issuer
+        const expectedIssuer = `https://securetoken.google.com/${process.env.FIREBASE_PROJECT_ID}`
+        if (payload.iss && payload.iss !== expectedIssuer && process.env.NODE_ENV === 'production') {
+          console.log('❌ Auth: Issuer mismatch in production')
+          logSecurityEvent(SECURITY_EVENTS.AUTH_FAILED, req, 'Token issuer mismatch')
+          return res.status(401).json({ message: 'Invalid token' })
+        }
       }
-
-      // Decode the payload (middle part)
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'))
-      
-      // Firebase tokens have user_id or sub field
-      const userId = payload.user_id || payload.sub
-      const email = payload.email
-
-      if (!userId) {
-        throw new Error('No user ID in token')
-      }
-
-      // Verify the token is not expired
-      const now = Math.floor(Date.now() / 1000)
-      if (payload.exp && payload.exp < now) {
-        console.log('❌ Auth: Token expired')
-        logSecurityEvent(SECURITY_EVENTS.AUTH_FAILED, req, 'Token expired')
-        return res.status(401).json({ message: 'Token expired' })
-      }
-
-      // Verify the issuer is Firebase (optional but recommended)
-      const expectedIssuer = `https://securetoken.google.com/${process.env.FIREBASE_PROJECT_ID}`
-      if (payload.iss && payload.iss !== expectedIssuer) {
-        console.log('⚠️ Auth: Issuer mismatch, but allowing for development')
-      }
-
-      console.log('✅ Auth: Firebase token decoded, user:', userId, 'email:', email)
       
       req.user = { id: userId, email: email }
 
       // Check account status for banned/suspended users
       // Auto-create User record for Firebase users if it doesn't exist
       let dbUser = await User.findOne({ email }).select('accountStatus role firebaseUid emailVerified').lean()
-      
-      // Check if email is verified in Firebase token
-      const emailVerified = payload.email_verified || false
       
       // Only enforce email verification for NEW users (users not in database yet)
       // Existing users (especially Google sign-in users) can bypass this check
@@ -86,7 +96,7 @@ export async function requireAuth(req, res, next) {
       if (!dbUser && email) {
         try {
           dbUser = await User.create({
-            name: payload.name || email.split('@')[0],
+            name: displayName || email.split('@')[0],
             email,
             passwordHash: 'firebase-auth-user',
             role: 'user',

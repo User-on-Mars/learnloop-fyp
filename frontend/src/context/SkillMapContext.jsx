@@ -417,14 +417,6 @@ export function SkillMapProvider({ children }) {
       if (currentSkill && currentSkill._id === skillId) {
         invalidateSkillMapDetailCache(skillId);
         await loadSkillMapFull(skillId, { background: false });
-        
-        // Update node count
-        setCurrentSkill((prev) => ({ ...prev, nodeCount: (prev.nodeCount || 0) + 1 }));
-        setSkills((prev) => prev.map((skill) =>
-          skill._id === skillId
-            ? { ...skill, nodeCount: (skill.nodeCount || 0) + 1 }
-            : skill
-        ));
       }
 
       return newNode;

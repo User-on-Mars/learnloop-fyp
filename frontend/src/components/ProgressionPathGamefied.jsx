@@ -338,7 +338,7 @@ export default function ProgressionPathGamefied() {
                 <h1 className="text-xl sm:text-2xl font-bold text-[#1c1f1a] truncate min-w-0">{currentSkill.name}</h1>
               </div>
               <div className="flex items-center gap-2">
-                <PublishRequestButton skillmap={currentSkill} />
+                <PublishRequestButton skillmap={currentSkill} actualNodeCount={userNodes.length} />
                 <button
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                   className="p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors lg:hidden"

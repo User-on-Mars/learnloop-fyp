@@ -3,7 +3,7 @@
 // Tests complete workflows: skill creation → node editing → session start → completion → reflection
 
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import Skill from '../../models/Skill.js';
 import Node from '../../models/Node.js';
 import LearningSession from '../../models/LearningSession.js';
@@ -16,10 +16,10 @@ import { createReflection } from '../../controllers/reflectionController.js';
 let mongoServer;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   const mongoUri = mongoServer.getUri();
   await mongoose.connect(mongoUri);
-});
+}, 60000);
 
 afterAll(async () => {
   await mongoose.disconnect();

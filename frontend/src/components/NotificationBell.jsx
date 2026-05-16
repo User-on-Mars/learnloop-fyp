@@ -13,6 +13,8 @@ export default function NotificationBell() {
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [error, setError] = useState("");
+  const [showAdminSwitchConfirm, setShowAdminSwitchConfirm] = useState(false);
+  const [pendingAdminNotif, setPendingAdminNotif] = useState(null);
   const [readIds, setReadIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("notif_read_ids") || "[]");
@@ -73,6 +75,13 @@ export default function NotificationBell() {
     const link = getNotificationLink(notif);
     if (!link) return;
 
+    // If navigating to admin panel, ask for confirmation first
+    if (link.startsWith('/admin')) {
+      setPendingAdminNotif(notif);
+      setShowAdminSwitchConfirm(true);
+      return;
+    }
+
     // Mark as read
     if (!notif.read) {
       try {
@@ -84,6 +93,30 @@ export default function NotificationBell() {
 
     setIsOpen(false);
     navigate(link);
+  };
+
+  const handleConfirmAdminSwitch = async () => {
+    if (!pendingAdminNotif) return;
+    const link = getNotificationLink(pendingAdminNotif);
+
+    // Mark as read
+    if (!pendingAdminNotif.read) {
+      try {
+        await notificationsAPI.markAsRead(pendingAdminNotif._id);
+      } catch (err) {
+        console.error("Failed to mark notification as read:", err);
+      }
+    }
+
+    setShowAdminSwitchConfirm(false);
+    setPendingAdminNotif(null);
+    setIsOpen(false);
+    navigate(link);
+  };
+
+  const handleCancelAdminSwitch = () => {
+    setShowAdminSwitchConfirm(false);
+    setPendingAdminNotif(null);
   };
 
   const fetchNotifications = useCallback(async () => {
@@ -207,7 +240,7 @@ export default function NotificationBell() {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return d.toLocaleDateString();
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   /**
@@ -520,6 +553,24 @@ export default function NotificationBell() {
         )}
       </button>
       {dropdown}
+      {showAdminSwitchConfirm && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) handleCancelAdminSwitch(); }}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 border border-[#e2e6dc]">
+            <div className="flex flex-col items-center text-center">
+              <svg className="w-12 h-12 text-[#2e5023]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+              <h3 className="text-lg font-bold text-site-ink mt-4 mb-2">Switch to Admin Panel?</h3>
+              <p className="text-site-muted text-sm mb-4">
+                This will take you to the admin panel to review the publish request.
+              </p>
+              <div className="flex gap-3 w-full">
+                <button onClick={handleCancelAdminSwitch} className="flex-1 py-2.5 border border-[#e2e6dc] text-site-muted rounded-lg font-medium hover:bg-[#f5f7f2] transition-colors">No</button>
+                <button onClick={handleConfirmAdminSwitch} className="flex-1 py-2.5 bg-[#2e5023] text-white rounded-lg font-medium hover:bg-[#3a6b2e] transition-colors">Yes</button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

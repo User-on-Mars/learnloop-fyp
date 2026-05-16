@@ -80,6 +80,35 @@ function Protected({ children }) {
   return user ? children : <Navigate to="/login" replace />;
 }
 
+// Protect admin routes - requires auth + admin role verified by backend
+function AdminProtected({ children }) {
+  const user = useAuth();
+  const [isAdmin, setIsAdmin] = React.useState(undefined); // undefined = loading
+
+  React.useEffect(() => {
+    if (!user) return;
+    // Verify admin role via backend API call
+    const checkAdmin = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/admin/verify`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setIsAdmin(res.ok);
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, [user]);
+
+  if (user === undefined || isAdmin === undefined) return <div>Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 /** Logged-in users skip marketing; logged-out users see nested public pages. */
 function PublicMarketingGate() {
   const user = useAuth();
@@ -188,7 +217,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/admin",
-        element: <Protected><AdminLayout /></Protected>,
+        element: <AdminProtected><AdminLayout /></AdminProtected>,
         children: [
           { index: true, element: <AdminDashboard /> },
           { path: "alerts", element: <AdminAlerts /> },

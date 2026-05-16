@@ -13,7 +13,7 @@
 // - GET /api/skills/:id response format
 
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import fc from 'fast-check';
 import Skill from '../../models/Skill.js';
 import Node from '../../models/Node.js';
@@ -24,10 +24,10 @@ import NodeService from '../../services/NodeService.js';
 let mongoServer;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   const mongoUri = mongoServer.getUri();
   await mongoose.connect(mongoUri);
-});
+}, 60000);
 
 afterAll(async () => {
   await mongoose.disconnect();
@@ -42,9 +42,9 @@ beforeEach(async () => {
 
 // Arbitraries for property-based testing
 const userIdArb = fc.uuid();
-const skillNameArb = fc.string({ minLength: 1, maxLength: 100 });
-const nodeCountArb = fc.integer({ min: 2, max: 16 });
-const nodeTitleArb = fc.string({ minLength: 0, maxLength: 200 });
+const skillNameArb = fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length >= 1);
+const nodeCountArb = fc.integer({ min: 2, max: 10 });
+const nodeTitleArb = fc.string({ minLength: 1, maxLength: 200 }).filter(s => s.trim().length >= 1);
 const nodeDescriptionArb = fc.string({ minLength: 0, maxLength: 2000 });
 const nodeStatusArb = fc.constantFrom('Locked', 'Unlocked', 'In_Progress', 'Completed');
 

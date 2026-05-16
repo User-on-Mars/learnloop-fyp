@@ -9,7 +9,7 @@ import { auth } from '../firebase';
  * PublishRequestButton - Button to request publishing a skillmap
  * Shows eligibility status and handles submission
  */
-export function PublishRequestButton({ skillmap }) {
+export function PublishRequestButton({ skillmap, actualNodeCount }) {
   const [eligibility, setEligibility] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -79,7 +79,7 @@ export function PublishRequestButton({ skillmap }) {
       return;
     }
 
-    const nodeCount = skillmap.nodeCount || 0;
+    const nodeCount = actualNodeCount != null ? actualNodeCount : (skillmap.nodeCount || 0);
     if (nodeCount < 5) {
       showError(`Skill map must have at least 5 nodes. Currently has ${nodeCount}. Add ${5 - nodeCount} more node${5 - nodeCount > 1 ? 's' : ''} to publish.`);
       return;
@@ -240,15 +240,15 @@ export function PublishRequestButton({ skillmap }) {
   }
 
   // ── MINIMUM NODES CHECK ──
-  const nodeCount = skillmap.nodeCount || 0;
+  const nodeCount = actualNodeCount != null ? actualNodeCount : (skillmap.nodeCount || 0);
   if (nodeCount < 5) {
     return (
-      <div className="flex flex-col gap-1">
-        <button disabled className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm opacity-50 cursor-not-allowed" style={{ backgroundColor: skillColor }}>
+      <div className="flex flex-col items-end gap-1">
+        <button disabled className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm cursor-not-allowed" style={{ backgroundColor: skillColor }}>
           <Upload className="w-4 h-4" />
           Publish
         </button>
-        <p className="text-xs text-red-600 font-medium">
+        <p className="text-xs text-red-500 font-medium">
           Need {5 - nodeCount} more node{5 - nodeCount > 1 ? 's' : ''} (min. 5)
         </p>
       </div>

@@ -182,7 +182,8 @@ class NotificationService {
         title,
         message,
         data: notification,
-        read: false
+        read: false,
+        ...(notification.createdAtOverride && { createdAt: new Date(notification.createdAtOverride) })
       });
 
       console.log('[IN-APP NOTIFICATION STORED]', {
@@ -691,7 +692,8 @@ The LearnLoop Team
         rewardLabel: reward.rewardLabel,
         weeklyXp: reward.weeklyXp,
         subscriptionExtendedTo: reward.subscriptionExtendedTo,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        createdAtOverride: reward.weekEndDate ? new Date(reward.weekEndDate).toISOString() : undefined
       });
 
       const subject = `${medal} Congratulations! You won ${reward.rewardLabel} of free Pro!`;

@@ -1,18 +1,24 @@
+import { jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import { 
-  requireAuth, 
-  verifySkillOwnership, 
-  verifySessionOwnership, 
-  verifyNodeOwnership,
-  validateJWTToken 
-} from '../auth.js';
 
-// Mock the models
-jest.mock('../../models/LearningSession.js', () => ({
-  default: {
-    findOne: jest.fn()
-  }
+// Mock firebase admin before importing auth middleware
+jest.unstable_mockModule('../../config/firebase.js', () => ({
+  default: { apps: [], auth: () => ({ verifyIdToken: jest.fn() }) },
+  firebaseApp: null
 }));
+
+// Mock User model
+jest.unstable_mockModule('../../models/User.js', () => ({
+  default: { findOne: jest.fn(), create: jest.fn(), updateOne: jest.fn() }
+}));
+
+// Mock LearningSession
+jest.unstable_mockModule('../../models/LearningSession.js', () => ({
+  default: { findOne: jest.fn() }
+}));
+
+const { requireAuth, verifySkillOwnership, verifySessionOwnership, verifyNodeOwnership, validateJWTToken } = await import('../auth.js');
+const { default: LearningSession } = await import('../../models/LearningSession.js');
 
 describe('Authentication Middleware', () => {
   let req, res, next;
@@ -24,7 +30,12 @@ describe('Authentication Middleware', () => {
     req = {
       headers: {},
       params: {},
-      user: null
+      user: null,
+      ip: '127.0.0.1',
+      connection: { remoteAddress: '127.0.0.1' },
+      get: jest.fn().mockReturnValue('test-agent'),
+      method: 'GET',
+      originalUrl: '/test'
     };
     res = {
       status: jest.fn().mockReturnThis(),
@@ -83,6 +94,7 @@ describe('Authentication Middleware', () => {
       const firebasePayload = {
         user_id: 'firebase-user-123',
         email: 'test@example.com',
+        email_verified: true,
         exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
         iss: 'https://securetoken.google.com/test-project'
       };
@@ -94,12 +106,24 @@ describe('Authentication Middleware', () => {
 
       req.headers.authorization = `Bearer ${firebaseToken}`;
 
+      // Mock User.findOne to return an existing user
+      const { default: User } = await import('../../models/User.js');
+      User.findOne.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue({
+            _id: 'user1',
+            accountStatus: 'active',
+            role: 'user',
+            firebaseUid: 'firebase-user-123',
+            emailVerified: true
+          })
+        })
+      });
+
       await requireAuth(req, res, next);
 
-      expect(req.user).toEqual({ 
-        id: 'firebase-user-123', 
-        email: 'test@example.com' 
-      });
+      expect(req.user.id).toBe('firebase-user-123');
+      expect(req.user.email).toBe('test@example.com');
       expect(next).toHaveBeenCalled();
     });
 
