@@ -90,10 +90,10 @@ export default function Signup() {
             <LogoMark size={48} />
           </Link>
           <div className="flex items-center gap-2.5">
-            <Link to="/" className="px-3.5 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+            <Link to="/" className="px-3.5 py-2 min-h-[44px] flex items-center rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
               Home
             </Link>
-            <Link to="/login" className="px-5 py-2 text-sm font-semibold bg-white text-[#3d6b30] rounded-lg hover:bg-white/90 transition-colors shadow-sm">
+            <Link to="/login" className="px-5 py-2.5 min-h-[44px] flex items-center text-sm font-semibold bg-white text-[#3d6b30] rounded-lg hover:bg-white/90 transition-colors shadow-sm">
               Log in
             </Link>
           </div>

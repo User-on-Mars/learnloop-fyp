@@ -85,7 +85,7 @@ export default function Login() {
             <Link to="/" className="px-3.5 py-2 min-h-[44px] flex items-center rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
               Home
             </Link>
-            <Link to="/signup" className="px-5 py-2 min-h-[44px] flex items-center text-sm font-semibold bg-white text-[#3d6b30] rounded-lg hover:bg-white/90 transition-colors shadow-sm">
+            <Link to="/signup" className="px-5 py-2.5 min-h-[44px] flex items-center text-sm font-semibold bg-white text-[#3d6b30] rounded-lg hover:bg-white/90 transition-colors shadow-sm">
               Sign up
             </Link>
           </div>

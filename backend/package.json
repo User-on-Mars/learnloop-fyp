@@ -5,8 +5,8 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
+    "dev": "node --max-old-space-size=512 --watch src/server.js",
+    "start": "node --max-old-space-size=512 src/server.js",
     "build": "node scripts/build.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest --runInBand",
     "migrate": "node scripts/migrate.js",

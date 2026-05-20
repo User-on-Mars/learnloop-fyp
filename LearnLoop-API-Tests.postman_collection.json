@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "LearnLoop API Tests - FYP",
-    "description": "Complete API test suite for LearnLoop Final Year Project",
+    "name": "LearnLoop API Tests",
+    "description": "API testing collection for LearnLoop FYP",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -11,22 +11,17 @@
       "type": "string"
     },
     {
-      "key": "token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "admin_token",
+      "key": "firebase_token",
       "value": "",
       "type": "string"
     }
   ],
   "item": [
     {
-      "name": "00 Health Check",
+      "name": "01 - Health Check",
       "item": [
         {
-          "name": "API Health",
+          "name": "API Health Check",
           "request": {
             "method": "GET",
             "header": [],
@@ -34,378 +29,180 @@
               "raw": "{{base_url}}/api/health",
               "host": ["{{base_url}}"],
               "path": ["api", "health"]
-            },
-            "description": "Check if API is running"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "01 Authentication",
-      "item": [
-        {
-          "name": "1.1 User Signup (Success)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Test123!@#\",\n  \"displayName\": \"Test User\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/auth/signup",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "signup"]
-            },
-            "description": "Create a new user account"
-          },
-          "response": []
-        },
-        {
-          "name": "1.2 User Login (Success)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('token', jsonData.token);",
-                  "    console.log('Token saved:', jsonData.token);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Test123!@#\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
-            },
-            "description": "Login and get JWT token (automatically saved)"
-          },
-          "response": []
-        },
-        {
-          "name": "1.3 Login Invalid Credentials (Failure)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"WrongPassword123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
-            },
-            "description": "Test authentication failure with wrong password"
-          },
-          "response": []
+          }
         }
       ]
     },
     {
-      "name": "02 Authorization Tests",
+      "name": "02 - User XP Profile",
       "item": [
         {
-          "name": "2.1 Get Skills (No Token - Should Fail)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/skills",
-              "host": ["{{base_url}}"],
-              "path": ["api", "skills"]
-            },
-            "description": "Test protected route without authentication"
-          },
-          "response": []
-        },
-        {
-          "name": "2.2 Get Skills (With Token - Should Succeed)",
+          "name": "Get XP Profile",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}",
+                "value": "Bearer {{firebase_token}}",
                 "type": "text"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/skills",
+              "raw": "{{base_url}}/api/xp/profile",
               "host": ["{{base_url}}"],
-              "path": ["api", "skills"]
-            },
-            "description": "Test protected route with valid token"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "03 Skill Maps",
-      "item": [
-        {
-          "name": "3.1 Create Skill Map (Valid)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"React Mastery\",\n  \"nodeCount\": 8\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/skills",
-              "host": ["{{base_url}}"],
-              "path": ["api", "skills"]
-            },
-            "description": "Create a new skill map with 8 nodes"
-          },
-          "response": []
-        },
-        {
-          "name": "3.2 Create Skill Map (Invalid - Empty Name)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"\",\n  \"nodeCount\": 8\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/skills",
-              "host": ["{{base_url}}"],
-              "path": ["api", "skills"]
-            },
-            "description": "Test validation - empty name should fail"
-          },
-          "response": []
-        },
-        {
-          "name": "3.3 Create Skill Map (Invalid - Too Many Nodes)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Skill\",\n  \"nodeCount\": 20\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/skills",
-              "host": ["{{base_url}}"],
-              "path": ["api", "skills"]
-            },
-            "description": "Test validation - max 16 nodes allowed"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "04 Admin Routes",
-      "item": [
-        {
-          "name": "4.1 Admin Verify (Regular User - Should Fail)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/admin/verify",
-              "host": ["{{base_url}}"],
-              "path": ["api", "admin", "verify"]
-            },
-            "description": "Test admin route protection - regular user should be denied"
-          },
-          "response": []
-        },
-        {
-          "name": "4.2 Admin Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('admin_token', jsonData.token);",
-                  "    console.log('Admin token saved');",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
+              "path": ["api", "xp", "profile"]
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@learnloop.com\",\n  \"password\": \"Admin123!@#\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
-            },
-            "description": "Login as admin (run seedAdmin.js first)"
-          },
-          "response": []
-        },
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Invitations",
+      "item": [
         {
-          "name": "4.3 Admin Verify (Admin User - Should Succeed)",
+          "name": "Get My Invitations",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{admin_token}}",
+                "value": "Bearer {{firebase_token}}",
                 "type": "text"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/admin/verify",
+              "raw": "{{base_url}}/api/invitations",
               "host": ["{{base_url}}"],
-              "path": ["api", "admin", "verify"]
-            },
-            "description": "Test admin access with admin token"
-          },
-          "response": []
+              "path": ["api", "invitations"]
+            }
+          }
         }
       ]
     },
     {
-      "name": "05 Rate Limiting",
+      "name": "04 - Notifications",
       "item": [
         {
-          "name": "5.1 Multiple Login Attempts",
+          "name": "Get Notifications",
           "request": {
-            "method": "POST",
+            "method": "GET",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"WrongPassword\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
-              "raw": "{{base_url}}/api/auth/login",
+              "raw": "{{base_url}}/api/notifications?limit=50",
               "host": ["{{base_url}}"],
-              "path": ["api", "auth", "login"]
-            },
-            "description": "Run this multiple times to test rate limiting (should block after 5 attempts)"
-          },
-          "response": []
+              "path": ["api", "notifications"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Skills",
+      "item": [
+        {
+          "name": "Get All Skills",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/skills",
+              "host": ["{{base_url}}"],
+              "path": ["api", "skills"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Rooms",
+      "item": [
+        {
+          "name": "Get My Rooms",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rooms",
+              "host": ["{{base_url}}"],
+              "path": ["api", "rooms"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Leaderboard",
+      "item": [
+        {
+          "name": "Get Weekly Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/leaderboard/weekly?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "leaderboard", "weekly"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Ranks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/leaderboard/my-ranks",
+              "host": ["{{base_url}}"],
+              "path": ["api", "leaderboard", "my-ranks"]
+            }
+          }
         }
       ]
     }

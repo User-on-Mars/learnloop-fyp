@@ -21,6 +21,13 @@ yarn-error.log*
 pnpm-debug.log*
 backend/logs/
 
+# Test Coverage
+coverage/
+backend/coverage/
+frontend/coverage/
+*.lcov
+coverage-report.txt
+
 # Editor
 .DS_Store
 .vscode/
@@ -30,6 +37,7 @@ backend/logs/
 *CREDENTIALS*
 *credentials*
 *serviceAccount*
+firebase-service-account.json
 *.pem
 *.key
 *.p12
