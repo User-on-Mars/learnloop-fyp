@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Gift, Trophy, Calendar, Search, Filter, ChevronLeft, ChevronRight, Medal, Users, Clock } from 'lucide-react'
+import { Gift, Trophy, Calendar, Search, Filter, ChevronLeft, ChevronRight, Medal, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
+import FilterDropdown from '../../components/FilterDropdown'
+import ThemedDatePicker from '../../components/ThemedDatePicker'
 import { adminApi } from '../../api/adminApi'
 import PageTransition from '../../components/admin/PageTransition'
 import ErrorState from '../../components/admin/ErrorState'
@@ -190,10 +192,9 @@ export default function AdminWeeklyRewards() {
 
         {/* Stats Cards */}
         {stats && (
-          <AnimatedList className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <AnimatedList className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
             <StatCard icon={Gift} label="Total Rewards Given" value={stats.totalRewards} />
             <StatCard icon={Users} label="Unique Winners" value={stats.uniqueUsers} color="text-blue-600" bgColor="bg-blue-50" />
-            <StatCard icon={Clock} label="Total Days Awarded" value={stats.totalDaysGiven.toLocaleString()} color="text-purple-600" bgColor="bg-purple-50" />
             <StatCard icon={Trophy} label="Avg Weekly XP" value={stats.avgXp?.toLocaleString() || '0'} color="text-amber-600" bgColor="bg-amber-50" />
           </AnimatedList>
         )}
@@ -244,53 +245,41 @@ export default function AdminWeeklyRewards() {
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-site-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Date Range - Start */}
-              <div>
-                <label className="block text-xs font-medium text-site-muted mb-1">From Date</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => { setStartDate(e.target.value); setPage(1) }}
-                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-site-accent/30 bg-site-bg"
-                />
-              </div>
+              <ThemedDatePicker
+                label="From Date"
+                value={startDate}
+                onChange={(value) => { setStartDate(value); setPage(1) }}
+                max={endDate}
+              />
 
               {/* Date Range - End */}
-              <div>
-                <label className="block text-xs font-medium text-site-muted mb-1">To Date</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => { setEndDate(e.target.value); setPage(1) }}
-                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-site-accent/30 bg-site-bg"
-                />
-              </div>
+              <ThemedDatePicker
+                label="To Date"
+                value={endDate}
+                onChange={(value) => { setEndDate(value); setPage(1) }}
+                min={startDate}
+              />
 
               {/* Rank Filter */}
               <div>
                 <label className="block text-xs font-medium text-site-muted mb-1">Rank</label>
-                <select
+                <FilterDropdown
                   value={rankFilter}
-                  onChange={(e) => { setRankFilter(e.target.value); setPage(1) }}
-                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-site-accent/30 bg-site-bg"
-                >
-                  {RANK_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                  onChange={(value) => { setRankFilter(value); setPage(1) }}
+                  options={RANK_OPTIONS}
+                  minWidth={0}
+                />
               </div>
 
               {/* Reward Duration Filter */}
               <div>
                 <label className="block text-xs font-medium text-site-muted mb-1">Reward Duration</label>
-                <select
+                <FilterDropdown
                   value={rewardDaysFilter}
-                  onChange={(e) => { setRewardDaysFilter(e.target.value); setPage(1) }}
-                  className="w-full px-3 py-2 border border-site-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-site-accent/30 bg-site-bg"
-                >
-                  {REWARD_DAYS_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                  onChange={(value) => { setRewardDaysFilter(value); setPage(1) }}
+                  options={REWARD_DAYS_OPTIONS}
+                  minWidth={0}
+                />
               </div>
             </div>
           )}

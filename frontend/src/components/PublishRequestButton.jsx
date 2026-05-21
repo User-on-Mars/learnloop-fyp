@@ -18,12 +18,28 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
   const { showSuccess, showError } = useToast();
 
   const skillColor = skillmap?.color || '#2e5023';
-  
+
   // Check if this skill map was created from a template
   const isFromTemplate = skillmap?.isTemplate || skillmap?.templateId || skillmap?.source === 'template' || skillmap?.fromTemplate;
 
   // Get publish status from skillmap data (set by backend)
   const publishStatus = skillmap?.publishStatus || 'draft';
+
+  // Button style constants - easy to modify
+  const BUTTON_STYLES = {
+    padding: 'px-4 py-2',
+    textSize: 'text-sm',
+    iconSize: 'w-4 h-4',
+    gap: 'gap-2',
+    rounded: 'rounded-lg'
+  };
+
+  // Message style constants - easy to modify
+  const MESSAGE_STYLES = {
+    textSize: 'text-xs',
+    maxWidth: 'max-w-[240px]',
+    wrap: 'break-words whitespace-normal'
+  };
 
   // Monitor authentication state
   useEffect(() => {
@@ -43,7 +59,7 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
       checkEligibility();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [skillmap, isAuthenticated]);
+  }, [skillmap?._id, publishStatus, isFromTemplate, isAuthenticated]);
 
   const checkEligibility = async () => {
     try {
@@ -52,9 +68,9 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
       setEligibility(response.data);
     } catch (error) {
       console.error('❌ PublishRequestButton: Failed to check eligibility:', error);
-      setEligibility({ 
-        canSubmit: false, 
-        reason: 'Unable to check eligibility. Please try again later.' 
+      setEligibility({
+        canSubmit: false,
+        reason: 'Unable to check eligibility. Please try again later.'
       });
     } finally {
       setIsChecking(false);
@@ -145,54 +161,96 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
   // Don't render if skillmap is not loaded yet or user not authenticated
   if (!skillmap || !skillmap._id || !isAuthenticated) return null;
 
-  // ── PUBLISHED: show clear "Published" badge with message ──
-  if (publishStatus === 'published') {
-    return (
-      <div className="flex flex-col items-end gap-1">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm" style={{ backgroundColor: skillColor }}>
-          <CheckCircle className="w-4 h-4" />
-          Published
-        </div>
-        <p className="text-xs text-green-700 font-medium">
-          This skill map has been published as a template
-        </p>
-      </div>
-    );
+  // ── DON'T SHOW BUTTON FOR TEMPLATE-BASED SKILL MAPS ──
+  if (isFromTemplate) {
+    return null;
   }
 
-  // ── PENDING: show "Under Review" badge ──
+  // ── PUBLISHED: show clear "Published" badge ──
+  if (publishStatus === 'published') {
+    const buttonContent = (
+      <div
+        className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} ${BUTTON_STYLES.rounded} text-white ${BUTTON_STYLES.textSize} font-semibold shadow-sm whitespace-nowrap`}
+        style={{ backgroundColor: skillColor }}
+      >
+        <CheckCircle className={BUTTON_STYLES.iconSize} />
+        Published
+      </div>
+    );
+
+    return buttonContent;
+  }
+
+  // ── PENDING: show "Under Review" badge with message ──
   if (publishStatus === 'pending') {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-        <Clock className="w-4 h-4 text-amber-600" />
-        <span className="text-sm font-semibold text-amber-700">Under Review</span>
+      <div className="flex flex-col items-end gap-1 max-w-[240px] min-w-0">
+        <div className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} bg-amber-50 border border-amber-200 ${BUTTON_STYLES.rounded} whitespace-nowrap`}>
+          <Clock className={BUTTON_STYLES.iconSize + ' text-amber-600'} />
+          <span className={`${BUTTON_STYLES.textSize} font-semibold text-amber-700`}>Under Review</span>
+        </div>
       </div>
     );
   }
 
-  // ── REJECTED: show "Not Approved" badge with compact resubmit ──
+  // ── REJECTED: show "Rejected" badge with resubmit button (if quota available) ──
   if (publishStatus === 'rejected') {
-    const canResubmit = !isFromTemplate && !isChecking;
+    // Check if user has quota remaining before showing resubmit button
+    const canResubmit = !isFromTemplate && !isChecking && eligibility?.canSubmit;
+
+    const statusBadge = (
+      <div className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} bg-red-50 border border-red-200 ${BUTTON_STYLES.rounded}`}>
+        <svg className={`${BUTTON_STYLES.iconSize} text-red-600 shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        <span className={`${BUTTON_STYLES.textSize} font-semibold text-red-700 whitespace-nowrap`}>Rejected</span>
+      </div>
+    );
+
+    const resubmitButton = canResubmit ? (
+      <button
+        onClick={handlePublishClick}
+        disabled={isLoading || isChecking}
+        className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} ${BUTTON_STYLES.rounded} text-white ${BUTTON_STYLES.textSize} font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap`}
+        style={{ backgroundColor: skillColor }}
+      >
+        <Upload className={BUTTON_STYLES.iconSize} />
+        {isLoading ? 'Sending...' : 'Resubmit'}
+      </button>
+    ) : null;
+
+    // Show quota limit message if user can't resubmit
+    let quotaMessage = null;
+    if (!canResubmit && eligibility && !eligibility.canSubmit) {
+      let daysRemaining = null;
+      if (eligibility?.resetDate) {
+        const resetDate = new Date(eligibility.resetDate);
+        const now = new Date();
+        const diffTime = resetDate - now;
+        daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      const current = eligibility?.currentCount || 0;
+      const max = eligibility?.maxCount || 1;
+      const limitText = daysRemaining
+        ? `${current}/${max} used (${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left)`
+        : `Limit: ${max} per 30 days`;
+
+      quotaMessage = (
+        <p className={`${MESSAGE_STYLES.textSize} text-red-600 font-medium ${MESSAGE_STYLES.maxWidth}`}>
+          {limitText}
+        </p>
+      );
+    }
+
     return (
       <>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-            <svg className="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span className="text-sm font-semibold text-red-700 whitespace-nowrap">Not Approved</span>
+        <div className="flex flex-col items-end gap-1 max-w-[240px] min-w-0">
+          <div className="flex items-center gap-2">
+            {statusBadge}
+            {resubmitButton}
           </div>
-          {canResubmit && (
-            <button
-              onClick={handlePublishClick}
-              disabled={isLoading || isChecking}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              style={{ backgroundColor: skillColor }}
-            >
-              <Upload className="w-3.5 h-3.5" />
-              {isLoading ? 'Submitting...' : 'Resubmit'}
-            </button>
-          )}
+          {quotaMessage}
         </div>
         {confirmModal}
       </>
@@ -200,41 +258,71 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
   }
 
   // ── TEMPLATE: always show "cannot publish" regardless of quota ──
+  // This code is now unreachable since we return null for templates above
+  // Keeping for reference in case logic changes
   if (isFromTemplate) {
-    return (
-      <div className="flex flex-col gap-1">
-        <button disabled className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm opacity-50 cursor-not-allowed" style={{ backgroundColor: skillColor }}>
-          <Upload className="w-4 h-4" />
-          Publish
-        </button>
-        <p className="text-xs text-amber-600 font-medium">
-          Template-based maps cannot be published
-        </p>
-      </div>
-    );
+    return null;
   }
 
   // ── CHECKING eligibility ──
   if (isChecking) {
-    return (
-      <button disabled className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm opacity-50 cursor-not-allowed" style={{ backgroundColor: skillColor }}>
-        <Upload className="w-4 h-4" />
+    const buttonContent = (
+      <button
+        disabled
+        className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} ${BUTTON_STYLES.rounded} text-white ${BUTTON_STYLES.textSize} font-semibold shadow-sm opacity-50 cursor-not-allowed whitespace-nowrap`}
+        style={{ backgroundColor: skillColor }}
+      >
+        <Upload className={BUTTON_STYLES.iconSize} />
         Checking...
       </button>
     );
+
+    return buttonContent;
   }
 
   // ── NOT ELIGIBLE (quota, pending, etc.) ──
   if (!eligibility?.canSubmit) {
+    // Calculate days remaining if resetDate is provided
+    let shortReason = eligibility?.reason || '';
+    let daysRemaining = null;
+
+    if (eligibility?.resetDate) {
+      const resetDate = new Date(eligibility.resetDate);
+      const now = new Date();
+      const diffTime = resetDate - now;
+      daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    if (shortReason.includes('monthly submission limit')) {
+      const current = eligibility?.currentCount || 0;
+      const max = eligibility?.maxCount || 1;
+
+      shortReason = daysRemaining
+        ? `${current}/${max} used (${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left)`
+        : `Limit: ${max} per 30 days`;
+    }
+
+    const buttonContent = (
+      <button
+        disabled
+        className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} ${BUTTON_STYLES.rounded} text-white ${BUTTON_STYLES.textSize} font-semibold shadow-sm opacity-50 cursor-not-allowed whitespace-nowrap`}
+        style={{ backgroundColor: skillColor }}
+      >
+        <Upload className={BUTTON_STYLES.iconSize} />
+        Publish
+      </button>
+    );
+
+    const messageContent = shortReason ? (
+      <p className={`${MESSAGE_STYLES.textSize} text-red-600 font-medium text-right ${MESSAGE_STYLES.maxWidth} ${MESSAGE_STYLES.wrap}`}>
+        {shortReason}
+      </p>
+    ) : null;
+
     return (
-      <div className="flex flex-col gap-1">
-        <button disabled className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm opacity-50 cursor-not-allowed" style={{ backgroundColor: skillColor }}>
-          <Upload className="w-4 h-4" />
-          Publish
-        </button>
-        {eligibility?.reason && (
-          <p className="text-xs text-red-600 font-medium">{eligibility.reason}</p>
-        )}
+      <div className="flex flex-col items-end gap-1 max-w-[240px] min-w-0">
+        {buttonContent}
+        {messageContent}
       </div>
     );
   }
@@ -242,33 +330,96 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
   // ── MINIMUM NODES CHECK ──
   const nodeCount = actualNodeCount != null ? actualNodeCount : (skillmap.nodeCount || 0);
   if (nodeCount < 5) {
+    const buttonContent = (
+      <button
+        disabled
+        className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} ${BUTTON_STYLES.rounded} text-white ${BUTTON_STYLES.textSize} font-semibold shadow-sm cursor-not-allowed whitespace-nowrap`}
+        style={{ backgroundColor: skillColor }}
+      >
+        <Upload className={BUTTON_STYLES.iconSize} />
+        Publish
+      </button>
+    );
+
+    const messageContent = (
+      <p className={`${MESSAGE_STYLES.textSize} text-red-500 font-medium ${MESSAGE_STYLES.wrap} ${MESSAGE_STYLES.maxWidth}`}>
+        Need {5 - nodeCount} more node{5 - nodeCount > 1 ? 's' : ''}
+      </p>
+    );
+
     return (
-      <div className="flex flex-col items-end gap-1">
-        <button disabled className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm cursor-not-allowed" style={{ backgroundColor: skillColor }}>
-          <Upload className="w-4 h-4" />
-          Publish
-        </button>
-        <p className="text-xs text-red-500 font-medium">
-          Need {5 - nodeCount} more node{5 - nodeCount > 1 ? 's' : ''} (min. 5)
-        </p>
+      <div className="flex flex-col items-end gap-1 max-w-[240px] min-w-0">
+        {buttonContent}
+        {messageContent}
+      </div>
+    );
+  }
+
+  // ── READY TO PUBLISH (but check eligibility one more time) ──
+  if (eligibility && !eligibility.canSubmit) {
+    // Calculate days remaining if resetDate is provided
+    let shortReason = eligibility?.reason || '';
+    let daysRemaining = null;
+
+    if (eligibility?.resetDate) {
+      const resetDate = new Date(eligibility.resetDate);
+      const now = new Date();
+      const diffTime = resetDate - now;
+      daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    if (shortReason.includes('monthly submission limit')) {
+      const current = eligibility?.currentCount || 0;
+      const max = eligibility?.maxCount || 1;
+
+      shortReason = daysRemaining
+        ? `${current}/${max} used (${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left)`
+        : `Limit: ${max} per 30 days`;
+    }
+
+    const buttonContent = (
+      <button
+        disabled
+        className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} ${BUTTON_STYLES.rounded} text-white ${BUTTON_STYLES.textSize} font-semibold shadow-sm opacity-50 cursor-not-allowed whitespace-nowrap`}
+        style={{ backgroundColor: skillColor }}
+      >
+        <Upload className={BUTTON_STYLES.iconSize} />
+        Publish
+      </button>
+    );
+
+    const messageContent = shortReason ? (
+      <p className={`${MESSAGE_STYLES.textSize} text-red-600 font-medium text-right ${MESSAGE_STYLES.maxWidth} ${MESSAGE_STYLES.wrap}`}>
+        {shortReason}
+      </p>
+    ) : null;
+
+    return (
+      <div className="flex flex-col items-end gap-1 max-w-[240px] min-w-0">
+        {buttonContent}
+        {messageContent}
       </div>
     );
   }
 
   // ── READY TO PUBLISH ──
+  const buttonContent = (
+    <button
+      onClick={handlePublishClick}
+      disabled={isLoading}
+      className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} ${BUTTON_STYLES.rounded} text-white ${BUTTON_STYLES.textSize} font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap`}
+      style={{ backgroundColor: skillColor }}
+    >
+      <Upload className={BUTTON_STYLES.iconSize} />
+      {isLoading ? 'Sending...' : 'Publish'}
+    </button>
+  );
+
   return (
-    <>
-      <button
-        onClick={handlePublishClick}
-        disabled={isLoading}
-        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ backgroundColor: skillColor }}
-      >
-        <Upload className="w-4 h-4" />
-        {isLoading ? 'Submitting...' : 'Publish'}
-      </button>
+    <div className="max-w-[240px] min-w-0">
+      {buttonContent}
       {confirmModal}
-    </>
+    </div>
   );
 }
 

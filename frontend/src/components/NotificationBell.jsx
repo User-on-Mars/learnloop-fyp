@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Bell, CheckCircle, XCircle, Clock, Users, X, CheckCheck, Sparkles, AlertCircle, ExternalLink, Award } from "lucide-react";
 import { invitationsAPI, notificationsAPI } from "../api/client.ts";
 import { useAdmin } from "../hooks/useAdmin";
@@ -24,6 +24,7 @@ export default function NotificationBell() {
   });
   const bellRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAdmin } = useAdmin();
 
   /**
@@ -75,8 +76,10 @@ export default function NotificationBell() {
     const link = getNotificationLink(notif);
     if (!link) return;
 
-    // If navigating to admin panel, ask for confirmation first
-    if (link.startsWith('/admin')) {
+    const isAdminPanel = location.pathname.startsWith('/admin');
+
+    // If navigating to admin panel from outside admin, ask for confirmation first
+    if (link.startsWith('/admin') && !isAdminPanel) {
       setPendingAdminNotif(notif);
       setShowAdminSwitchConfirm(true);
       return;

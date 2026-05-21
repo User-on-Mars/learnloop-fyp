@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 /**
  * Responsive Modal wrapper component
@@ -37,13 +38,13 @@ export default function Modal({
     }
   };
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
       onClick={handleBackdropClick}
     >
       <div 
-        className={`bg-white rounded-2xl shadow-2xl w-full ${maxWidth} max-h-[90vh] overflow-hidden flex flex-col border border-[#e2e6dc]`}
+        className={`bg-white rounded-2xl shadow-2xl w-full ${maxWidth} max-h-[90vh] overflow-hidden flex flex-col`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
@@ -85,6 +86,8 @@ export default function Modal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 /**
@@ -119,12 +122,12 @@ export function ModalButton({
   type = "button",
   ...props
 }) {
-  const baseClasses = "flex-1 py-3 min-h-[44px] rounded-xl font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseClasses = "flex-1 py-3 min-h-[44px] rounded-xl font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2";
   
   const variantClasses = {
-    primary: "bg-gradient-to-r from-sky-600 to-blue-600 text-white hover:from-sky-700 hover:to-blue-700 active:from-sky-800 active:to-blue-800",
-    secondary: "border border-[#e2e6dc] text-[#565c52] hover:bg-[#f4f7f2] active:bg-[#f0f2eb]",
-    danger: "bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700 active:from-red-800 active:to-rose-800"
+    primary: "bg-gradient-to-r from-[#2e5023] via-[#3d6b30] to-[#4f7942] text-white hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] shadow-md",
+    secondary: "border-2 border-[#e2e6dc] text-[#565c52] bg-white hover:bg-[#f8faf6] hover:border-[#c8cec0] active:bg-[#f0f2eb]",
+    danger: "bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] shadow-md"
   };
 
   return (

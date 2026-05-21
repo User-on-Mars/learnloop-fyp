@@ -255,11 +255,30 @@ router.get('/activity', async (req, res) => {
 router.get('/xp-leaderboard', async (req, res) => {
   try {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50))
-    const leaderboard = await AdminService.getXpLeaderboard(limit)
-    res.json({ leaderboard })
+    const filter = {
+      weekOffset: req.query.weekOffset,
+      startDate: req.query.startDate || '',
+      endDate: req.query.endDate || '',
+      search: req.query.search || '',
+      league: req.query.league || '',
+      source: req.query.source || ''
+    }
+    const result = await AdminService.getXpLeaderboard(limit, filter)
+    res.json(result)
   } catch (error) {
     console.error('XP leaderboard error:', error)
     res.status(500).json({ message: 'Failed to fetch leaderboard' })
+  }
+})
+
+router.get('/xp-leaderboard/weeks', async (req, res) => {
+  try {
+    const limit = Math.min(52, Math.max(1, parseInt(req.query.limit) || 12))
+    const result = await AdminService.getXpLeaderboardWeeks(limit)
+    res.json(result)
+  } catch (error) {
+    console.error('XP leaderboard weeks error:', error)
+    res.status(500).json({ message: 'Failed to fetch leaderboard weeks' })
   }
 })
 
@@ -732,9 +751,16 @@ router.get('/subscriptions', requireAuth, requireAdmin, async (req, res) => {
     }
 
     const total = merged.length;
+    const proCount = merged.filter(s => s.effectiveTier === 'pro').length;
+    const freeCount = merged.filter(s => s.effectiveTier === 'free').length;
     const paged = merged.slice(skip, skip + limit);
 
-    res.json({ subscriptions: paged, total, page, pages: Math.ceil(total / limit) });
+    res.json({
+      subscriptions: paged,
+      total,
+      pages: Math.ceil(total / limit),
+      stats: { total, pro: proCount, free: freeCount },
+    });
   } catch (error) {
     console.error('Admin list subscriptions error:', error);
     res.status(500).json({ message: 'Failed to list subscriptions' });

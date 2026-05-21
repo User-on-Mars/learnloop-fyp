@@ -26,43 +26,61 @@ class PublishRequestService {
       // Check pending request count
       const pendingCount = await PublishRequest.getUserPendingCount(userId);
       if (pendingCount >= 1) {
-        return { 
-          canSubmit: false, 
-          reason: 'You already have a pending publish request. Please wait for it to be reviewed.' 
+        return {
+          canSubmit: false,
+          reason: 'You already have a pending publish request. Please wait for it to be reviewed.'
         };
       }
 
       // Get tier-based limit
-      const { limits } = await SubscriptionService.getLimits(userId);
+      const { limits, tier } = await SubscriptionService.getLimits(userId);
       const maxPerMonth = limits.maxPublishRequestsPerMonth || 1;
 
       // Check monthly quota
       const now = new Date();
       let quotaReset = user.monthlyQuotaReset;
-      
+      let submissionCount = user.publishRequestsThisMonth || 0;
+
       // Initialize or reset quota if needed
       if (!quotaReset || quotaReset < now) {
+        // Quota period has expired, reset it
         quotaReset = new Date(now);
         quotaReset.setDate(quotaReset.getDate() + 30);
+        submissionCount = 0; // Reset counter for new period
+
         await User.updateOne(
           { firebaseUid: userId },
-          { 
+          {
             publishRequestsThisMonth: 0,
             monthlyQuotaReset: quotaReset
           }
         );
       }
 
-      const monthlySubmissions = await PublishRequest.getUserMonthlySubmissions(userId);
-      if (monthlySubmissions >= maxPerMonth) {
+      // IMPORTANT: If user's counter exceeds their current tier limit
+      // (e.g., downgraded from PRO with 9 submissions to Free with limit 1)
+      // Cap the display at the current limit but still block them
+      const displayCount = Math.min(submissionCount, maxPerMonth);
+
+      // Check if user has reached their limit
+      if (submissionCount >= maxPerMonth) {
         return {
           canSubmit: false,
           reason: `You have reached your monthly submission limit (${maxPerMonth} request${maxPerMonth > 1 ? 's' : ''} per 30 days).`,
-          resetDate: quotaReset
+          resetDate: quotaReset,
+          currentCount: displayCount, // Show capped value (e.g., 1/1 instead of 9/1)
+          maxCount: maxPerMonth,
+          tier
         };
       }
 
-      return { canSubmit: true };
+      return {
+        canSubmit: true,
+        currentCount: displayCount,
+        maxCount: maxPerMonth,
+        tier,
+        resetDate: quotaReset
+      };
     } catch (error) {
       await ErrorLoggingService.logError(error, {
         userId,
@@ -159,8 +177,8 @@ class PublishRequestService {
       const skillmap = await Skill.findById(skillmapId).lean();
       const nodes = await Node.find({ skillId: skillmapId }).lean();
       const completedNodes = nodes.filter(n => n.status === 'Completed').length;
-      const completionPercentage = nodes.length > 0 
-        ? Math.round((completedNodes / nodes.length) * 100) 
+      const completionPercentage = nodes.length > 0
+        ? Math.round((completedNodes / nodes.length) * 100)
         : 0;
 
       // Create publish request
@@ -186,11 +204,16 @@ class PublishRequestService {
         { publishStatus: 'pending' }
       );
 
-      // Update user pending count
+      // Update user pending count and set quota reset date
+      // The 30-day period starts from the submission date
+      const quotaResetDate = new Date();
+      quotaResetDate.setDate(quotaResetDate.getDate() + 30);
+
       await User.updateOne(
         { firebaseUid: userId },
-        { 
-          $inc: { pendingRequestCount: 1, publishRequestsThisMonth: 1 }
+        {
+          $inc: { pendingRequestCount: 1, publishRequestsThisMonth: 1 },
+          monthlyQuotaReset: quotaResetDate
         }
       );
 
@@ -250,7 +273,7 @@ class PublishRequestService {
           const user = await User.findOne({ firebaseUid: request.userId })
             .select('name email avatar')
             .lean();
-          
+
           const skillmap = await Skill.findById(request.skillmapId)
             .select('name description icon color goal nodeCount publishStatus')
             .lean();
@@ -302,7 +325,7 @@ class PublishRequestService {
           const user = await User.findOne({ firebaseUid: request.userId })
             .select('name email avatar')
             .lean();
-          
+
           const skillmap = await Skill.findById(request.skillmapId)
             .select('name description icon color goal nodeCount')
             .lean();
@@ -427,7 +450,7 @@ class PublishRequestService {
       // Update skillmap
       await Skill.updateOne(
         { _id: request.skillmapId },
-        { 
+        {
           publishStatus: 'published',
           publishedAt: new Date(),
           authorCredit

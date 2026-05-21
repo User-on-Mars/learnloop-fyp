@@ -11,6 +11,7 @@ import UserStreak from '../models/UserStreak.js'
 import WeeklyResetHistory from '../models/WeeklyResetHistory.js'
 import XpTransaction from '../models/XpTransaction.js'
 import Subscription from '../models/Subscription.js'
+import XpSettings from '../models/XpSettings.js'
 
 class AdminService {
   /**
@@ -527,48 +528,168 @@ class AdminService {
     }
   }
 
-  /**
-   * Get XP leaderboard
-   */
-  async getXpLeaderboard(limit = 50) {
-    try {
-      // Sort by weeklyXp for the weekly leaderboard
-      const profiles = await UserXpProfile.find({ weeklyXp: { $gt: 0 } })
-        .sort({ weeklyXp: -1, totalXp: -1 })  // Sort by weekly first, then total as tiebreaker
-        .limit(limit)
-        .lean()
+  _getWeekRange(weekOffset = 0) {
+    const now = new Date()
+    const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+    weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay() - (weekOffset * 7))
 
-      const userIds = profiles.map(p => p.userId)
-      const users = await User.find({ firebaseUid: { $in: userIds } }).select('firebaseUid name email').lean()
-      const userMap = {}
-      for (const u of users) {
-        userMap[u.firebaseUid] = { name: u.name, email: u.email }
+    const weekEnd = new Date(weekStart)
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 7)
+
+    return { weekStart, weekEnd }
+  }
+
+  _getLeaderboardDateRange(filter = {}) {
+    if (filter.startDate || filter.endDate) {
+      const start = filter.startDate
+        ? new Date(`${filter.startDate}T00:00:00.000Z`)
+        : new Date(0)
+      const end = filter.endDate
+        ? new Date(`${filter.endDate}T23:59:59.999Z`)
+        : new Date()
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+        throw new Error('Invalid leaderboard date range')
       }
 
-      const leaderboard = profiles.map((p, idx) => {
-        const rank = idx + 1
-        let leagueTier = 'Newcomer'
-        
-        // Assign league based on weekly XP thresholds, not rank
-        if (p.weeklyXp >= 200) leagueTier = 'Gold'
-        else if (p.weeklyXp >= 100) leagueTier = 'Silver'
-        else if (p.weeklyXp >= 50) leagueTier = 'Bronze'
-        else leagueTier = 'Newcomer'
+      return {
+        weekOffset: null,
+        weekStart: start,
+        weekEnd: new Date(end.getTime() + 1),
+        isCustomRange: true
+      }
+    }
 
-        return {
-          rank,
-          userId: p.userId,
-          userName: userMap[p.userId]?.name || 'Unknown',
-          userEmail: userMap[p.userId]?.email || p.userId,
-          totalXp: p.totalXp,
-          weeklyXp: p.weeklyXp,
-          leagueTier
+    const weekOffset = Math.max(0, parseInt(filter.weekOffset) || 0)
+    const { weekStart, weekEnd } = this._getWeekRange(weekOffset)
+    return { weekOffset, weekStart, weekEnd, isCustomRange: false }
+  }
+
+  _calculateLeagueTier(weeklyXp, settings) {
+    if (weeklyXp >= settings.goldThreshold) return 'Gold'
+    if (weeklyXp >= settings.silverThreshold) return 'Silver'
+    if (weeklyXp >= settings.bronzeThreshold) return 'Bronze'
+    return 'Newcomer'
+  }
+
+  /**
+   * Get XP leaderboard for the current or a previous week.
+   */
+  async getXpLeaderboard(limit = 50, filter = {}) {
+    try {
+      const { weekOffset, weekStart, weekEnd, isCustomRange } = this._getLeaderboardDateRange(filter)
+      const settings = await XpSettings.getSettings()
+
+      const match = {
+        createdAt: { $gte: weekStart, $lt: weekEnd },
+        finalAmount: { $gt: 0 }
+      }
+      if (filter.source) match.source = filter.source
+
+      const rows = await XpTransaction.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: '$userId',
+            weeklyXp: { $sum: '$finalAmount' },
+            firstTxAt: { $min: '$createdAt' }
+          }
+        },
+        { $sort: { weeklyXp: -1, firstTxAt: 1 } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: 'firebaseUid',
+            as: 'user'
+          }
+        },
+        {
+          $lookup: {
+            from: 'userxpprofiles',
+            localField: '_id',
+            foreignField: 'userId',
+            as: 'profile'
+          }
+        },
+        {
+          $project: {
+            userId: '$_id',
+            weeklyXp: 1,
+            firstTxAt: 1,
+            userName: { $ifNull: [{ $arrayElemAt: ['$user.name', 0] }, 'Unknown'] },
+            userEmail: { $ifNull: [{ $arrayElemAt: ['$user.email', 0] }, ''] },
+            totalXp: { $ifNull: [{ $arrayElemAt: ['$profile.totalXp', 0] }, 0] }
+          }
         }
-      })
+      ])
 
-      return leaderboard
+      let leaderboard = rows.map((row, idx) => ({
+        rank: idx + 1,
+        userId: row.userId,
+        userName: row.userName,
+        userEmail: row.userEmail || row.userId,
+        totalXp: row.totalXp,
+        weeklyXp: row.weeklyXp,
+        leagueTier: this._calculateLeagueTier(row.weeklyXp, settings),
+        firstXpAt: row.firstTxAt
+      }))
+
+      if (filter.search) {
+        const search = String(filter.search).toLowerCase()
+        leaderboard = leaderboard.filter(user =>
+          user.userName.toLowerCase().includes(search) ||
+          user.userEmail.toLowerCase().includes(search)
+        )
+      }
+
+      if (filter.league) {
+        leaderboard = leaderboard.filter(user => user.leagueTier === filter.league)
+      }
+
+      leaderboard = leaderboard.map((user, idx) => ({ ...user, rank: idx + 1 })).slice(0, limit)
+
+      return {
+        leaderboard,
+        weekStart,
+        weekEnd: new Date(weekEnd.getTime() - 1),
+        weekOffset,
+        isCustomRange
+      }
     } catch (error) {
       console.error('AdminService.getXpLeaderboard error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get recent leaderboard week options with XP activity.
+   */
+  async getXpLeaderboardWeeks(limit = 12) {
+    try {
+      const weeks = []
+      const weekCount = Math.min(52, Math.max(1, parseInt(limit) || 12))
+
+      for (let weekOffset = 0; weekOffset < weekCount; weekOffset += 1) {
+        const { weekStart, weekEnd } = this._getWeekRange(weekOffset)
+        const totalXpResult = await XpTransaction.aggregate([
+          { $match: { createdAt: { $gte: weekStart, $lt: weekEnd }, finalAmount: { $gt: 0 } } },
+          { $group: { _id: '$userId', weeklyXp: { $sum: '$finalAmount' } } },
+          { $group: { _id: null, users: { $sum: 1 }, totalXp: { $sum: '$weeklyXp' } } }
+        ])
+
+        weeks.push({
+          weekOffset,
+          weekStart,
+          weekEnd: new Date(weekEnd.getTime() - 1),
+          users: totalXpResult[0]?.users || 0,
+          totalXp: totalXpResult[0]?.totalXp || 0
+        })
+      }
+
+      return { weeks }
+    } catch (error) {
+      console.error('AdminService.getXpLeaderboardWeeks error:', error)
       throw error
     }
   }

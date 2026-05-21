@@ -74,8 +74,8 @@ export default function AdminSidebar({
   const renderNav = (collapsed) => (
     <>
       {/* Logo header */}
-      <div className={`border-b border-site-border ${collapsed ? 'p-3' : 'p-5'}`}>
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+      <div className={`border-b border-site-border ${collapsed ? 'h-16 px-3' : 'h-16 px-5'}`}>
+        <div className={`flex h-full items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
           <LogoMark size={collapsed ? 28 : 32} />
           {!collapsed && (
             <div className="overflow-hidden whitespace-nowrap">

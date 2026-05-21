@@ -48,6 +48,7 @@ export default function AdminBillingHistory() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const pageSize = 10
 
   // Filters
   const [search, setSearch] = useState('')
@@ -64,7 +65,7 @@ export default function AdminBillingHistory() {
       setError(null)
       const params = {
         page,
-        limit: 20,
+        limit: pageSize,
         search,
         type: typeFilter,
         status: statusFilter,
@@ -99,6 +100,8 @@ export default function AdminBillingHistory() {
 
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   const fmtTime = (d) => new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  const startRecord = total === 0 ? 0 : (page - 1) * pageSize + 1
+  const endRecord = Math.min(page * pageSize, total)
 
   if (error && history.length === 0) {
     return (
@@ -241,7 +244,9 @@ export default function AdminBillingHistory() {
 
         {/* Results count */}
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-site-muted">{total} record{total !== 1 ? 's' : ''} found</p>
+          <p className="text-sm text-site-muted">
+            Showing {startRecord}-{endRecord} of {total} record{total !== 1 ? 's' : ''}
+          </p>
         </div>
 
         {/* Loading */}

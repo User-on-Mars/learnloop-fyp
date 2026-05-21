@@ -6,7 +6,7 @@ import Modal, { ModalButton } from "../components/Modal";
 import { useAuth } from "../useAuth";
 import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider, linkWithCredential, deleteUser } from "firebase/auth";
 import { auth } from "../firebase";
-import { authAPI } from "../api/client";
+import { authAPI, preferencesAPI } from "../api/client";
 import {
   Eye, EyeOff, Camera, User, Mail, Shield, Key, Trash2, LogOut,
   CheckCircle, AlertTriangle, X, Loader2, ChevronRight, Settings,
@@ -16,6 +16,8 @@ import AvatarPicker from "../components/AvatarPicker";
 import { useCustomAvatar } from "../context/AvatarContext";
 import { useSubscription } from "../context/SubscriptionContext";
 import MyPublishRequests from "../components/MyPublishRequests";
+import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
+import { validatePassword } from "../utils/passwordValidator";
 
 export default function Profile() {
   const user = useAuth();
@@ -51,30 +53,36 @@ export default function Profile() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  // Settings state (persisted to localStorage)
-  const [settings, setSettings] = useState(() => {
-    try {
-      const saved = localStorage.getItem("learnloop_settings");
-      return saved ? JSON.parse(saved) : {
-        emailNotifications: true,
-        practiceReminders: true,
-        weeklyDigest: true,
-        streakAlerts: true,
-        xpNotifications: true,
-        soundEffects: true,
-        timerSound: true,
-        darkMode: false,
-        compactView: false,
-      };
-    } catch { return { emailNotifications: true, practiceReminders: true, weeklyDigest: true, streakAlerts: true, xpNotifications: true, soundEffects: true, timerSound: true, darkMode: false, compactView: false }; }
+  // Settings state (synced with backend)
+  const [settings, setSettings] = useState({
+    emailNotifications: true,
+    practiceReminders: true,
+    weeklyDigest: true,
+    streakAlerts: true,
+    xpNotifications: true,
+    soundEffects: true,
+    timerSound: true,
+    darkMode: false,
+    compactView: false,
   });
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
 
-  const updateSetting = (key, value) => {
-    setSettings(prev => {
-      const next = { ...prev, [key]: value };
-      localStorage.setItem("learnloop_settings", JSON.stringify(next));
-      return next;
-    });
+  const updateSetting = async (key, value) => {
+    // Optimistic update
+    setSettings(prev => ({ ...prev, [key]: value }));
+
+    try {
+      // Sync to backend
+      await preferencesAPI.updatePreference(key, value);
+
+      // Also update localStorage as fallback
+      const updated = { ...settings, [key]: value };
+      localStorage.setItem("learnloop_settings", JSON.stringify(updated));
+    } catch (error) {
+      console.error('Failed to update preference:', error);
+      // Revert on error
+      setSettings(prev => ({ ...prev, [key]: !value }));
+    }
   };
 
   useEffect(() => {
@@ -86,6 +94,48 @@ export default function Profile() {
       setHasPasswordProvider(providers.some(p => p.providerId === "password"));
       setHasGoogleProvider(providers.some(p => p.providerId === "google.com"));
     }
+  }, [user]);
+
+  // Load preferences from backend on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user) return;
+
+      try {
+        setIsLoadingPreferences(true);
+        const response = await preferencesAPI.getPreferences();
+        const backendPrefs = response.data.preferences;
+
+        // Merge with localStorage (backend takes precedence)
+        const localPrefs = (() => {
+          try {
+            const saved = localStorage.getItem("learnloop_settings");
+            return saved ? JSON.parse(saved) : {};
+          } catch {
+            return {};
+          }
+        })();
+
+        const mergedPrefs = { ...localPrefs, ...backendPrefs };
+        setSettings(mergedPrefs);
+
+        // Update localStorage with merged preferences
+        localStorage.setItem("learnloop_settings", JSON.stringify(mergedPrefs));
+      } catch (error) {
+        console.error('Failed to load preferences:', error);
+        // Fall back to localStorage
+        try {
+          const saved = localStorage.getItem("learnloop_settings");
+          if (saved) {
+            setSettings(JSON.parse(saved));
+          }
+        } catch {}
+      } finally {
+        setIsLoadingPreferences(false);
+      }
+    };
+
+    loadPreferences();
   }, [user]);
 
   useEffect(() => {
@@ -115,7 +165,14 @@ export default function Profile() {
   const handlePasswordChange = async (e) => {
     e.preventDefault(); setPasswordChangeMessage(null);
     if (newPassword !== confirmPassword) { setPasswordChangeMessage({ variant: "error", text: "Passwords do not match" }); return; }
-    if (newPassword.length < 6) { setPasswordChangeMessage({ variant: "error", text: "Password must be at least 6 characters" }); return; }
+
+    // Validate password strength
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      setPasswordChangeMessage({ variant: "error", text: validation.errors[0] });
+      return;
+    }
+
     try {
       setIsChangingPassword(true);
       if (hasPasswordProvider) {
@@ -135,7 +192,7 @@ export default function Profile() {
       const msgs = {
         "auth/wrong-password": "Current password is incorrect",
         "auth/invalid-credential": "Current password is incorrect",
-        "auth/weak-password": "Password is too weak",
+        "auth/weak-password": "Password does not meet security requirements",
         "auth/requires-recent-login": "Please log out and log back in first",
         "auth/provider-already-linked": "Password already set",
       };
@@ -331,12 +388,13 @@ export default function Profile() {
                   <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">{hasPasswordProvider ? "New Password" : "Password"}</label>
                   <div className="relative">
                     <input type={showNewPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                      required minLength={6} disabled={isChangingPassword} autoComplete="new-password" placeholder="Min 6 characters"
+                      required minLength={8} disabled={isChangingPassword} autoComplete="new-password" placeholder="Create a strong password"
                       className="w-full px-4 py-3 pr-10 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 bg-[#f8faf6] focus:bg-white text-sm transition-all disabled:opacity-50" />
                     <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] text-[#9aa094] hover:text-[#565c52] flex items-center justify-center" aria-label={showNewPassword ? "Hide password" : "Show password"}>
                       {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {newPassword && <div className="mt-3"><PasswordStrengthMeter password={newPassword} /></div>}
                 </div>
 
                 <div>
@@ -371,13 +429,16 @@ export default function Profile() {
                 <h2 className="text-base font-bold text-[#1c1f1a]">Notifications</h2>
                 <p className="text-[11px] text-[#9aa094]">Control what alerts you receive</p>
               </div>
+              {isLoadingPreferences && (
+                <Loader2 className="w-4 h-4 text-blue-500 animate-spin ml-auto" />
+              )}
             </div>
             <div className="divide-y divide-[#f0f2eb]">
-              <ToggleRow icon={<Mail className="w-4 h-4 text-blue-500" />} label="Email Notifications" desc="Receive updates and announcements via email" checked={settings.emailNotifications} onChange={v => updateSetting('emailNotifications', v)} />
-              <ToggleRow icon={<Clock className="w-4 h-4 text-orange-500" />} label="Practice Reminders" desc="Daily reminders to keep your streak alive" checked={settings.practiceReminders} onChange={v => updateSetting('practiceReminders', v)} />
-              <ToggleRow icon={<Bell className="w-4 h-4 text-violet-500" />} label="Weekly Digest" desc="Summary of your weekly progress every Sunday" checked={settings.weeklyDigest} onChange={v => updateSetting('weeklyDigest', v)} />
-              <ToggleRow icon={<AlertTriangle className="w-4 h-4 text-amber-500" />} label="Streak Alerts" desc="Get notified when your streak is about to expire" checked={settings.streakAlerts} onChange={v => updateSetting('streakAlerts', v)} />
-              <ToggleRow icon={<CheckCircle className="w-4 h-4 text-emerald-500" />} label="XP Notifications" desc="Show XP earned popups after actions" checked={settings.xpNotifications} onChange={v => updateSetting('xpNotifications', v)} />
+              <ToggleRow icon={<Mail className="w-4 h-4 text-blue-500" />} label="Email Notifications" desc="Receive updates and announcements via email" checked={settings.emailNotifications} onChange={v => updateSetting('emailNotifications', v)} disabled={isLoadingPreferences} />
+              <ToggleRow icon={<Clock className="w-4 h-4 text-orange-500" />} label="Practice Reminders" desc="Daily reminders to keep your streak alive" checked={settings.practiceReminders} onChange={v => updateSetting('practiceReminders', v)} disabled={isLoadingPreferences} />
+              <ToggleRow icon={<Bell className="w-4 h-4 text-violet-500" />} label="Weekly Digest" desc="Summary of your weekly progress every Sunday" checked={settings.weeklyDigest} onChange={v => updateSetting('weeklyDigest', v)} disabled={isLoadingPreferences} />
+              <ToggleRow icon={<AlertTriangle className="w-4 h-4 text-amber-500" />} label="Streak Alerts" desc="Get notified when your streak is about to expire" checked={settings.streakAlerts} onChange={v => updateSetting('streakAlerts', v)} disabled={isLoadingPreferences} />
+              <ToggleRow icon={<CheckCircle className="w-4 h-4 text-emerald-500" />} label="XP Notifications" desc="Show XP earned popups after actions" checked={settings.xpNotifications} onChange={v => updateSetting('xpNotifications', v)} disabled={isLoadingPreferences} />
             </div>
           </div>
 
@@ -391,10 +452,13 @@ export default function Profile() {
                 <h2 className="text-base font-bold text-[#1c1f1a]">Preferences</h2>
                 <p className="text-[11px] text-[#9aa094]">Customize your experience</p>
               </div>
+              {isLoadingPreferences && (
+                <Loader2 className="w-4 h-4 text-violet-500 animate-spin ml-auto" />
+              )}
             </div>
             <div className="divide-y divide-[#f0f2eb]">
-              <ToggleRow icon={<Volume2 className="w-4 h-4 text-blue-500" />} label="Sound Effects" desc="Play sounds for achievements and actions" checked={settings.soundEffects} onChange={v => updateSetting('soundEffects', v)} />
-              <ToggleRow icon={<Clock className="w-4 h-4 text-teal-500" />} label="Timer Sound" desc="Play sound when practice timer completes" checked={settings.timerSound} onChange={v => updateSetting('timerSound', v)} />
+              <ToggleRow icon={<Volume2 className="w-4 h-4 text-blue-500" />} label="Sound Effects" desc="Play sounds for achievements and actions" checked={settings.soundEffects} onChange={v => updateSetting('soundEffects', v)} disabled={isLoadingPreferences} />
+              <ToggleRow icon={<Clock className="w-4 h-4 text-teal-500" />} label="Timer Sound" desc="Play sound when practice timer completes" checked={settings.timerSound} onChange={v => updateSetting('timerSound', v)} disabled={isLoadingPreferences} />
             </div>
           </div>
 
@@ -535,12 +599,12 @@ export default function Profile() {
         {hasPasswordProvider && (
           <div className="mb-4">
             <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">Enter your password</label>
-            <input 
-              type="password" 
-              value={deletePassword} 
-              onChange={e => setDeletePassword(e.target.value)} 
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={e => setDeletePassword(e.target.value)}
               placeholder="Your password"
-              className="w-full px-4 py-3 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 text-sm transition-all" 
+              className="w-full px-4 py-3 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 text-sm transition-all"
             />
           </div>
         )}
@@ -550,12 +614,12 @@ export default function Profile() {
           <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
             Type <span className="font-mono bg-red-50 text-red-600 px-1.5 py-0.5 rounded">DELETE</span> to confirm
           </label>
-          <input 
-            type="text" 
-            value={deleteConfirmInput} 
-            onChange={e => setDeleteConfirmInput(e.target.value)} 
+          <input
+            type="text"
+            value={deleteConfirmInput}
+            onChange={e => setDeleteConfirmInput(e.target.value)}
             placeholder="Type DELETE"
-            className="w-full px-4 py-3 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 font-mono text-sm transition-all" 
+            className="w-full px-4 py-3 min-h-[44px] border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/15 font-mono text-sm transition-all"
           />
         </div>
 
@@ -571,9 +635,9 @@ export default function Profile() {
 }
 
 
-function ToggleRow({ icon, label, desc, checked, onChange }) {
+function ToggleRow({ icon, label, desc, checked, onChange, disabled = false }) {
   return (
-    <div className="flex items-center gap-4 px-5 py-4 hover:bg-[#f8faf6] transition-colors">
+    <div className={`flex items-center gap-4 px-5 py-4 transition-colors ${disabled ? 'opacity-50' : 'hover:bg-[#f8faf6]'}`}>
       <div className="w-9 h-9 rounded-xl bg-[#f8faf6] flex items-center justify-center flex-shrink-0">
         {icon}
       </div>
@@ -581,9 +645,10 @@ function ToggleRow({ icon, label, desc, checked, onChange }) {
         <p className="text-sm font-semibold text-[#1c1f1a]">{label}</p>
         <p className="text-[11px] text-[#9aa094]">{desc}</p>
       </div>
-      <button 
-        onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-gradient-to-r from-rose-500 to-pink-500' : 'bg-[#d0d5ca]'}`}
+      <button
+        onClick={() => !disabled && onChange(!checked)}
+        disabled={disabled}
+        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-gradient-to-r from-rose-500 to-pink-500' : 'bg-[#d0d5ca]'} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
         aria-label={`Toggle ${label}`}
       >
         <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />

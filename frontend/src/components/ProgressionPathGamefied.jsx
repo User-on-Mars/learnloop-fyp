@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSkillMap } from '../context/SkillMapContext';
 import { useActiveSessions } from '../context/ActiveSessionContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { practiceAPI } from '../api/client';
 import { Pencil, Check, X, ChevronRight, ChevronLeft, FileText, Target, Rocket, Trophy, Lock, Unlock, CheckCircle, Trash2, Clock } from 'lucide-react';
 import SkillMapPageSkeleton from './SkillMapPageSkeleton';
@@ -12,6 +13,8 @@ export default function ProgressionPathGamefied() {
   const { skillId } = useParams();
   const navigate = useNavigate();
   const { activeSessions, formatTimer } = useActiveSessions();
+  const { isPro, limits } = useSubscription();
+  const maxNodes = isPro ? 15 : (limits?.maxNodesPerSkillMap ?? 5);
   const {
     currentSkill,
     nodes,
@@ -136,7 +139,7 @@ export default function ProgressionPathGamefied() {
     // Check duplicates against existing nodes + pending adds
     const allNames = [...nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).map(n => n.title), ...pendingAddNodes];
     if (allNames.some(t => t.toLowerCase() === newNodeTitle.trim().toLowerCase())) { setNodeError('Duplicate name'); return; }
-    if (allNames.length >= 15) { setNodeError('Max 15 nodes'); return; }
+    if (allNames.length >= maxNodes) { setNodeError(`Max ${maxNodes} nodes`); return; }
     // Add to pending — don't call API yet
     setPendingAddNodes(prev => [...prev, newNodeTitle.trim()]);
     setNewNodeTitle('');
@@ -330,15 +333,8 @@ export default function ProgressionPathGamefied() {
 
           {/* Compact Header */}
           <div className="bg-white rounded-2xl border border-[#e2e6dc] p-5 mb-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: currentSkill.color || '#2e5023' }}>
-                  <SkillIcon name={icon} size={22} className="text-white" />
-                </div>
-                <h1 className="text-xl sm:text-2xl font-bold text-[#1c1f1a] truncate min-w-0">{currentSkill.name}</h1>
-              </div>
-              <div className="flex items-center gap-2">
-                <PublishRequestButton skillmap={currentSkill} actualNodeCount={userNodes.length} />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
                 <button
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                   className="p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors lg:hidden"
@@ -346,6 +342,13 @@ export default function ProgressionPathGamefied() {
                 >
                   {isSidebarOpen ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
                 </button>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: currentSkill.color || '#2e5023' }}>
+                  <SkillIcon name={icon} size={22} className="text-white" />
+                </div>
+                <h1 className="text-xl sm:text-2xl font-bold text-[#1c1f1a] truncate">{currentSkill.name}</h1>
+              </div>
+              <div className="min-w-0 max-w-[260px] w-full sm:w-auto">
+                <PublishRequestButton skillmap={currentSkill} actualNodeCount={userNodes.length} />
               </div>
             </div>
           </div>
@@ -555,8 +558,8 @@ export default function ProgressionPathGamefied() {
               {/* Nodes Section - Edit Mode */}
               <div className="bg-site-soft rounded-lg p-4 border-2 border-site-border shadow-md">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).length}/15)</h3>
-                  {nodes.length < 15 ? (
+                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).length}/{maxNodes})</h3>
+                  {nodes.length < maxNodes ? (
                     <button
                       onClick={() => { setShowAddNodeForm(true); setNodeError(''); }}
                       className="px-3 py-1 bg-[#2e5023] text-white text-xs font-bold rounded hover:bg-[#1f3518] transition"
@@ -569,7 +572,7 @@ export default function ProgressionPathGamefied() {
                 </div>
                 
                 {/* Add Node Form */}
-                {showAddNodeForm && nodes.length < 15 && (
+                {showAddNodeForm && nodes.length < maxNodes && (
                   <div className="mb-3 bg-white rounded p-3 border-2 border-site-border">
                     <label className="block text-xs font-bold text-gray-700 mb-2">New Node Title</label>
                     <input
@@ -695,7 +698,7 @@ export default function ProgressionPathGamefied() {
               {/* Nodes Section - View Mode (no edit/delete) */}
               <div className="bg-site-soft rounded-lg p-4 border-2 border-site-border shadow-md">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).length}/15)</h3>
+                  <h3 className="text-sm font-bold text-gray-900">Nodes ({nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).length}/{maxNodes})</h3>
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {nodes.filter(n => !n.isGoal && !(n.isStart && n.title === 'Start')).map((node, index) => (

@@ -32,6 +32,7 @@ import subscriptionRoutes from "./routes/subscription.js";
 import contactRoutes from "./routes/contact.js";
 import publishRequestRoutes from "./routes/publishRequests.js";
 import notificationRoutes from "./routes/notifications.js";
+import preferencesRoutes from "./routes/preferences.js";
 import { requireAuth } from "./middleware/auth.js";
 import { checkSkillMapLimit } from "./middleware/subscription.js";
 import { 
@@ -148,6 +149,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api", auditLogger(SECURITY_EVENTS.UNAUTHORIZED_ACCESS), invitationRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/publish-requests", publishRequestRoutes);
+app.use("/api/preferences", preferencesRoutes);
 
 // Error handling middleware with security logging
 app.use((err, req, res, next) => {

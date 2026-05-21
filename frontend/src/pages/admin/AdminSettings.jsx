@@ -10,12 +10,12 @@ import { staggerItem } from '../../components/admin/animations'
 
 function SettingRow({ label, desc, children }) {
   return (
-    <div className="flex items-center justify-between gap-4 p-3 bg-site-bg rounded-lg">
+    <div className="flex flex-col gap-3 p-4 bg-site-surface border border-site-border rounded-2xl">
       <div className="min-w-0">
         <p className="text-sm font-medium text-site-ink">{label}</p>
-        {desc && <p className="text-xs text-site-faint mt-0.5">{desc}</p>}
+        {desc && <p className="text-xs text-site-faint mt-1">{desc}</p>}
       </div>
-      <div className="flex-shrink-0">{children}</div>
+      <div className="flex items-center justify-between gap-4">{children}</div>
     </div>
   )
 }
@@ -39,13 +39,18 @@ function SectionCard({ icon: Icon, iconBg, iconColor, title, desc, children, isD
   return (
     <motion.div 
       variants={staggerItem}
-      className={`bg-site-surface rounded-xl border ${isDanger ? 'border-red-200' : 'border-site-border'} p-6 ${className}`}
+      className={`h-full flex flex-col bg-site-surface rounded-3xl border ${isDanger ? 'border-red-200' : 'border-site-border'} shadow-sm p-6 ${className}`}
     >
-      <div className="flex items-center gap-3 mb-5">
-        <div className={`p-2 rounded-lg ${iconBg}`}><Icon className={`w-5 h-5 ${iconColor}`} /></div>
-        <div><h2 className={`font-semibold ${isDanger ? 'text-red-600' : 'text-site-ink'}`}>{title}</h2><p className="text-xs text-site-faint">{desc}</p></div>
+      <div className="flex items-start gap-3 mb-5">
+        <div className={`p-3 rounded-2xl border ${iconBg}`}>
+          <Icon className={`w-5 h-5 ${iconColor}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className={`font-semibold text-lg ${isDanger ? 'text-red-700' : 'text-site-ink'}`}>{title}</h2>
+          <p className="text-sm text-site-faint mt-1">{desc}</p>
+        </div>
       </div>
-      {children}
+      <div className="flex flex-col flex-1 justify-between space-y-4">{children}</div>
     </motion.div>
   )
 }
@@ -54,14 +59,14 @@ function EditButton({ editing, onEdit, onSave, onCancel, saving }) {
   if (editing) {
     return (
       <div className="flex gap-2 mt-4">
-        <button onClick={onSave} disabled={saving} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-site-accent text-white rounded-lg text-sm font-medium hover:bg-site-accent-hover disabled:opacity-50 transition-colors">
+        <button type="button" onClick={onSave} disabled={saving} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-site-accent text-white rounded-lg text-sm font-medium hover:bg-site-accent-hover disabled:opacity-50 transition-colors">
           <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save changes'}
         </button>
-        <button onClick={onCancel} className="px-4 py-2.5 border border-site-border rounded-lg text-sm font-medium text-site-ink hover:bg-site-bg transition-colors">Cancel</button>
+        <button type="button" onClick={onCancel} className="px-4 py-2.5 border border-site-border rounded-lg text-sm font-medium text-site-ink hover:bg-site-bg transition-colors">Cancel</button>
       </div>
     )
   }
-  return <button onClick={onEdit} className="w-full mt-4 px-4 py-2.5 border border-site-border rounded-lg text-sm font-medium text-site-ink hover:bg-site-bg transition-colors">Edit settings</button>
+  return <button type="button" onClick={onEdit} className="w-full mt-4 px-4 py-2.5 border border-site-border rounded-lg text-sm font-medium text-site-ink hover:bg-site-bg transition-colors">Edit settings</button>
 }
 
 export default function AdminSettings() {
@@ -136,16 +141,22 @@ export default function AdminSettings() {
   const handleExport = async () => {
     setActionLoading(true)
     try {
-      const token = await adminApi.getToken()
-      const res = await fetch(`${apiUrl}/admin/export-users`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) throw new Error('Export failed')
-      const blob = await res.blob(); const url = URL.createObjectURL(blob)
-      const a = document.createElement('a'); a.href = url; a.download = `learnloop-users-${new Date().toISOString().split('T')[0]}.csv`
-      document.body.appendChild(a); a.click()
+      const data = await adminApi.exportUserData()
+      const blob = new Blob([data], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `learnloop-users-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
       setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a) }, 100)
-      showMsg('Export downloaded'); setConfirmAction(null)
-    } catch (e) { showMsg(`Error: ${e.message}`, 5000) }
-    finally { setActionLoading(false) }
+      showMsg('Export downloaded')
+      setConfirmAction(null)
+    } catch (e) {
+      showMsg(`Error: ${e.message}`, 5000)
+    } finally {
+      setActionLoading(false)
+    }
   }
 
   if (loading) {
@@ -189,12 +200,16 @@ export default function AdminSettings() {
     <PageTransition>
       <div className="p-6 lg:p-8 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-site-ink">Settings</h1>
-        <p className="text-site-muted mt-1">Platform configuration and admin tools</p>
+        <div className="inline-flex items-center gap-2 rounded-full bg-site-surface border border-site-border px-4 py-2 text-site-ink">
+          <span className="inline-flex h-2.5 w-2.5 rounded-full bg-site-accent" />
+          <span className="text-xs uppercase tracking-[0.24em] font-semibold">Admin settings</span>
+        </div>
+        <h1 className="mt-5 text-3xl font-bold tracking-tight text-site-ink">Platform settings</h1>
+        <p className="text-site-muted mt-3 max-w-2xl">Manage XP rules, leaderboard thresholds, auto-flagging, contact email, and admin exports from one central dashboard.</p>
       </div>
 
       {message && (
-        <div className={`mb-6 p-3 rounded-lg border text-sm ${message.startsWith('Error') ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'}`}>{message}</div>
+        <div className={`mb-6 p-4 rounded-3xl border text-sm ${message.startsWith('Error') ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>{message}</div>
       )}
 
       <AnimatedList className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -284,25 +299,30 @@ export default function AdminSettings() {
         </SectionCard>
 
         {/* Contact Email */}
-        <SectionCard icon={Mail} iconBg="bg-green-50" iconColor="text-green-600" title="Contact email" desc="Email shown on the public contact page and where messages are sent">
-          <div className="space-y-2">
-            <SettingRow label="Contact email" desc="Displayed on the contact page and receives form submissions">
-              {contactEditing ? (
-                <input type="email" value={s.contactEmail || ''} onChange={e => set('contactEmail', e.target.value)}
-                  className="w-56 px-2 py-1 border border-site-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-site-accent/30"
-                  placeholder="admin@example.com" />
-              ) : (
-                <DisplayVal value={s.contactEmail || 'weweebo@gmail.com'} />
-              )}
-            </SettingRow>
+        <SectionCard icon={Mail} iconBg="bg-green-50" iconColor="text-green-600" title="Contact email" desc="Email shown on the public contact page and where messages are sent" className="h-full">
+          <div className="flex flex-col h-full justify-between">
+            <div className="space-y-3">
+              <SettingRow label="Contact email" desc="Displayed on the contact page and receives form submissions">
+                {contactEditing ? (
+                  <input type="email" value={s.contactEmail || ''} onChange={e => set('contactEmail', e.target.value)}
+                    className="w-56 px-2 py-1 border border-site-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-site-accent/30"
+                    placeholder="admin@example.com" />
+                ) : (
+                  <DisplayVal value={s.contactEmail || 'No email configured'} />
+                )}
+              </SettingRow>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <EditButton editing={contactEditing} saving={saving}
+                onEdit={() => { setEdited(settings); setContactEditing(true) }}
+                onSave={async () => { if (await saveFields(['contactEmail'])) setContactEditing(false) }}
+                onCancel={() => { cancelEdit(); setContactEditing(false) }} />
+            </div>
           </div>
-          <EditButton editing={contactEditing} saving={saving}
-            onEdit={() => { setEdited(settings); setContactEditing(true) }}
-            onSave={async () => { if (await saveFields(['contactEmail'])) setContactEditing(false) }}
-            onCancel={() => { cancelEdit(); setContactEditing(false) }} />
         </SectionCard>
 
-        {/* Admin Tools — full width */}
+        {/* Admin Tools */}
         <SectionCard 
           icon={AlertCircle} 
           iconBg="bg-red-50" 
@@ -310,23 +330,29 @@ export default function AdminSettings() {
           title="Admin tools" 
           desc="Destructive actions — use with caution"
           isDanger={true}
-          className="lg:col-span-2"
+          className="h-full"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <button onClick={() => setConfirmAction('reset')} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium">
-                <RotateCcw className="w-4 h-4" /> Trigger weekly reset
-              </button>
-              <p className="text-xs text-site-faint mt-1.5 text-center">Sets all weekly XP to 0. Runs auto every Sunday.</p>
+          <div className="flex flex-col h-full justify-between">
+            <div className="space-y-3">
+              <p className="text-sm text-site-faint">Choose one of the actions below. These are logged for audit purposes.</p>
+              <p className="text-xs text-site-faint">All actions are logged in the audit log.</p>
             </div>
-            <div>
-              <button onClick={() => setConfirmAction('export')} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-site-border text-site-ink rounded-lg hover:bg-site-bg transition-colors text-sm font-medium">
-                <Download className="w-4 h-4" /> Export users (CSV)
-              </button>
-              <p className="text-xs text-site-faint mt-1.5 text-center">Downloads all user data as a CSV file.</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <button type="button" onClick={() => setConfirmAction('reset')} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium">
+                  <RotateCcw className="w-4 h-4" /> Trigger weekly reset
+                </button>
+                <p className="text-xs text-site-faint mt-1.5 text-center">Sets all weekly XP to 0. Runs auto every Sunday.</p>
+              </div>
+              <div>
+                <button type="button" onClick={() => setConfirmAction('export')} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-site-border text-site-ink rounded-lg hover:bg-site-bg transition-colors text-sm font-medium">
+                  <Download className="w-4 h-4" /> Export users (CSV)
+                </button>
+                <p className="text-xs text-site-faint mt-1.5 text-center">Downloads all user data as a CSV file.</p>
+              </div>
             </div>
           </div>
-          <p className="text-xs text-site-faint mt-3">All actions are logged in the audit log.</p>
         </SectionCard>
       </AnimatedList>
 
@@ -340,10 +366,11 @@ export default function AdminSettings() {
               {confirmAction === 'export' && 'This will download a CSV with all user data.'}
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmAction(null)} className="flex-1 px-4 py-2.5 border border-site-border rounded-lg text-sm font-medium text-site-ink hover:bg-site-bg transition-colors">
+              <button type="button" onClick={() => setConfirmAction(null)} className="flex-1 px-4 py-2.5 border border-site-border rounded-lg text-sm font-medium text-site-ink hover:bg-site-bg transition-colors">
                 No
               </button>
               <button
+                type="button"
                 onClick={() => {
                   if (confirmAction === 'reset') handleReset()
                   else if (confirmAction === 'export') handleExport()

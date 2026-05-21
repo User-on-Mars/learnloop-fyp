@@ -49,7 +49,15 @@ export const adminApi = {
   getActivity: (page = 1, limit = 20) => request(`/admin/activity?page=${page}&limit=${limit}`),
   
   // XP & Leaderboard
-  getXpLeaderboard: (limit = 50) => request(`/admin/xp-leaderboard?limit=${limit}`),
+  getXpLeaderboard: (limit = 50, params = {}) => {
+    const cleanParams = { limit };
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== '' && val !== null && val !== undefined) cleanParams[key] = val;
+    });
+    const qs = new URLSearchParams(cleanParams).toString();
+    return request(`/admin/xp-leaderboard?${qs}`);
+  },
+  getXpLeaderboardWeeks: (limit = 12) => request(`/admin/xp-leaderboard/weeks?limit=${limit}`),
   
   // Skill Maps
   getSkillMapStats: () => request('/admin/skill-maps/stats'),
@@ -73,7 +81,16 @@ export const adminApi = {
   // Admin Actions
   manualReset: (confirmation) => request('/admin/manual-reset', { method: 'POST', body: JSON.stringify({ confirmation }) }),
   recalculateXp: () => request('/admin/recalculate-xp', { method: 'POST' }),
-  exportUserData: () => request('/admin/export-users', { method: 'POST' }),
+  exportUserData: async () => {
+    const token = await getToken()
+    const res = await fetch(`${API}/admin/export-users`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      const message = data.message || `Export failed with status ${res.status}`
+      throw new Error(message)
+    }
+    return await res.text()
+  },
   
   // Content
   deleteContent: (type, id) => request(`/admin/content/${type}/${id}`, { method: 'DELETE' }),

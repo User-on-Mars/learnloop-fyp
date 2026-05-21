@@ -247,4 +247,11 @@ export const notificationsAPI = {
   deleteNotification: (notificationId: string) => client.delete(`/notifications/${notificationId}`),
 }
 
+// ============ PREFERENCES API ============
+export const preferencesAPI = {
+  getPreferences: () => client.get('/preferences'),
+  updatePreferences: (data: any) => client.put('/preferences', data),
+  updatePreference: (key: string, value: boolean) => client.patch('/preferences', { key, value }),
+}
+
 export default client

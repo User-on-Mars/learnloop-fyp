@@ -271,8 +271,10 @@ export default function AdminSubscriptions() {
   const [statusFilter, setStatusFilter] = useState('') // '' | 'active' | 'canceled'
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const pageSize = 10
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const [stats, setStats] = useState({ total: 0, pro: 0, free: 0 })
 
   useEffect(() => {
     fetchSubscriptions()
@@ -282,7 +284,7 @@ export default function AdminSubscriptions() {
     try {
       setLoading(true)
       setError(null)
-      const params = { page, limit: 20 }
+      const params = { page, limit: pageSize }
       if (filter !== 'all') params.tier = filter
       if (statusFilter) params.status = statusFilter
       if (search) params.search = search
@@ -290,6 +292,13 @@ export default function AdminSubscriptions() {
       setSubscriptions(data.subscriptions || [])
       setTotalPages(data.pages || 1)
       setTotal(data.total || 0)
+      if (data.stats) {
+        setStats({
+          total: data.stats.total || 0,
+          pro: data.stats.pro || 0,
+          free: data.stats.free || 0,
+        })
+      }
     } catch (e) {
       setError(e.message)
     } finally {
@@ -297,11 +306,9 @@ export default function AdminSubscriptions() {
     }
   }
 
-  const stats = {
-    total,
-    pro: subscriptions.filter(s => s.effectiveTier === 'pro').length,
-    free: subscriptions.filter(s => s.effectiveTier === 'free').length,
-  }
+  const visibleStart = total === 0 ? 0 : (page - 1) * pageSize + 1
+  const visibleEnd = Math.min(page * pageSize, total)
+  const statsDisplay = stats
 
   if (loading && subscriptions.length === 0) {
     return (
@@ -339,16 +346,20 @@ export default function AdminSubscriptions() {
   return (
     <PageTransition>
       <div className="p-6 lg:p-8 max-w-7xl">
-        <div className="mb-8">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-site-ink">Subscriptions</h1>
           <p className="text-site-muted mt-1">Manage user subscription tiers • {total} total</p>
         </div>
 
+        <div className="flex items-center justify-between mb-6 gap-3">
+          <p className="text-sm text-site-muted">Showing {visibleStart}-{visibleEnd} of {total} records</p>
+        </div>
+
         {/* Stats */}
         <AnimatedList className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <StatCard icon={Users} label="Total Users" value={total} />
-          <StatCard icon={Crown} label="Pro Users" value={stats.pro} color="text-amber-600" bgColor="bg-amber-50" />
-          <StatCard icon={Check} label="Free Users" value={stats.free} color="text-gray-600" bgColor="bg-gray-50" />
+          <StatCard icon={Users} label="Total Users" value={statsDisplay.total} />
+          <StatCard icon={Crown} label="Pro Users" value={statsDisplay.pro} color="text-amber-600" bgColor="bg-amber-50" />
+          <StatCard icon={Check} label="Free Users" value={statsDisplay.free} color="text-gray-600" bgColor="bg-gray-50" />
         </AnimatedList>
 
         {/* Filters */}

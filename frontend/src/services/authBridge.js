@@ -6,11 +6,12 @@ export const authBridge = {
   // Sync Firebase user profile to backend
   syncProfileToBackend: async (user) => {
     try {
-      console.log(`🔄 Frontend: Syncing profile for ${user.email} with displayName: ${user.displayName}`);
+      console.log(`🔄 Frontend: Syncing profile for ${user.email} with displayName: ${user.displayName}, emailVerified: ${user.emailVerified}`);
       const response = await authAPI.syncProfile({
         email: user.email,
         displayName: user.displayName || user.email.split('@')[0],
-        firebaseUid: user.uid  // CRITICAL: Send the Firebase UID
+        firebaseUid: user.uid,  // CRITICAL: Send the Firebase UID
+        emailVerified: user.emailVerified  // CRITICAL: Send email verification status
       });
       console.log(`✅ Frontend: Profile sync successful`, response.data);
       return response.data;

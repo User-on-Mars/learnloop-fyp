@@ -15,8 +15,8 @@ const STEPS = [
 
 export default function CreateSkillMapWizard({ isOpen, onClose, onCreated, onSwitchToTemplates }) {
   const { skills, createSkillMap } = useSkillMap();
-  const { limits } = useSubscription();
-  const maxNodes = limits?.maxNodesPerSkillMap === -1 ? 15 : (limits?.maxNodesPerSkillMap ?? 5);
+  const { limits, isPro } = useSubscription();
+  const maxNodes = isPro ? 15 : (limits?.maxNodesPerSkillMap ?? 5);
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react'
-import { BookOpen, Layers, Clock, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { BookOpen, Layers, Clock, ChevronLeft, ChevronRight, RotateCcw, Search } from 'lucide-react'
 import { adminApi } from '../../api/adminApi'
 import MetricCard from '../../components/admin/MetricCard'
 import PageTransition from '../../components/admin/PageTransition'
 import ErrorState from '../../components/admin/ErrorState'
 import { SkeletonCard, SkeletonTable } from '../../components/admin/Skeleton'
 import Modal, { ModalButton } from '../../components/Modal'
+import FilterDropdown from '../../components/FilterDropdown'
 
 export default function AdminSkillMaps() {
   const [stats, setStats] = useState(null)
@@ -15,6 +16,10 @@ export default function AdminSkillMaps() {
   const [page, setPage] = useState(1)
   const [deleteModal, setDeleteModal] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [nodeFilter, setNodeFilter] = useState('all')
+  const [completionFilter, setCompletionFilter] = useState('all')
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -53,6 +58,47 @@ export default function AdminSkillMaps() {
     }
   }
 
+  const filteredSkillMaps = useMemo(() => {
+    const query = search.trim().toLowerCase()
+
+    return skillMaps.filter(map => {
+      const title = String(map.title || '').toLowerCase()
+      const owner = String(map.owner || '').toLowerCase()
+      const type = String(map.type || '').toLowerCase()
+      const nodes = Number(map.nodes || 0)
+      const completion = Number(String(map.completion || '0').replace('%', '')) || 0
+
+      const matchesSearch = !query || title.includes(query) || owner.includes(query)
+      const matchesType = typeFilter === 'all' || type === typeFilter.toLowerCase()
+      const matchesNodes =
+        nodeFilter === 'all' ||
+        (nodeFilter === 'small' && nodes <= 5) ||
+        (nodeFilter === 'medium' && nodes >= 6 && nodes <= 10) ||
+        (nodeFilter === 'large' && nodes > 10)
+      const matchesCompletion =
+        completionFilter === 'all' ||
+        (completionFilter === 'not-started' && completion === 0) ||
+        (completionFilter === 'in-progress' && completion > 0 && completion < 100) ||
+        (completionFilter === 'complete' && completion === 100)
+
+      return matchesSearch && matchesType && matchesNodes && matchesCompletion
+    })
+  }, [skillMaps, search, typeFilter, nodeFilter, completionFilter])
+
+  const hasFilters = search || typeFilter !== 'all' || nodeFilter !== 'all' || completionFilter !== 'all'
+
+  const resetFilters = () => {
+    setSearch('')
+    setTypeFilter('all')
+    setNodeFilter('all')
+    setCompletionFilter('all')
+    setPage(1)
+  }
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, typeFilter, nodeFilter, completionFilter])
+
   if (loading) {
     return (
       <PageTransition>
@@ -89,13 +135,10 @@ export default function AdminSkillMaps() {
 
   if (!stats) return null
 
-  // Pagination logic
-  const totalPages = Math.ceil(skillMaps.length / itemsPerPage)
+  const totalPages = Math.max(1, Math.ceil(filteredSkillMaps.length / itemsPerPage))
   const startIndex = (page - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const paginatedSkillMaps = skillMaps.slice(startIndex, endIndex)
-
-  const displaySkillMaps = paginatedSkillMaps.length > 0 ? paginatedSkillMaps : []
+  const displaySkillMaps = filteredSkillMaps.slice(startIndex, endIndex)
 
   return (
     <PageTransition>
@@ -136,10 +179,67 @@ export default function AdminSkillMaps() {
           />
         </div>
 
-        {/* Most Active Skill Maps */}
         <div className="bg-site-surface rounded-xl border border-site-border p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-site-ink">Skill maps — most active</h3>
+          <div className="flex flex-col gap-1 mb-5">
+            <h3 className="font-semibold text-site-ink">Skill maps - most active</h3>
+            <p className="text-xs text-site-faint">
+              {filteredSkillMaps.length} of {skillMaps.length} maps shown
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-site-border bg-site-bg/40 p-4 mb-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.5fr)_180px_180px_200px_auto] gap-3 items-center">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-site-faint" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search title or owner"
+                  className="w-full pl-10 pr-3 py-2 border border-site-border rounded-xl bg-white text-sm text-site-ink outline-none focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15"
+                />
+              </div>
+              <FilterDropdown
+                value={typeFilter}
+                onChange={setTypeFilter}
+                minWidth={150}
+                options={[
+                  { value: 'all', label: 'All types' },
+                  { value: 'template', label: 'Template' },
+                  { value: 'custom', label: 'Custom' }
+                ]}
+              />
+              <FilterDropdown
+                value={nodeFilter}
+                onChange={setNodeFilter}
+                minWidth={150}
+                options={[
+                  { value: 'all', label: 'All nodes' },
+                  { value: 'small', label: '1-5 nodes' },
+                  { value: 'medium', label: '6-10 nodes' },
+                  { value: 'large', label: '10+ nodes' }
+                ]}
+              />
+              <FilterDropdown
+                value={completionFilter}
+                onChange={setCompletionFilter}
+                minWidth={170}
+                options={[
+                  { value: 'all', label: 'All completion' },
+                  { value: 'not-started', label: 'Not started' },
+                  { value: 'in-progress', label: 'In progress' },
+                  { value: 'complete', label: 'Complete' }
+                ]}
+              />
+              <button
+                type="button"
+                onClick={resetFilters}
+                disabled={!hasFilters}
+                className="h-10 px-3 rounded-xl border border-site-border bg-white text-site-muted hover:bg-site-bg disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center"
+                title="Reset filters"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -157,7 +257,7 @@ export default function AdminSkillMaps() {
                 {displaySkillMaps.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="px-4 py-8 text-center text-site-faint">
-                      No skill maps found
+                      {hasFilters ? 'No skill maps match these filters' : 'No skill maps found'}
                     </td>
                   </tr>
                 ) : (
@@ -187,7 +287,7 @@ export default function AdminSkillMaps() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-site-border">
               <p className="text-sm text-site-faint">
-                Showing {startIndex + 1} to {Math.min(endIndex, skillMaps.length)} of {skillMaps.length} skill maps
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredSkillMaps.length)} of {filteredSkillMaps.length} skill maps
               </p>
               <div className="flex items-center gap-2">
                 <button

@@ -5,21 +5,22 @@ export default function AdminHeader({ onMenuToggle, adminName, adminAvatar }) {
   const initial = adminName ? adminName.charAt(0).toUpperCase() : '?'
 
   return (
-    <header className="h-16 sticky top-0 z-30 bg-site-surface border-b border-site-border flex items-center justify-between px-4">
-      {/* Hamburger — mobile only */}
-      <button
-        onClick={onMenuToggle}
-        className="md:hidden p-2 text-site-muted hover:text-site-ink hover:bg-site-soft rounded-lg transition-colors"
-        aria-label="Toggle menu"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
+    <header className="h-16 sticky top-0 z-30 bg-site-surface border-b border-site-border">
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 lg:px-8">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={onMenuToggle}
+          className="md:hidden p-2 text-site-muted hover:text-site-ink hover:bg-site-soft rounded-lg transition-colors"
+          aria-label="Toggle menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
 
-      {/* Spacer on desktop (hamburger hidden, keeps right side aligned) */}
-      <div className="hidden md:block" />
+        {/* Spacer on desktop (hamburger hidden, keeps right side aligned) */}
+        <div className="hidden md:block" />
 
-      {/* Right side — admin info */}
-      <div className="flex items-center gap-3">
+        {/* Right side — admin info */}
+        <div className="flex items-center gap-3">
         {/* Notification Bell */}
         <NotificationBell />
 
@@ -38,6 +39,7 @@ export default function AdminHeader({ onMenuToggle, adminName, adminAvatar }) {
           {initial}
         </div>
       </div>
+    </div>
     </header>
   )
 }

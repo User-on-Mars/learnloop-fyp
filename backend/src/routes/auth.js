@@ -14,7 +14,12 @@ const router = Router()
 const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(8)
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/\d/, 'Password must contain at least one number')
+    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Password must contain at least one special character')
 })
 
 const loginSchema = z.object({
@@ -25,18 +30,18 @@ const loginSchema = z.object({
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = registerSchema.parse(req.body)
-    
+
     // Validate email domain
     const emailValidation = validateEmail(email)
     if (!emailValidation.valid) {
       return res.status(400).json({ message: emailValidation.message })
     }
-    
+
     const existing = await User.findOne({ email })
     if (existing) {
       // Check if user is banned
       if (existing.accountStatus === 'banned') {
-        return res.status(403).json({ 
+        return res.status(403).json({
           message: 'This account has been banned and cannot be used.',
           accountStatus: 'banned'
         })
@@ -47,12 +52,12 @@ router.post('/register', async (req, res) => {
       }
       return res.status(409).json({ message: 'Email already registered' })
     }
-    
+
     // Note: We don't create the user in our database yet
     // Firebase will handle account creation and email verification
     // User will be created in our DB only after email verification via sync-profile
-    return res.status(201).json({ 
-      message: 'Please verify your email to complete registration. Check your inbox for the verification link.' 
+    return res.status(201).json({
+      message: 'Please verify your email to complete registration. Check your inbox for the verification link.'
     })
   } catch (e){
     return res.status(400).json({ message: e.message })
@@ -64,21 +69,21 @@ router.post('/login', async (req, res) => {
     const { email, password } = loginSchema.parse(req.body)
     const user = await User.findOne({ email })
     if (!user) return res.status(401).json({ message: 'Invalid credentials' })
-    
+
     // Check if user is banned before validating password
     if (user.accountStatus === 'banned') {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: 'This account has been banned and cannot access the platform.',
         accountStatus: 'banned'
       })
     }
-    
+
     const ok = await bcrypt.compare(password, user.passwordHash)
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' })
-    
+
     // Update lastLoginAt
     await User.updateOne({ _id: user._id }, { lastLoginAt: new Date() })
-    
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' })
     return res.json({ token })
   } catch (e){
@@ -131,24 +136,32 @@ router.post('/reset', async (req, res) => {
 // This is where we create the user in our database AFTER email verification
 router.post('/sync-profile', async (req, res) => {
   try {
-    const { email, displayName, firebaseUid } = req.body
+    const { email, displayName, firebaseUid, emailVerified } = req.body
     if (!email) return res.status(400).json({ message: 'Email is required' })
-    
+
     // Validate email domain
     const emailValidation = validateEmail(email)
     if (!emailValidation.valid) {
       return res.status(400).json({ message: emailValidation.message })
     }
-    
+
     const name = displayName || email.split('@')[0]
-    
-    console.log(`🔄 Syncing profile for ${email} with name: ${name}`)
-    
+
+    console.log(`🔄 Syncing profile for ${email} with name: ${name}, emailVerified: ${emailVerified}`)
+
     // Find user by email (NOT by firebaseUid, since auth middleware already created it)
     let user = await User.findOne({ email })
     if (!user) {
+      // Only create user if they've verified their email
+      if (!emailVerified) {
+        console.log(`❌ Cannot create user ${email} - email not verified`)
+        return res.status(403).json({
+          message: 'Please verify your email before accessing the platform. Check your inbox for the verification link.',
+          emailVerified: false
+        })
+      }
+
       console.log(`📝 Creating new user: ${email}`)
-      // Only create user if they've verified their email (Firebase handles this)
       user = await User.create({
         name,
         email,
@@ -156,7 +169,7 @@ router.post('/sync-profile', async (req, res) => {
         passwordHash: 'firebase-auth-user',
         role: 'user',
         accountStatus: 'active',
-        emailVerified: true,  // Firebase users are verified through Firebase
+        emailVerified: true,  // Only create if verified
         lastLoginAt: new Date()
       })
       console.log(`✅ User created: ${user._id} with firebaseUid: ${user.firebaseUid}`)
@@ -164,12 +177,12 @@ router.post('/sync-profile', async (req, res) => {
       // Check if user is banned
       if (user.accountStatus === 'banned') {
         console.log(`🚫 Banned user attempted to sync profile: ${email}`)
-        return res.status(403).json({ 
+        return res.status(403).json({
           message: 'This account has been banned and cannot access the platform.',
           accountStatus: 'banned'
         })
       }
-      
+
       console.log(`👤 User exists: ${user._id}, current name: ${user.name}, current firebaseUid: ${user.firebaseUid}`)
       // Always update name if displayName is provided and different
       const updateData = { lastLoginAt: new Date() }
@@ -191,11 +204,11 @@ router.post('/sync-profile', async (req, res) => {
         user = { ...user, ...updateData }
       }
     }
-    
+
     // Clear leaderboard cache so new name appears immediately
     await LeaderboardService.clearCache()
     console.log(`✅ Leaderboard cache cleared`)
-    
+
     console.log(`✅ Profile sync complete for ${email}`)
     const freshUser = await User.findOne({ email })
     return res.json({ ok: true, user: { email: freshUser.email, name: freshUser.name, firebaseUid: freshUser.firebaseUid, avatar: freshUser.avatar } })

@@ -4,6 +4,8 @@ import { auth, signInWithGoogle } from "../firebase.js";
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { UserPlus, Loader, Eye, EyeOff } from "lucide-react";
 import LogoMark from "../components/LogoMark";
+import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
+import { validatePassword } from "../utils/passwordValidator";
 
 /* Same leaf decoration used on the landing-page hero */
 function LeafDecoration({ className = "" }) {
@@ -44,6 +46,14 @@ export default function Signup() {
         setErr("Passwords do not match.");
         setLoading(false); return;
       }
+
+      // Validate password strength
+      const validation = validatePassword(password);
+      if (!validation.isValid) {
+        setErr(validation.errors[0]); // Show first error
+        setLoading(false); return;
+      }
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await sendEmailVerification(userCredential.user);
       await auth.signOut();
@@ -54,7 +64,7 @@ export default function Signup() {
       const map = {
         "auth/email-already-in-use": "This email is already registered. Please login instead.",
         "auth/invalid-email": "Please enter a valid email address.",
-        "auth/weak-password": "Password should be at least 6 characters.",
+        "auth/weak-password": "Password does not meet security requirements.",
         "auth/operation-not-allowed": "Email/password accounts are not enabled.",
       };
       setErr(map[code] || e.message || "Sign-up failed. Please try again.");
@@ -229,7 +239,7 @@ export default function Signup() {
                       <input
                         id="signup-pw" type={showPassword ? "text" : "password"} value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        required placeholder="At least 6 characters"
+                        required placeholder="Create a strong password"
                         className="w-full h-11 px-4 pr-12 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                         autoComplete="new-password"
                       />
@@ -240,6 +250,7 @@ export default function Signup() {
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+                    {password && <div className="mt-3"><PasswordStrengthMeter password={password} /></div>}
                   </div>
 
                   <div>

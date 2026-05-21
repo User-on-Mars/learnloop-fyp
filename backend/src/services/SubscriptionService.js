@@ -214,6 +214,22 @@ class SubscriptionService {
     if (periodEnd) sub.currentPeriodEnd = periodEnd;
     sub.currentPeriodStart = new Date();
     await sub.save();
+
+    // Reset publish request quota when upgrading to PRO
+    // This allows immediate access to PRO limits
+    const User = (await import('../models/User.js')).default;
+    const now = new Date();
+    const quotaReset = new Date(now);
+    quotaReset.setDate(quotaReset.getDate() + 30);
+
+    await User.updateOne(
+      { firebaseUid: userId },
+      {
+        publishRequestsThisMonth: 0,
+        monthlyQuotaReset: quotaReset
+      }
+    );
+
     return sub;
   }
 
@@ -229,6 +245,22 @@ class SubscriptionService {
     sub.currentPeriodEnd = null;
     sub.canceledAt = null;
     await sub.save();
+
+    // Reset publish request quota when downgrading to Free
+    // This gives the user their 1 free request even if they used 5 on PRO
+    const User = (await import('../models/User.js')).default;
+    const now = new Date();
+    const quotaReset = new Date(now);
+    quotaReset.setDate(quotaReset.getDate() + 30);
+
+    await User.updateOne(
+      { firebaseUid: userId },
+      {
+        publishRequestsThisMonth: 0,
+        monthlyQuotaReset: quotaReset
+      }
+    );
+
     return sub;
   }
 
