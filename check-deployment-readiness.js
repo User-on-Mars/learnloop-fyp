@@ -8,10 +8,6 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -264,20 +260,18 @@ function checkFirebaseConfig() {
   }
 }
 
-// Check for console.log in production code
+// Check production logging behavior
 function checkConsoleStatements() {
-  section('Checking for Console Statements');
-  
-  try {
-    const backendSrc = path.join(__dirname, 'backend', 'src');
-    const frontendSrc = path.join(__dirname, 'frontend', 'src');
-    
-    // This is a simplified check - in real scenario, use grep or similar
-    checkWarning('Manual check recommended: Search for console.log in src files');
-    checkWarning('Run: grep -r "console.log" backend/src frontend/src');
-  } catch (error) {
-    checkWarning('Could not check for console statements');
+  section('Checking Production Logging');
+
+  const viteConfig = readFile('frontend/vite.config.js');
+  if (viteConfig && viteConfig.includes("drop: mode === 'production' ? ['console', 'debugger']")) {
+    checkPassed('Frontend production build strips console and debugger statements');
+  } else {
+    checkWarning('Frontend production build should strip console and debugger statements');
   }
+
+  checkPassed('Backend runtime logging is allowed for operational observability');
 }
 
 // Check Docker configuration
@@ -297,23 +291,18 @@ function checkDockerConfig() {
   }
 }
 
-// Check documentation
+// Check deployment artifact documentation policy
 function checkDocumentation() {
-  section('Checking Documentation');
-  
-  const docs = [
-    'README.md',
-    'TESTING_AND_DEPLOYMENT_GUIDE.md',
-    'PRE_DEPLOYMENT_CHECKLIST.md',
-    'BUG_CHECK.md'
-  ];
-  
-  for (const doc of docs) {
-    if (fileExists(doc)) {
-      checkPassed(`${doc} exists`);
-    } else {
-      checkWarning(`${doc} not found`);
-    }
+  section('Checking Documentation Policy');
+
+  const rootMarkdownFiles = fs
+    .readdirSync(__dirname)
+    .filter((file) => file.toLowerCase().endsWith('.md'));
+
+  if (rootMarkdownFiles.length === 0) {
+    checkPassed('Root Markdown docs are excluded from deployment artifact');
+  } else {
+    checkWarning(`Root Markdown docs still present: ${rootMarkdownFiles.join(', ')}`);
   }
 }
 
