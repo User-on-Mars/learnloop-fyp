@@ -94,56 +94,74 @@ router.post('/login', async (req, res) => {
 
 // Very simple reset token using JWT for demo; in production use a separate token store
 router.post('/forgot', async (req, res) => {
-  const email = req.body.email
-  const user = await User.findOne({ email })
-  if (user?.accountStatus === 'banned' || user?.accountStatus === 'deleted') {
-    return res.json({ ok: true }) // do not reveal account state
-  }
-  const clientUrl = (process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5173').replace(/\/$/, '')
-  let link = `${clientUrl}/forgot`
-
   try {
-    const firebaseResetLink = await admin.auth().generatePasswordResetLink(email)
-    const resetUrl = new URL(firebaseResetLink)
-    const oobCode = resetUrl.searchParams.get('oobCode')
-    if (!oobCode) throw new Error('Firebase reset link did not include an oobCode')
-    link = `${clientUrl}/reset?oobCode=${encodeURIComponent(oobCode)}&email=${encodeURIComponent(email)}`
-  } catch (error) {
-    console.error('Failed to generate Firebase password reset link:', error.message)
-    return res.json({ ok: true })
-  }
+    const email = req.body.email
+    if (!email) return res.status(400).json({ message: 'Email is required' })
 
-  // Transport (dev-friendly: log to console if SMTP not set)
-  if (!process.env.SMTP_HOST){
-    console.log('[DEV] Password reset link:', link)
-    return res.json({ ok: true, devLink: link })
-  }
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587), secure: false,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-  })
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || 'no-reply@learnloop.local',
-    to: email,
-    subject: 'Reset your password',
-    text: `Reset your LearnLoop password using this link: ${link}`,
-    html: `
-      <div style="margin:0;padding:28px;background:#f4f7f2;font-family:Inter,Arial,sans-serif;color:#1c1f1a;">
-        <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e2e6dc;border-radius:16px;overflow:hidden;">
-          <div style="background:#4f7942;color:#ffffff;padding:22px 26px;">
-            <h1 style="margin:0;font-size:22px;line-height:1.25;">Reset your LearnLoop password</h1>
-          </div>
-          <div style="padding:26px;">
-            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3d4a38;">We received a request to reset your password. This link expires soon, so use it when you're ready.</p>
-            <a href="${link}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#2e5023;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 18px;border-radius:12px;">Reset password</a>
-            <p style="margin:22px 0 8px;font-size:12px;line-height:1.5;color:#565c52;">If the button does not open, copy and paste this link into your browser:</p>
-            <p style="word-break:break-all;margin:0;font-size:12px;line-height:1.5;"><a href="${link}" target="_blank" rel="noopener noreferrer" style="color:#2e5023;">${link}</a></p>
+    const user = await User.findOne({ email })
+    if (user?.accountStatus === 'banned' || user?.accountStatus === 'deleted') {
+      return res.json({ ok: true }) // do not reveal account state
+    }
+    const clientUrl = (process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5173').replace(/\/$/, '')
+    let link = `${clientUrl}/forgot`
+
+    try {
+      const firebaseResetLink = await admin.auth().generatePasswordResetLink(email)
+      const resetUrl = new URL(firebaseResetLink)
+      const oobCode = resetUrl.searchParams.get('oobCode')
+      if (!oobCode) throw new Error('Firebase reset link did not include an oobCode')
+      link = `${clientUrl}/reset?oobCode=${encodeURIComponent(oobCode)}&email=${encodeURIComponent(email)}`
+    } catch (error) {
+      console.error('Failed to generate Firebase password reset link:', error.message)
+      return res.json({ ok: true })
+    }
+
+    // Transport (dev-friendly: log to console if SMTP not set)
+    if (!process.env.SMTP_HOST){
+      console.log('[DEV] Password reset link:', link)
+      return res.json({ ok: true, devLink: link })
+    }
+
+    const fromAddress = process.env.SMTP_FROM && !process.env.SMTP_FROM.includes('learnloop.local')
+      ? process.env.SMTP_FROM
+      : `LearnLoop <${process.env.SMTP_USER}>`
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: false,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    })
+
+    await transporter.sendMail({
+      from: fromAddress,
+      to: email,
+      subject: 'Reset your password',
+      text: `Reset your LearnLoop password using this link: ${link}`,
+      html: `
+        <div style="margin:0;padding:28px;background:#f4f7f2;font-family:Inter,Arial,sans-serif;color:#1c1f1a;">
+          <div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e2e6dc;border-radius:16px;overflow:hidden;">
+            <div style="background:#4f7942;color:#ffffff;padding:22px 26px;">
+              <h1 style="margin:0;font-size:22px;line-height:1.25;">Reset your LearnLoop password</h1>
+            </div>
+            <div style="padding:26px;">
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3d4a38;">We received a request to reset your password. This link expires soon, so use it when you're ready.</p>
+              <a href="${link}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#2e5023;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 18px;border-radius:12px;">Reset password</a>
+              <p style="margin:22px 0 8px;font-size:12px;line-height:1.5;color:#565c52;">If the button does not open, copy and paste this link into your browser:</p>
+              <p style="word-break:break-all;margin:0;font-size:12px;line-height:1.5;"><a href="${link}" target="_blank" rel="noopener noreferrer" style="color:#2e5023;">${link}</a></p>
+            </div>
           </div>
         </div>
-      </div>
-    `
-  })
-  return res.json({ ok: true })
+      `
+    })
+    return res.json({ ok: true })
+  } catch (error) {
+    console.error('Password reset email failed:', error.message)
+    return res.json({ ok: true })
+  }
 })
 
 router.post('/reset', async (req, res) => {

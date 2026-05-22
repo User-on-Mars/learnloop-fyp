@@ -61,6 +61,10 @@ import PaymentCleanupScheduler from "./services/PaymentCleanupScheduler.js";
 dotenv.config();
 const app = express();
 const server = createServer(app);
+const corsOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 
 // Compression middleware for faster responses
 app.use(compression({
@@ -87,7 +91,11 @@ if (process.env.NODE_ENV === 'production') {
 // DEV CORS: allow all origins + preflight (fixes your browser's OPTIONS failure)
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      return callback(null, corsOrigins.includes(normalizedOrigin));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
