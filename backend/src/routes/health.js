@@ -5,6 +5,7 @@
  */
 
 import express from 'express';
+import os from 'os';
 import { connectDB } from '../config/db.js';
 import cacheService from '../services/CacheService.js';
 import SystemMonitoringService from '../services/SystemMonitoringService.js';
@@ -118,7 +119,7 @@ router.get('/health/detailed', async (req, res) => {
       platform: process.platform,
       arch: process.arch,
       cpuUsage: process.cpuUsage(),
-      loadAverage: process.platform !== 'win32' ? require('os').loadavg() : null
+      loadAverage: process.platform !== 'win32' ? os.loadavg() : null
     };
 
     // Set overall status
