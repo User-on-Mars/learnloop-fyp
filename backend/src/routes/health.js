@@ -44,7 +44,7 @@ router.get('/health/detailed', async (req, res) => {
   try {
     // Check MongoDB connection
     try {
-      const mongoose = await import('mongoose');
+      const { default: mongoose } = await import('mongoose');
       const dbState = mongoose.connection.readyState;
       healthStatus.services.mongodb = {
         status: dbState === 1 ? 'healthy' : 'unhealthy',
@@ -142,7 +142,7 @@ router.get('/health/detailed', async (req, res) => {
 router.get('/health/ready', async (req, res) => {
   try {
     // Check critical dependencies
-    const mongoose = await import('mongoose');
+    const { default: mongoose } = await import('mongoose');
     const dbReady = mongoose.connection.readyState === 1;
     
     let cacheReady = false;
