@@ -47,7 +47,7 @@ export default function MobileNav() {
   const runningCount = activeSessions.filter((s) => s.isRunning).length;
 
   // Don't show on public/auth pages
-  const publicPaths = ["/", "/login", "/signup", "/forgot", "/features", "/about", "/contact"];
+  const publicPaths = ["/", "/login", "/signup", "/forgot", "/reset", "/features", "/about", "/contact"];
   if (!user || publicPaths.includes(location.pathname)) return null;
 
   const isActive = (path) => {

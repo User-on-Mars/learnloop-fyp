@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { auth } from "../firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
 import { Mail, ArrowLeft, Loader, CheckCircle } from "lucide-react";
 import LogoMark from "../components/LogoMark";
+import { authAPI } from "../api/client";
 
 function LeafDecoration({ className = "" }) {
   return (
@@ -34,15 +33,10 @@ export default function ForgotPassword() {
     e.preventDefault();
     setErr(""); setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      await authAPI.forgotPassword(email);
       setSent(true);
     } catch (e) {
-      const code = e?.code || "";
-      const map = {
-        "auth/invalid-email": "Enter a valid email address.",
-        "auth/user-not-found": "If that email exists, a reset link will be sent.",
-      };
-      setErr(map[code] || e.message || "Failed to send reset email.");
+      setErr(e?.response?.data?.message || e.message || "Failed to send reset email.");
     } finally { setLoading(false); }
   }
 

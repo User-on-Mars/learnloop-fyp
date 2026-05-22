@@ -79,7 +79,7 @@ export default function ActiveSessionPopup() {
 
     // Don't show on auth pages or log-practice
     if (!user) return null;
-    const hiddenPages = ['/login', '/signup', '/forgot', '/'];
+    const hiddenPages = ['/login', '/signup', '/forgot', '/reset', '/'];
     if (hiddenPages.includes(location.pathname)) return null;
 
     // Hide on admin panel pages

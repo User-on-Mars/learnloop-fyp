@@ -20,6 +20,7 @@ import MarketingLayout from "./layout/MarketingLayout";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import LogPractice from "./pages/LogPractice";
@@ -180,6 +181,7 @@ const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/signup", element: <Signup /> },
       { path: "/forgot", element: <ForgotPassword /> },
+      { path: "/reset", element: <ResetPassword /> },
       {
         element: <Protected><AppShell /></Protected>,
         children: [
