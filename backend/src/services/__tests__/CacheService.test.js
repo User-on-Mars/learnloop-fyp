@@ -11,6 +11,7 @@ const mockRedisClient = {
   keys: jest.fn(),
   flushAll: jest.fn(),
   info: jest.fn(),
+  ping: jest.fn(),
   on: jest.fn()
 };
 
@@ -156,6 +157,35 @@ describe('CacheService', () => {
       ]);
     });
 
+    it('should support skill map invalidation alias', async () => {
+      const skillId = 'skill123';
+      const userId = 'user456';
+
+      mockRedisClient.keys.mockResolvedValueOnce([]);
+      mockRedisClient.keys.mockResolvedValueOnce([]);
+      mockRedisClient.del.mockResolvedValue(2);
+
+      const result = await cacheService.invalidateSkillMap(skillId, userId);
+
+      expect(result).toBe(true);
+      expect(mockRedisClient.del).toHaveBeenCalledWith([
+        `skill_map:${userId}:${skillId}`,
+        `user_progression:${userId}:${skillId}`
+      ]);
+    });
+
+    it('should invalidate user progression cache', async () => {
+      const userId = 'user456';
+      const skillId = 'all_skills';
+
+      mockRedisClient.del.mockResolvedValue(1);
+
+      const result = await cacheService.invalidateUserProgression(userId, skillId);
+
+      expect(result).toBe(true);
+      expect(mockRedisClient.del).toHaveBeenCalledWith(`user_progression:${userId}:${skillId}`);
+    });
+
     it('should handle cache invalidation when Redis is unavailable', async () => {
       cacheService.isConnected = false;
 
@@ -163,6 +193,24 @@ describe('CacheService', () => {
 
       expect(result).toBe(false);
       expect(mockRedisClient.del).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Connection Health', () => {
+    it('should ping Redis when connected', async () => {
+      mockRedisClient.ping.mockResolvedValue('PONG');
+
+      const result = await cacheService.ping();
+
+      expect(result).toBe('PONG');
+      expect(mockRedisClient.ping).toHaveBeenCalled();
+    });
+
+    it('should throw when pinging without a Redis connection', async () => {
+      cacheService.isConnected = false;
+
+      await expect(cacheService.ping()).rejects.toThrow('Redis not connected');
+      expect(mockRedisClient.ping).not.toHaveBeenCalled();
     });
   });
 

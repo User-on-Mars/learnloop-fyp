@@ -36,6 +36,29 @@ const completeSessionSchema = z.object({
  * Implements Requirements: 2.1, 2.2, 2.3, 2.4
  */
 class SessionController {
+  /**
+   * GET /sessions
+   * Get recent sessions for the current user
+   */
+  static async getSessions(req, res) {
+    try {
+      const userId = req.user.id;
+      const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 1000, 1), 1000);
+
+      const sessions = await LearningSession.find({ userId })
+        .sort({ startTime: -1 })
+        .limit(limit)
+        .lean();
+
+      res.json({ sessions });
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+      res.status(500).json({
+        message: 'Failed to fetch sessions',
+        error: error.message
+      });
+    }
+  }
   
   /**
    * POST /sessions/start

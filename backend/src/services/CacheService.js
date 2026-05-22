@@ -35,30 +35,29 @@ class CacheService {
       if (process.env.DISABLE_REDIS === 'true') {
         console.log('Redis disabled via environment variable');
         this.isConnected = false;
-        return;
+        return false;
       }
 
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      let hasLoggedConnectionError = false;
       
       this.client = createClient({
         url: redisUrl,
-        retry_strategy: (options) => {
-          if (options.error && options.error.code === 'ECONNREFUSED') {
-            console.error('Redis connection refused');
-            return new Error('Redis connection refused');
+        socket: {
+          reconnectStrategy: (retries) => {
+            if (retries >= 3) {
+              return false;
+            }
+            return Math.min(retries * 100, 1000);
           }
-          if (options.total_retry_time > 1000 * 60 * 60) {
-            return new Error('Retry time exhausted');
-          }
-          if (options.attempt > 10) {
-            return undefined;
-          }
-          return Math.min(options.attempt * 100, 3000);
         }
       });
 
       this.client.on('error', (err) => {
-        console.error('Redis Client Error:', err);
+        if (!hasLoggedConnectionError) {
+          console.error('Redis Client Error:', err.message);
+          hasLoggedConnectionError = true;
+        }
         this.isConnected = false;
       });
 
@@ -78,11 +77,14 @@ class CacheService {
       });
 
       await this.client.connect();
+      return true;
       
     } catch (error) {
-      console.error('Failed to connect to Redis:', error);
+      console.error('Failed to connect to Redis:', error.message);
       this.isConnected = false;
+      this.client?.destroy?.();
       // Don't throw the error, just log it and continue without Redis
+      return false;
     }
   }
 
@@ -101,6 +103,17 @@ class CacheService {
    */
   isAvailable() {
     return this.isConnected && this.client;
+  }
+
+  /**
+   * Ping Redis to verify the connection is responsive
+   */
+  async ping() {
+    if (!this.isAvailable()) {
+      throw new Error('Redis not connected');
+    }
+
+    return this.client.ping();
   }
 
   /**
@@ -356,6 +369,29 @@ class CacheService {
       return true;
     } catch (error) {
       console.error('Error invalidating skill map cache:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Backward-compatible alias for skill map invalidation
+   */
+  async invalidateSkillMap(skillId, userId) {
+    return this.invalidateSkillMapCache(skillId, userId);
+  }
+
+  /**
+   * Invalidate cached user progression data
+   */
+  async invalidateUserProgression(userId, skillId) {
+    if (!this.isAvailable()) return false;
+
+    try {
+      const key = `${this.keyPrefixes.USER_PROGRESSION}${userId}:${skillId}`;
+      await this.client.del(key);
+      return true;
+    } catch (error) {
+      console.error('Error invalidating user progression cache:', error);
       return false;
     }
   }

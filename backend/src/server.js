@@ -186,11 +186,21 @@ async function startServer() {
     await connectDB();
     console.log('✅ MongoDB connected');
     
-    // Try to connect to Redis cache (optional)
+    // Connect to Redis cache
     try {
-      await cacheService.connect();
-      console.log('✅ Redis cache connected');
+      const redisConnected = await cacheService.connect();
+      if (redisConnected) {
+        console.log('✅ Redis cache connected');
+      } else {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('Redis is required in production but did not connect');
+        }
+        console.log('ℹ️ Redis cache not connected - continuing without caching');
+      }
     } catch (redisError) {
+      if (process.env.NODE_ENV === 'production') {
+        throw redisError;
+      }
       console.warn('⚠️ Redis cache unavailable - continuing without caching:', redisError.message);
     }
     
@@ -230,8 +240,20 @@ async function startServer() {
     console.log('✅ Payment cleanup scheduler started');
     
     // Start the server
-    const serverInstance = server.listen(PORT, () => {
-      console.log(`🚀 API running on http://localhost:${PORT}`);
+    const serverInstance = await new Promise((resolve, reject) => {
+      const onError = (error) => {
+        if (error.code === 'EADDRINUSE') {
+          error.message = `Port ${PORT} is already in use. Stop the existing server or set PORT to another value.`;
+        }
+        reject(error);
+      };
+
+      server.once('error', onError);
+      server.listen(PORT, () => {
+        server.off('error', onError);
+        console.log(`🚀 API running on http://localhost:${PORT}`);
+        resolve(server);
+      });
     });
     
     return serverInstance;

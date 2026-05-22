@@ -26,8 +26,6 @@ class WebSocketService {
 
     this.setupMiddleware();
     this.setupEventHandlers();
-    
-    console.log('✅ WebSocket service initialized');
   }
 
   /**

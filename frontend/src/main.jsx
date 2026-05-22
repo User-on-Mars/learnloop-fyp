@@ -95,7 +95,8 @@ function AdminProtected({ children }) {
           `${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/admin/verify`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setIsAdmin(res.ok);
+        const data = await res.json().catch(() => ({ admin: false }));
+        setIsAdmin(Boolean(data.admin));
       } catch {
         setIsAdmin(false);
       }
@@ -238,10 +239,19 @@ const router = createBrowserRouter([
       },
     ]
   }
-]);
+], {
+  future: {
+    v7_startTransition: true,
+  },
+});
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <RouterProvider
+      router={router}
+      future={{
+        v7_startTransition: true,
+      }}
+    />
   </React.StrictMode>
 );

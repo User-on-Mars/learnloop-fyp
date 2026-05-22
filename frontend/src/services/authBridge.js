@@ -1,25 +1,55 @@
 import { authAPI } from '../api/client';
 import { authService } from './auth';
 
+const profileSyncState = {
+  lastKey: null,
+  inFlight: new Map()
+};
+
+function getProfileSyncKey(user) {
+  return [
+    user.uid,
+    user.email,
+    user.displayName || '',
+    user.emailVerified ? 'verified' : 'unverified'
+  ].join('|');
+}
+
 // Bridge between Firebase auth and backend JWT
 export const authBridge = {
   // Sync Firebase user profile to backend
   syncProfileToBackend: async (user) => {
-    try {
-      console.log(`🔄 Frontend: Syncing profile for ${user.email} with displayName: ${user.displayName}, emailVerified: ${user.emailVerified}`);
-      const response = await authAPI.syncProfile({
-        email: user.email,
-        displayName: user.displayName || user.email.split('@')[0],
-        firebaseUid: user.uid,  // CRITICAL: Send the Firebase UID
-        emailVerified: user.emailVerified  // CRITICAL: Send email verification status
-      });
-      console.log(`✅ Frontend: Profile sync successful`, response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Frontend: Profile sync failed:', error);
-      // Don't throw - this is non-critical
+    const syncKey = getProfileSyncKey(user);
+    if (profileSyncState.lastKey === syncKey) {
       return null;
     }
+
+    if (profileSyncState.inFlight.has(syncKey)) {
+      return profileSyncState.inFlight.get(syncKey);
+    }
+
+    const syncPromise = (async () => {
+      try {
+        const response = await authAPI.syncProfile({
+          email: user.email,
+          displayName: user.displayName || user.email.split('@')[0],
+          firebaseUid: user.uid,
+          emailVerified: user.emailVerified
+        });
+        profileSyncState.lastKey = syncKey;
+        return response.data;
+      } catch (error) {
+        if (error.code !== 'ERR_NETWORK') {
+          console.error('Frontend profile sync failed:', error);
+        }
+        return null;
+      } finally {
+        profileSyncState.inFlight.delete(syncKey);
+      }
+    })();
+
+    profileSyncState.inFlight.set(syncKey, syncPromise);
+    return syncPromise;
   },
 
   // Register user in backend after Firebase signup
@@ -28,12 +58,11 @@ export const authBridge = {
       const userData = {
         name: user.displayName || user.email.split('@')[0],
         email: user.email,
-        password: 'firebase_user_' + user.uid // Placeholder password for Firebase users
+        password: 'firebase_user_' + user.uid
       };
-      
+
       await authAPI.register(userData);
     } catch (error) {
-      // User might already exist in backend, try to login
       if (error.response?.status === 409) {
         return await authBridge.loginToBackend(user);
       }
@@ -48,13 +77,12 @@ export const authBridge = {
         email: user.email,
         password: 'firebase_user_' + user.uid
       };
-      
+
       const response = await authAPI.login(loginData);
       const token = response.data.token;
-      
-      // Store JWT token for API calls
+
       authService.setToken(token);
-      
+
       return token;
     } catch (error) {
       console.error('Backend login failed:', error);
@@ -66,14 +94,10 @@ export const authBridge = {
   handleFirebaseAuth: async (user) => {
     if (user) {
       try {
-        // Sync profile first to ensure display name is saved
         await authBridge.syncProfileToBackend(user);
-        
-        // Then try to login, if that fails, register
         await authBridge.loginToBackend(user);
       } catch (error) {
         if (error.response?.status === 401) {
-          // User doesn't exist in backend, register them
           await authBridge.registerInBackend(user);
           await authBridge.loginToBackend(user);
         } else {
@@ -81,8 +105,9 @@ export const authBridge = {
         }
       }
     } else {
-      // User logged out, remove JWT token
       authService.removeToken();
+      profileSyncState.lastKey = null;
+      profileSyncState.inFlight.clear();
     }
   }
 };

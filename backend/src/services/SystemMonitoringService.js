@@ -30,6 +30,7 @@ class SystemMonitoringService {
     CPU_USAGE: 80,            // 80% CPU usage
     MEMORY_USAGE: 95,         // 95% OS memory usage (85% was too aggressive — OS disk cache inflates this)
     HEAP_USAGE: 85,           // 85% Node.js heap usage (this is the meaningful metric)
+    MIN_HEAP_USED_MB_FOR_PERCENT_ALERT: 128, // Avoid noisy local alerts when V8's committed heap is tiny
     ERROR_RATE: 10,           // 10 errors per minute
     RESPONSE_TIME: 2000,      // 2 seconds average response time
     DISK_USAGE: 90,           // 90% disk usage
@@ -739,12 +740,17 @@ class SystemMonitoringService {
    */
   _checkResourceThresholds(resourceUsage) {
     // Check Node.js heap usage (the meaningful metric for the backend process)
-    if (resourceUsage.memory.percentage > SystemMonitoringService.ALERT_THRESHOLDS.HEAP_USAGE) {
+    const heapUsedMB = resourceUsage.memory.used / 1024 / 1024;
+    if (
+      heapUsedMB >= SystemMonitoringService.ALERT_THRESHOLDS.MIN_HEAP_USED_MB_FOR_PERCENT_ALERT &&
+      resourceUsage.memory.percentage > SystemMonitoringService.ALERT_THRESHOLDS.HEAP_USAGE
+    ) {
       this._triggerAlert('high_heap_usage', {
-        heapUsedMB: Math.round(resourceUsage.memory.used / 1024 / 1024),
+        heapUsedMB: Math.round(heapUsedMB),
         heapTotalMB: Math.round(resourceUsage.memory.total / 1024 / 1024),
         heapPercentage: resourceUsage.memory.percentage.toFixed(1),
-        threshold: SystemMonitoringService.ALERT_THRESHOLDS.HEAP_USAGE
+        threshold: SystemMonitoringService.ALERT_THRESHOLDS.HEAP_USAGE,
+        minHeapUsedMB: SystemMonitoringService.ALERT_THRESHOLDS.MIN_HEAP_USED_MB_FOR_PERCENT_ALERT
       });
     }
 

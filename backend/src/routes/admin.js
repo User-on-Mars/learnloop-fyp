@@ -30,8 +30,26 @@ router.get('/xp-settings', async (req, res) => {
 })
 
 // ─── Admin Verify (check if current user is admin) ───────────
-router.get('/verify', requireAuth, requireAdmin, (req, res) => {
-  res.json({ admin: true })
+router.get('/verify', requireAuth, async (req, res) => {
+  try {
+    let user = null
+    if (req.user?.email) {
+      user = await User.findOne({ email: req.user.email }).select('role accountStatus').lean()
+    }
+    if (!user) {
+      try {
+        user = await User.findById(req.user.id).select('role accountStatus').lean()
+      } catch {
+        // Firebase UIDs are not Mongo ObjectIds.
+      }
+    }
+
+    const admin = user?.role === 'admin' && user?.accountStatus === 'active'
+    res.json({ admin })
+  } catch (error) {
+    console.error('Admin verify error:', error)
+    res.status(500).json({ message: 'Failed to verify admin status' })
+  }
 })
 
 // ─── Dashboard Stats (requires admin role) ───────────────

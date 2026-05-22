@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
 import { auth } from '../firebase'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 
 /**
  * Hook to check if the current user has admin role.
- * Makes a lightweight call to the admin stats endpoint — if it succeeds, user is admin.
  */
 export function useAdmin() {
   const [isAdmin, setIsAdmin] = useState(false)
@@ -17,25 +16,21 @@ export function useAdmin() {
     async function check() {
       try {
         const token = await auth.currentUser?.getIdToken()
-        if (!token) { 
-          console.log('🔐 useAdmin: No token found')
+        if (!token) {
           setIsAdmin(false)
           setChecking(false)
-          return 
+          return
         }
 
-        const res = await fetch(`${API}/admin/stats`, {
+        const res = await fetch(`${API}/admin/verify`, {
           headers: { Authorization: `Bearer ${token}` }
         })
-        
-        console.log(`🔐 useAdmin: /admin/stats returned ${res.status}`)
-        
+        const data = await res.json().catch(() => ({ admin: false }))
+
         if (!cancelled) {
-          setIsAdmin(res.ok)
-          console.log(`🔐 useAdmin: isAdmin set to ${res.ok}`)
+          setIsAdmin(Boolean(data.admin))
         }
-      } catch (err) {
-        console.error('🔐 useAdmin: Error checking admin status:', err)
+      } catch {
         if (!cancelled) setIsAdmin(false)
       } finally {
         if (!cancelled) setChecking(false)

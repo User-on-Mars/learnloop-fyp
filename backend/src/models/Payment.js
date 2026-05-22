@@ -70,7 +70,6 @@ const PaymentSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-PaymentSchema.index({ transactionUuid: 1 });
 PaymentSchema.index({ userId: 1, status: 1 });
 
 export default mongoose.model('Payment', PaymentSchema);

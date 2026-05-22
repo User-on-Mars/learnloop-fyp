@@ -19,6 +19,9 @@ router.use(requireAuth);
 // Apply rate limiting to session operations
 router.use(sessionRateLimit);
 
+// GET /api/sessions - Get recent sessions for user
+router.get('/', SessionController.getSessions);
+
 // POST /api/sessions/start - Start a new learning session
 router.post('/start', 
   auditLogger(SECURITY_EVENTS.SESSION_START),
