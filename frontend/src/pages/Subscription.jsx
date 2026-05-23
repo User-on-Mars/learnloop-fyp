@@ -353,11 +353,11 @@ export default function Subscription() {
                           : "border-[#e2e6dc] bg-[#f8faf6] hover:border-violet-200"
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-white border border-[#e2e6dc]">
-                        <CreditCard className="w-5 h-5 text-[#635bff]" />
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#635bff] border border-[#5548d8] shadow-sm">
+                        <span className="text-[11px] font-black italic tracking-normal text-white leading-none">stripe</span>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-[#1c1f1a]">Card</p>
+                        <p className="text-sm font-semibold text-[#1c1f1a]">Stripe</p>
                         <p className="text-xs text-[#9aa094]">Stripe Checkout test mode</p>
                       </div>
                       {paymentMethod === "stripe" && (
