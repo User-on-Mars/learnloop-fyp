@@ -164,6 +164,9 @@ export const subscriptionAPI = {
   // eSewa payment
   esewaInitiate: (planId: string) => client.post('/subscription/esewa/initiate', { planId }),
   esewaVerify: (data: string) => client.post('/subscription/esewa/verify', { data }),
+  // Stripe Checkout payment
+  stripeCheckout: (planId: string) => client.post('/subscription/stripe/checkout', { planId }),
+  stripeVerify: (sessionId: string) => client.post('/subscription/stripe/verify', { sessionId }),
 }
 
 // ============ CONTACT API (public, no auth) ============

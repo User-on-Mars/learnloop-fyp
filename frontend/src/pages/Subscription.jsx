@@ -26,8 +26,9 @@ const FEATURES = [
 
 export default function Subscription() {
   const navigate = useNavigate();
-  const { isPro, isFree, isCanceled, isRewarded, usage, limits, initiatePayment, cancel, subscription } = useSubscription();
+  const { isPro, isFree, isCanceled, isRewarded, usage, limits, initiatePayment, initiateStripePayment, cancel, subscription } = useSubscription();
   const [selectedPlan, setSelectedPlan] = useState("pro_3month");
+  const [paymentMethod, setPaymentMethod] = useState("esewa");
   const [upgrading, setUpgrading] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [message, setMessage] = useState(null);
@@ -76,6 +77,15 @@ export default function Subscription() {
   const handleUpgrade = async () => {
     try {
       setUpgrading(true); setMessage(null);
+      if (paymentMethod === "stripe") {
+        const result = await initiateStripePayment(selectedPlan);
+        if (!result.checkoutUrl) {
+          throw new Error("Stripe did not return a checkout URL.");
+        }
+        window.location.assign(result.checkoutUrl);
+        return;
+      }
+
       const result = await initiatePayment(selectedPlan);
       const form = document.createElement("form");
       form.method = "POST"; form.action = result.paymentUrl;
@@ -84,7 +94,7 @@ export default function Subscription() {
       });
       document.body.appendChild(form); form.submit();
     } catch (err) {
-      setMessage({ type: "error", text: err.response?.data?.message || "Failed to initiate payment." });
+      setMessage({ type: "error", text: err.response?.data?.message || err.message || "Failed to initiate payment." });
       setUpgrading(false);
     }
   };
@@ -308,33 +318,79 @@ export default function Subscription() {
                 {/* Payment Method */}
                 <div>
                   <h4 className="text-sm font-bold text-[#1c1f1a] mb-3">Payment Method</h4>
-                  <div className="flex items-center gap-3 p-4 border-2 border-violet-300 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border border-[#e2e6dc]">
-                      <img src="https://cdn.esewa.com.np/ui/images/logos/esewa-icon-large.png" alt="eSewa" className="w-full h-auto max-w-[32px] max-h-[32px] object-contain"
-                        loading="lazy"
-                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "https://cdn.esewa.com.np/ui/images/esewa_og.png"; }} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-[#1c1f1a]">eSewa</p>
-                      <p className="text-xs text-[#9aa094]">Pay securely with your eSewa wallet</p>
-                    </div>
-                    <div className="w-5 h-5 bg-violet-600 rounded-full flex items-center justify-center">
-                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                    </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("esewa")}
+                      className={`flex items-center gap-3 p-4 border-2 rounded-xl text-left transition-all ${
+                        paymentMethod === "esewa"
+                          ? "border-violet-300 bg-gradient-to-r from-violet-50 to-purple-50"
+                          : "border-[#e2e6dc] bg-[#f8faf6] hover:border-violet-200"
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border border-[#e2e6dc]">
+                        <img src="https://cdn.esewa.com.np/ui/images/logos/esewa-icon-large.png" alt="eSewa" className="w-full h-auto max-w-[32px] max-h-[32px] object-contain"
+                          loading="lazy"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "https://cdn.esewa.com.np/ui/images/esewa_og.png"; }} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-[#1c1f1a]">eSewa</p>
+                        <p className="text-xs text-[#9aa094]">Pay with your wallet</p>
+                      </div>
+                      {paymentMethod === "esewa" && (
+                        <div className="w-5 h-5 bg-violet-600 rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                        </div>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("stripe")}
+                      className={`flex items-center gap-3 p-4 border-2 rounded-xl text-left transition-all ${
+                        paymentMethod === "stripe"
+                          ? "border-violet-300 bg-gradient-to-r from-violet-50 to-purple-50"
+                          : "border-[#e2e6dc] bg-[#f8faf6] hover:border-violet-200"
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-white border border-[#e2e6dc]">
+                        <CreditCard className="w-5 h-5 text-[#635bff]" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-[#1c1f1a]">Card</p>
+                        <p className="text-xs text-[#9aa094]">Stripe Checkout test mode</p>
+                      </div>
+                      {paymentMethod === "stripe" && (
+                        <div className="w-5 h-5 bg-violet-600 rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                        </div>
+                      )}
+                    </button>
                   </div>
+                  {paymentMethod === "stripe" && (
+                    <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                      Test card: 4242 4242 4242 4242, any future expiry, any CVC.
+                    </div>
+                  )}
                 </div>
 
                 {/* Pay Button */}
                 <button onClick={handleUpgrade} disabled={upgrading}
                   className="w-full py-3.5 min-h-[44px] bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-semibold hover:from-violet-700 hover:to-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm shadow-lg shadow-violet-500/20">
-                  {upgrading ? (<><Loader2 className="w-4 h-4 animate-spin" /> Redirecting to eSewa...</>) : (<><CreditCard className="w-4 h-4" /> Pay Rs. {plan.price} with eSewa</>)}
+                  {upgrading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting to {paymentMethod === "stripe" ? "Stripe" : "eSewa"}...</>
+                  ) : (
+                    <><CreditCard className="w-4 h-4" /> Pay Rs. {plan.price} with {paymentMethod === "stripe" ? "Card" : "eSewa"}</>
+                  )}
                 </button>
                 {message && message.type === "error" && (
                   <div className="p-3 rounded-xl border text-sm bg-red-50 border-red-200 text-red-700 flex items-center gap-2">
                     <X className="w-4 h-4 flex-shrink-0" />{message.text}
                   </div>
                 )}
-                <p className="text-xs text-[#9aa094] text-center">You'll be redirected to eSewa to complete payment. Pro access starts immediately.</p>
+                <p className="text-xs text-[#9aa094] text-center">
+                  You'll be redirected to {paymentMethod === "stripe" ? "Stripe Checkout" : "eSewa"} to complete payment. Pro access starts immediately.
+                </p>
               </div>
             </div>
           )}

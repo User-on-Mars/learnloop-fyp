@@ -62,12 +62,25 @@ export function SubscriptionProvider({ children }) {
     return res.data;
   };
 
+  const initiateStripePayment = async (planId = 'pro_1month') => {
+    const res = await subscriptionAPI.stripeCheckout(planId);
+    return res.data;
+  };
+
   /**
    * Verify eSewa payment after redirect.
    * @param {string} encodedData - base64-encoded data from eSewa success redirect
    */
   const verifyPayment = async (encodedData) => {
     const res = await subscriptionAPI.esewaVerify(encodedData);
+    if (res.data.subscription) {
+      setSubscription(res.data.subscription);
+    }
+    return res.data;
+  };
+
+  const verifyStripePayment = async (sessionId) => {
+    const res = await subscriptionAPI.stripeVerify(sessionId);
     if (res.data.subscription) {
       setSubscription(res.data.subscription);
     }
@@ -93,7 +106,9 @@ export function SubscriptionProvider({ children }) {
         limits: subscription.limits,
         usage: subscription.usage,
         initiatePayment,
+        initiateStripePayment,
         verifyPayment,
+        verifyStripePayment,
         cancel,
         refresh: fetchSubscription,
       }}

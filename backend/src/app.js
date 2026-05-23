@@ -32,6 +32,7 @@ import invitationRoutes from "./routes/invitations.js";
 import roomXpRoutes from "./routes/roomXp.js";
 import roomProgressRoutes from "./routes/roomProgress.js";
 import subscriptionRoutes from "./routes/subscription.js";
+import stripeWebhookRoutes from "./routes/stripeWebhook.js";
 import contactRoutes from "./routes/contact.js";
 import publishRequestRoutes from "./routes/publishRequests.js";
 import notificationRoutes from "./routes/notifications.js";
@@ -98,6 +99,9 @@ app.options("*", cors(corsOptions));
 if (process.env.NODE_ENV === 'production') {
   app.use(generalRateLimit);
 }
+
+// Stripe needs the raw request body for webhook signature verification.
+app.use("/api", stripeWebhookRoutes);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));

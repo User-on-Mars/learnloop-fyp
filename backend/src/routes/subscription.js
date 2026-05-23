@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import SubscriptionService from '../services/SubscriptionService.js';
 import EsewaService from '../services/EsewaService.js';
+import StripeService from '../services/StripeService.js';
 import NotificationService from '../services/NotificationService.js';
 import User from '../models/User.js';
 import WeeklyReward from '../models/WeeklyReward.js';
@@ -184,6 +185,72 @@ router.post('/esewa/verify', async (req, res) => {
   }
 });
 
+// ─── Stripe Checkout Payment Flow ───────────────────────────────────────────
+
+/**
+ * POST /api/subscription/stripe/checkout
+ * Create a Stripe Checkout Session for a one-time Pro payment.
+ */
+router.post('/stripe/checkout', async (req, res) => {
+  try {
+    const tier = await SubscriptionService.getTier(req.user.id);
+    if (tier === 'pro') {
+      return res.status(400).json({ message: 'You already have an active Pro subscription' });
+    }
+
+    const { planId } = req.body;
+    const result = await StripeService.createCheckoutSession(req.user.id, planId || 'pro_1month');
+    console.log(`Stripe checkout created for user ${req.user.id}: ${result.sessionId} (plan: ${planId || 'pro_1month'})`);
+    res.json(result);
+  } catch (error) {
+    console.error('Error creating Stripe checkout session:', error.message);
+    res.status(500).json({ message: error.message || 'Failed to create Stripe checkout session' });
+  }
+});
+
+/**
+ * POST /api/subscription/stripe/verify
+ * Verify a Checkout Session after Stripe redirects back to the app.
+ * Webhook still remains the source of truth; this makes the UI update instantly.
+ */
+router.post('/stripe/verify', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ message: 'Missing Stripe session ID' });
+    }
+
+    const result = await StripeService.completeCheckoutSession(sessionId, req.user.id);
+    const info = await SubscriptionService.getSubscriptionInfo(req.user.id);
+
+    if (result.applied && result.justApplied) {
+      try {
+        const user = await User.findOne({ firebaseUid: req.user.id }).lean()
+          || await User.findOne({ _id: req.user.id }).lean();
+        if (user) {
+          const sub = await SubscriptionService.getSubscription(req.user.id);
+          await NotificationService.sendSubscriptionUpgradeNotification(user, sub);
+
+          const payment = await StripeService.getPaymentByTransaction(result.transactionUuid);
+          if (payment) {
+            await NotificationService.sendPaymentReceiptNotification(user, payment, sub);
+          }
+        }
+      } catch (notifErr) {
+        console.error('Failed to send Stripe upgrade/receipt notification:', notifErr.message);
+      }
+    }
+
+    res.json({
+      payment: result,
+      subscription: info,
+    });
+  } catch (error) {
+    console.error('Error verifying Stripe payment:', error.message);
+    res.status(400).json({ message: error.message || 'Stripe payment verification failed' });
+  }
+});
+
 // ─── Weekly Rewards (User-facing) ─────────────────────────
 
 /**
@@ -229,11 +296,11 @@ router.get('/billing-history', async (req, res) => {
         date: p.createdAt,
         plan: p.plan,
         amount: p.totalAmount,
-        currency: 'NPR',
+        currency: p.currency || 'NPR',
         status: p.status,
         transactionId: p.transactionUuid,
         durationDays: p.durationDays,
-        method: 'eSewa',
+        method: p.provider === 'stripe' ? 'Stripe' : 'eSewa',
         label: { pro_1month: '1 Month', pro_3month: '3 Months', pro_6month: '6 Months' }[p.plan] || p.plan,
       })),
       ...rewards.map(r => ({

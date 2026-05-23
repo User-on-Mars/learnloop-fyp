@@ -16,10 +16,20 @@ const PaymentSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  provider: {
+    type: String,
+    enum: ['esewa', 'stripe'],
+    default: 'esewa',
+    index: true
+  },
   // eSewa product code (EPAYTEST for testing, merchant code for production)
   productCode: {
     type: String,
     required: true
+  },
+  currency: {
+    type: String,
+    default: 'NPR'
   },
   amount: {
     type: Number,
@@ -49,6 +59,19 @@ const PaymentSchema = new mongoose.Schema({
   },
   // eSewa transaction code
   transactionCode: {
+    type: String,
+    default: null
+  },
+  stripeCheckoutSessionId: {
+    type: String,
+    default: null,
+    index: true
+  },
+  stripePaymentIntentId: {
+    type: String,
+    default: null
+  },
+  stripeCustomerId: {
     type: String,
     default: null
   },

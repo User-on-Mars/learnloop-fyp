@@ -54,6 +54,7 @@ import RoomNodeDetail from "./pages/RoomNodeDetail";
 import Subscription from "./pages/Subscription";
 import EsewaSuccess from "./pages/EsewaSuccess";
 import EsewaFailure from "./pages/EsewaFailure";
+import StripeSuccess from "./pages/StripeSuccess";
 
 import ActiveSessionPopup from "./components/ActiveSessionPopup";
 import AppShell from "./layout/AppShell";
@@ -190,6 +191,7 @@ const router = createBrowserRouter([
           { path: "/subscription", element: <Subscription /> },
           { path: "/subscription/esewa/success", element: <EsewaSuccess /> },
           { path: "/subscription/esewa/failure", element: <EsewaFailure /> },
+          { path: "/subscription/stripe/success", element: <StripeSuccess /> },
           { path: "/log-practice", element: <LogPractice /> },
           { path: "/reflect", element: <ReflectPage /> },
           { path: "/reflections", element: <ReflectionHistory /> },
