@@ -6,16 +6,16 @@ import { useCustomAvatar } from "../context/AvatarContext";
  */
 function CrownBadge({ size }) {
   const crownSizes = {
-    sm: "w-3.5 h-3.5 -top-1 -right-0.5",
-    md: "w-4 h-4 -top-1 -right-0.5",
-    lg: "w-5 h-5 -top-1.5 -right-0.5",
-    xl: "w-6 h-6 -top-1.5 -right-0.5",
+    sm: "w-4 h-4 -top-1.5 -right-1.5",
+    md: "w-[18px] h-[18px] -top-1.5 -right-1.5",
+    lg: "w-5 h-5 -top-2 -right-1.5",
+    xl: "w-6 h-6 -top-2 -right-1.5",
   };
   const crownClass = crownSizes[size] || crownSizes.md;
 
   return (
-    <span className={`absolute ${crownClass} drop-shadow-sm`}>
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <span className={`absolute ${crownClass} z-10 rounded-full bg-amber-400 border-2 border-white shadow-sm flex items-center justify-center`}>
+      <svg viewBox="0 0 24 24" className="w-[78%] h-[78%]" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
           d="M2 17L3.5 9L7.5 12L12 5L16.5 12L20.5 9L22 17H2Z"
           fill="#FFD700"
@@ -97,24 +97,26 @@ export function Avatar({
   // Show photo if available and no error
   if (photoURL && !imageError) {
     return (
-      <div className={`relative ${sizeClass} rounded-full flex-shrink-0 overflow-hidden ring-2 ring-white bg-site-accent text-white flex items-center justify-center font-semibold ${className}`}>
-        <span className={`${isImageLoaded ? "opacity-0" : "opacity-100"} transition-opacity duration-200`}>
-          {initials}
-        </span>
-        <img
-          src={photoURL}
-          alt={displayName || "User avatar"}
-          onError={() => {
-            setImageError(true);
-            setIsImageLoaded(false);
-          }}
-          onLoad={() => setIsImageLoaded(true)}
-          referrerPolicy="no-referrer"
-          className={`absolute inset-0 w-full h-full object-cover ${
-            isImageLoaded ? "opacity-100" : "opacity-0"
-          } transition-opacity duration-200`}
-          loading="lazy"
-        />
+      <div className={`relative inline-block flex-shrink-0 ${className}`}>
+        <div className={`relative ${sizeClass} rounded-full overflow-hidden ring-2 ring-white bg-site-accent text-white flex items-center justify-center font-semibold`}>
+          <span className={`${isImageLoaded ? "opacity-0" : "opacity-100"} transition-opacity duration-200`}>
+            {initials}
+          </span>
+          <img
+            src={photoURL}
+            alt={displayName || "User avatar"}
+            onError={() => {
+              setImageError(true);
+              setIsImageLoaded(false);
+            }}
+            onLoad={() => setIsImageLoaded(true)}
+            referrerPolicy="no-referrer"
+            className={`absolute inset-0 w-full h-full object-cover rounded-full ${
+              isImageLoaded ? "opacity-100" : "opacity-0"
+            } transition-opacity duration-200`}
+            loading="lazy"
+          />
+        </div>
         {isPro && <CrownBadge size={size} />}
       </div>
     );

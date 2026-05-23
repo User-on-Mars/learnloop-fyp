@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Crown, Check, X, Zap, Users, Map, FileText, Upload,
   CreditCard, Loader2, Receipt, Gift, Clock, Star, Shield, Sparkles,
+  Calendar,
 } from "lucide-react";
 import Modal, { ModalButton } from "../components/Modal";
 import { useSubscription } from "../context/SubscriptionContext";
@@ -152,7 +153,7 @@ export default function Subscription() {
 
             {/* Plan Stats */}
             {isPro && (
-              <div className="relative grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-violet-100">
+              <div className="relative grid grid-cols-1 min-[390px]:grid-cols-2 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-violet-100">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isCanceled ? 'bg-amber-100' : 'bg-emerald-100'}`}>
                     <Shield className={`w-5 h-5 ${isCanceled ? 'text-amber-600' : 'text-emerald-600'}`} />
@@ -168,7 +169,7 @@ export default function Subscription() {
                       <Clock className="w-5 h-5 text-violet-600" />
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-[#1c1f1a] leading-none">{fmtDate(subscription.currentPeriodEnd)}</p>
+                      <p className="text-base sm:text-lg font-bold text-[#1c1f1a] leading-tight">{fmtDate(subscription.currentPeriodEnd)}</p>
                       <p className="text-[11px] text-[#9aa094] mt-0.5">{isCanceled ? 'Access Until' : 'Renews On'}</p>
                     </div>
                   </div>
@@ -179,7 +180,7 @@ export default function Subscription() {
                       <X className="w-5 h-5 text-red-500" />
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-[#1c1f1a] leading-none">{fmtDate(subscription.canceledAt)}</p>
+                      <p className="text-base sm:text-lg font-bold text-[#1c1f1a] leading-tight">{fmtDate(subscription.canceledAt)}</p>
                       <p className="text-[11px] text-[#9aa094] mt-0.5">Canceled On</p>
                     </div>
                   </div>
@@ -227,25 +228,25 @@ export default function Subscription() {
                 <p className="text-[11px] text-[#9aa094]">See what you get with Pro</p>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <div className="min-w-[500px]">
-                <div className="grid grid-cols-3 gap-4 px-5 py-3 bg-[#f8faf6] border-b border-[#e8ece3] text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider">
+            <div>
+              <div>
+                <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(54px,.55fr)_minmax(78px,.7fr)] sm:grid-cols-3 gap-2 sm:gap-4 px-4 sm:px-5 py-3 bg-[#f8faf6] border-b border-[#e8ece3] text-[10px] sm:text-[11px] font-semibold text-[#9aa094] uppercase tracking-wider">
                   <span>Feature</span>
                   <span className="text-center">Free</span>
                   <span className="text-center flex items-center justify-center gap-1"><Crown className="w-3 h-3 text-amber-500" /> Pro</span>
                 </div>
                 {FEATURES.map((f, i) => (
-                  <div key={f.name} className={`grid grid-cols-3 gap-4 px-5 py-3.5 items-center ${i < FEATURES.length - 1 ? 'border-b border-[#f0f2eb]' : ''}`}>
-                    <div className="flex items-center gap-2.5 text-sm text-[#1c1f1a]">
-                      <div className="w-8 h-8 rounded-lg bg-[#f8faf6] flex items-center justify-center flex-shrink-0">
-                        <f.icon className="w-4 h-4 text-[#9aa094]" />
+                  <div key={f.name} className={`grid grid-cols-[minmax(0,1.45fr)_minmax(54px,.55fr)_minmax(78px,.7fr)] sm:grid-cols-3 gap-2 sm:gap-4 px-4 sm:px-5 py-3.5 items-center ${i < FEATURES.length - 1 ? 'border-b border-[#f0f2eb]' : ''}`}>
+                    <div className="flex items-center gap-2 sm:gap-2.5 text-xs sm:text-sm text-[#1c1f1a] min-w-0">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#f8faf6] flex items-center justify-center flex-shrink-0">
+                        <f.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#9aa094]" />
                       </div>
-                      <span className="font-medium">{f.name}</span>
+                      <span className="font-medium leading-snug">{f.name}</span>
                     </div>
-                    <div className="text-center text-sm text-[#9aa094]">
+                    <div className="text-center text-xs sm:text-sm text-[#9aa094]">
                       {typeof f.free === "boolean" ? (f.free ? <Check className="w-4 h-4 text-emerald-500 mx-auto" /> : <X className="w-4 h-4 text-[#d0d5ca] mx-auto" />) : f.free}
                     </div>
-                    <div className="text-center text-sm font-bold text-violet-600">
+                    <div className="text-center text-xs sm:text-sm font-bold text-violet-600">
                       {typeof f.pro === "boolean" ? (f.pro ? <Check className="w-4 h-4 text-emerald-500 mx-auto" /> : <X className="w-4 h-4 text-[#d0d5ca] mx-auto" />) : f.pro}
                     </div>
                   </div>
@@ -380,7 +381,7 @@ export default function Subscription() {
                   {upgrading ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting to {paymentMethod === "stripe" ? "Stripe" : "eSewa"}...</>
                   ) : (
-                    <><CreditCard className="w-4 h-4" /> Pay Rs. {plan.price} with {paymentMethod === "stripe" ? "Card" : "eSewa"}</>
+                    <><CreditCard className="w-4 h-4" /> Pay Rs. {plan.price} with {paymentMethod === "stripe" ? "Stripe" : "eSewa"}</>
                   )}
                 </button>
                 {message && message.type === "error" && (
@@ -423,12 +424,19 @@ export default function Subscription() {
                   Rewards
                 </button>
               </div>
-              <div className="flex items-center gap-2 ml-auto">
-                <input type="date" value={billingStartDate} onChange={e => { setBillingStartDate(e.target.value); setBillingPage(1) }}
-                  className="px-2 py-1.5 border border-[#e2e6dc] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-[#f8faf6]" />
-                <span className="text-xs text-[#9aa094]">to</span>
-                <input type="date" value={billingEndDate} onChange={e => { setBillingEndDate(e.target.value); setBillingPage(1) }}
-                  className="px-2 py-1.5 border border-[#e2e6dc] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-[#f8faf6]" />
+              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:ml-auto">
+                <label className="relative">
+                  <span className="block text-[10px] font-semibold text-[#9aa094] mb-1">From</span>
+                  <Calendar className="absolute left-2 bottom-2.5 w-3.5 h-3.5 text-[#9aa094] pointer-events-none" />
+                  <input type="date" value={billingStartDate} onChange={e => { setBillingStartDate(e.target.value); setBillingPage(1) }}
+                    className="w-full min-h-[38px] pl-7 pr-2 py-1.5 border border-[#e2e6dc] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-[#f8faf6]" />
+                </label>
+                <label className="relative">
+                  <span className="block text-[10px] font-semibold text-[#9aa094] mb-1">To</span>
+                  <Calendar className="absolute left-2 bottom-2.5 w-3.5 h-3.5 text-[#9aa094] pointer-events-none" />
+                  <input type="date" value={billingEndDate} onChange={e => { setBillingEndDate(e.target.value); setBillingPage(1) }}
+                    className="w-full min-h-[38px] pl-7 pr-2 py-1.5 border border-[#e2e6dc] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-[#f8faf6]" />
+                </label>
               </div>
               {(billingType || billingStartDate || billingEndDate) && (
                 <button onClick={() => { setBillingType(''); setBillingStartDate(''); setBillingEndDate(''); setBillingPage(1) }}
@@ -491,7 +499,7 @@ export default function Subscription() {
                           <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-xs text-[#9aa094]">{fmtDate(item.date)}</p>
                             <span className="text-[#d0d5ca]">·</span>
-                            <p className="text-xs text-[#9aa094]">{item.method}</p>
+                            <p className="text-xs text-[#9aa094]">Paid with {item.method}</p>
                             {item.transactionId && (
                               <>
                                 <span className="text-[#d0d5ca]">·</span>

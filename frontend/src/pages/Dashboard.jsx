@@ -68,7 +68,11 @@ export default function Dashboard() {
   }, []);
 
   const fetchDashboard = useCallback(async ({ force = false } = {}) => {
-    if (!userKey) return;
+    if (!userKey) {
+      setIsLoading(false);
+      setXpLoading(false);
+      return;
+    }
     const now = Date.now();
     const hasUserCache = dashboardCache?.userKey === userKey;
     const hasFreshCache = hasUserCache && now - dashboardCache.fetchedAt < DASHBOARD_CACHE_TTL_MS;
@@ -251,7 +255,7 @@ export default function Dashboard() {
               <div className="flex-1 p-4 sm:p-7">
                 <h2 className="text-[16px] sm:text-[17px] font-bold text-site-ink mb-4 sm:mb-6">Practice Overview</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <StatBubble icon={<Clock className="w-6 h-6 text-blue-500" />} bg="bg-blue-100" value={`${totalHours}h ${totalMins}m`} label="Total Time" sub={todayMinutes > 0 ? `↑ ${todayMinutes}m today` : null} subUp={todayMinutes > 0} />
+                  <StatBubble icon={<Clock className="w-6 h-6 text-blue-500" />} bg="bg-blue-100" value={`${totalHours}h ${totalMins}m`} label="Total Time" sub={todayMinutes > 0 ? `${todayMinutes}m today` : null} subUp={todayMinutes > 0} />
                   <StatBubble icon={<BarChart3 className="w-6 h-6 text-amber-600" />} bg="bg-amber-100" value={totalSessions} label="Total Sessions" sub={totalSessions > 0 ? `${Math.round((summary.totalMinutes || 0) / totalSessions)}m avg` : null} subUp={totalSessions > 0} />
                   <StatBubble icon={<Target className="w-6 h-6 text-emerald-600" />} bg="bg-emerald-100" value={totalNodes} label="Total Nodes" sub={`${completedNodes} completed`} subUp={completedNodes > 0} />
                 </div>

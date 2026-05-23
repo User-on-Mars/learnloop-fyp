@@ -751,6 +751,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;l
         pro_3month: 'Pro — 3 Months',
         pro_6month: 'Pro — 6 Months',
       }[payment.plan] || payment.plan;
+      const paymentMethod = payment.provider === 'stripe' ? 'Stripe' : 'eSewa';
 
       // In-app notification
       await this._sendInAppNotification(user.firebaseUid || user._id?.toString(), {
@@ -761,8 +762,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;l
         timestamp: new Date().toISOString()
       });
 
-      const subject = `Payment Receipt — LearnLoop Pro (Rs. ${payment.totalAmount})`;
-      const text = `Hi ${user.name},\n\nThank you for your payment!\n\nReceipt\n-------\nPlan: ${planLabel}\nAmount: Rs. ${payment.totalAmount}\nTransaction ID: ${payment.transactionUuid}\nDate: ${paidDate}\nPro active until: ${endDate}\n\nThank you for supporting LearnLoop!\nThe LearnLoop Team`;
+      const subject = `LearnLoop Pro receipt - Rs. ${payment.totalAmount}`;
+      const text = `Hi ${user.name},\n\nYour LearnLoop Pro payment was successful.\n\nReceipt\n-------\nPlan: ${planLabel}\nAmount: Rs. ${payment.totalAmount}\nPaid with: ${paymentMethod}\nTransaction ID: ${payment.transactionUuid}\nDate: ${paidDate}\nPro active until: ${endDate}\n\nThank you for supporting LearnLoop!\nThe LearnLoop Team`;
       const html = `
 <!DOCTYPE html><html><head><style>
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#1a1a1a;margin:0;padding:0;background:#f3f4f6}
@@ -785,7 +786,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;l
 <div class="row"><span class="lbl">Plan</span><span class="val">${planLabel}</span></div>
 <div class="row"><span class="lbl">Date</span><span class="val">${paidDate}</span></div>
 <div class="row"><span class="lbl">Transaction ID</span><span class="val" style="font-size:12px;font-family:monospace">${payment.transactionUuid}</span></div>
-<div class="row"><span class="lbl">Payment Method</span><span class="val">eSewa</span></div>
+<div class="row"><span class="lbl">Payment Method</span><span class="val">${paymentMethod}</span></div>
 <div class="row"><span class="lbl">Pro Active Until</span><span class="val">${endDate}</span></div>
 <div class="row total"><span class="lbl">Total Paid</span><span class="val">Rs. ${payment.totalAmount}</span></div>
 </div>
