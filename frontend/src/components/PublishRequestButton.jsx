@@ -27,17 +27,17 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
 
   // Button style constants - easy to modify
   const BUTTON_STYLES = {
-    padding: 'px-4 py-2',
-    textSize: 'text-sm',
+    padding: 'px-3 sm:px-4 py-2',
+    textSize: 'text-xs sm:text-sm',
     iconSize: 'w-4 h-4',
-    gap: 'gap-2',
+    gap: 'gap-1.5 sm:gap-2',
     rounded: 'rounded-lg'
   };
 
   // Message style constants - easy to modify
   const MESSAGE_STYLES = {
-    textSize: 'text-xs',
-    maxWidth: 'max-w-[240px]',
+    textSize: 'text-[11px] sm:text-xs',
+    maxWidth: 'max-w-[190px] sm:max-w-[240px]',
     wrap: 'break-words whitespace-normal'
   };
 
@@ -184,7 +184,7 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
   // ── PENDING: show "Under Review" badge with message ──
   if (publishStatus === 'pending') {
     return (
-      <div className="flex flex-col items-end gap-1 max-w-[240px] min-w-0">
+      <div className="flex flex-col items-center sm:items-end gap-1 max-w-[190px] sm:max-w-[240px] min-w-0">
         <div className={`flex items-center ${BUTTON_STYLES.gap} ${BUTTON_STYLES.padding} bg-amber-50 border border-amber-200 ${BUTTON_STYLES.rounded} whitespace-nowrap`}>
           <Clock className={BUTTON_STYLES.iconSize + ' text-amber-600'} />
           <span className={`${BUTTON_STYLES.textSize} font-semibold text-amber-700`}>Under Review</span>
@@ -245,7 +245,7 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
 
     return (
       <>
-        <div className="flex flex-col items-end gap-1 max-w-[240px] min-w-0">
+        <div className="flex flex-col items-center sm:items-end gap-1 max-w-[190px] sm:max-w-[240px] min-w-0">
           <div className="flex items-center gap-2">
             {statusBadge}
             {resubmitButton}
@@ -320,7 +320,7 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
     ) : null;
 
     return (
-      <div className="flex flex-col items-end gap-1 max-w-[240px] min-w-0">
+      <div className="flex flex-col items-center sm:items-end gap-1 max-w-[190px] sm:max-w-[240px] min-w-0">
         {buttonContent}
         {messageContent}
       </div>
@@ -348,7 +348,7 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
     );
 
     return (
-      <div className="flex flex-col items-end gap-1 max-w-[240px] min-w-0">
+      <div className="flex flex-col items-center sm:items-end gap-1 max-w-[190px] sm:max-w-[240px] min-w-0">
         {buttonContent}
         {messageContent}
       </div>
@@ -416,7 +416,7 @@ export function PublishRequestButton({ skillmap, actualNodeCount }) {
   );
 
   return (
-    <div className="max-w-[240px] min-w-0">
+    <div className="max-w-[190px] sm:max-w-[240px] min-w-0">
       {buttonContent}
       {confirmModal}
     </div>

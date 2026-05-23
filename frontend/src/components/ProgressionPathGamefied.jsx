@@ -321,33 +321,33 @@ export default function ProgressionPathGamefied() {
       {/* Main Content */}
       <div className={`py-4 sm:py-8 px-4 sm:px-6 transition-all duration-300 relative z-10 ${isSidebarOpen ? 'lg:mr-80' : ''}`}>
         <div className="max-w-3xl mx-auto">
-          <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
+          <div className="mb-3 sm:mb-6">
             <button
               type="button"
               onClick={() => navigate('/skills')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm bg-white text-[#2e5023] border border-[#d4e8cc] hover:bg-[#edf5e9] transition-all shadow-sm"
+              className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl font-semibold text-sm bg-white text-[#2e5023] border border-[#d4e8cc] hover:bg-[#edf5e9] transition-all shadow-sm"
             >
               <ChevronLeft className="w-4 h-4" /> Back to Skills
             </button>
           </div>
 
           {/* Compact Header */}
-          <div className="bg-white rounded-2xl border border-[#e2e6dc] p-5 mb-4 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0">
+          <div className="bg-white rounded-2xl border border-[#e2e6dc] p-4 sm:p-5 mb-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <button
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  className="p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors lg:hidden"
+                  className="min-w-[44px] min-h-[44px] p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors lg:hidden"
                   aria-label="Toggle details"
                 >
                   {isSidebarOpen ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
                 </button>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: currentSkill.color || '#2e5023' }}>
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: currentSkill.color || '#2e5023' }}>
                   <SkillIcon name={icon} size={22} className="text-white" />
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold text-[#1c1f1a] truncate">{currentSkill.name}</h1>
+                <h1 className="text-lg sm:text-2xl font-bold text-[#1c1f1a] leading-tight truncate">{currentSkill.name}</h1>
               </div>
-              <div className="min-w-0 max-w-[260px] w-full sm:w-auto">
+              <div className="self-center sm:self-start shrink-0 max-w-[190px] sm:max-w-[260px]">
                 <PublishRequestButton skillmap={currentSkill} actualNodeCount={userNodes.length} />
               </div>
             </div>
@@ -489,7 +489,7 @@ export default function ProgressionPathGamefied() {
         } w-[calc(100vw-2rem)] max-w-sm sm:w-80 sm:max-w-none flex flex-col`}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#e2e6dc] bg-[#f8faf6]">
+        <div className="flex items-center justify-between gap-3 p-4 pr-16 sm:pr-4 border-b border-[#e2e6dc] bg-[#f8faf6]">
           <h2 className="text-[15px] font-bold text-[#1c1f1a]">Details</h2>
           <div className="flex items-center gap-1">
             {isEditing ? (
@@ -792,10 +792,10 @@ export default function ProgressionPathGamefied() {
         </div>
       </div>
 
-      {/* Toggle sidebar button - always visible at same position */}
+      {/* Toggle sidebar button - hidden while open on mobile so details actions stay accessible */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`fixed top-20 p-2 bg-white border border-[#e2e6dc] rounded-xl shadow-md hover:shadow-lg transition-all z-40 hover:bg-[#edf5e9] ${isSidebarOpen ? 'right-3 sm:right-[20.5rem]' : 'right-3 sm:right-4'}`}
+        className={`fixed top-20 min-w-[44px] min-h-[44px] p-2 bg-white border border-[#e2e6dc] rounded-xl shadow-md hover:shadow-lg transition-all z-40 hover:bg-[#edf5e9] ${isSidebarOpen ? 'hidden sm:flex sm:right-[20.5rem]' : 'right-3 sm:right-4 flex'} items-center justify-center`}
         aria-label={isSidebarOpen ? 'Close details' : 'Open details'}
       >
         {isSidebarOpen ? <ChevronRight className="w-5 h-5 text-[#2e5023]" /> : <ChevronLeft className="w-5 h-5 text-[#2e5023]" />}
