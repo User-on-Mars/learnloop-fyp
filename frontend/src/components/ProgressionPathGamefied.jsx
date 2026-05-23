@@ -489,9 +489,9 @@ export default function ProgressionPathGamefied() {
         } w-[calc(100vw-2rem)] max-w-sm sm:w-80 sm:max-w-none flex flex-col`}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between gap-3 p-4 pr-16 sm:pr-4 border-b border-[#e2e6dc] bg-[#f8faf6]">
+        <div className="grid grid-cols-[1fr_auto] items-center gap-2 p-4 border-b border-[#e2e6dc] bg-[#f8faf6]">
           <h2 className="text-[15px] font-bold text-[#1c1f1a]">Details</h2>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-end gap-0.5">
             {isEditing ? (
               <>
                 <button onClick={handleSaveEdit} disabled={isSaving || !editForm.name.trim()} className="min-w-[44px] min-h-[44px] p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50" title="Save"><Check className="w-5 h-5" /></button>
