@@ -60,6 +60,13 @@ const Toast = ({
       text: 'text-amber-800', 
       icon: AlertCircle,
       iconColor: 'text-amber-600'
+    },
+    info: {
+      bg: 'bg-sky-50',
+      border: 'border-sky-200',
+      text: 'text-sky-800',
+      icon: AlertCircle,
+      iconColor: 'text-sky-600'
     }
   };
 
@@ -69,23 +76,23 @@ const Toast = ({
   return (
     <div 
       className={`
-        fixed top-4 right-4 z-50 max-w-md w-full
+        pointer-events-auto w-fit max-w-full min-w-0 sm:min-w-80 sm:max-w-md
         ${style.bg} ${style.border} ${style.text}
-        border rounded-lg shadow-lg p-4
+        border rounded-xl shadow-lg px-3 py-2.5 sm:p-4
         transform transition-all duration-300 ease-in-out
         ${isExiting ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'}
       `}
       role="alert"
     >
-      <div className="flex items-start gap-3">
-        <Icon className={`w-5 h-5 ${style.iconColor} flex-shrink-0 mt-0.5`} />
+      <div className="flex items-center gap-2.5 sm:items-start sm:gap-3">
+        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${style.iconColor} flex-shrink-0 sm:mt-0.5`} />
         
         <div className="flex-1 min-w-0">
           {title && (
             <p className="font-semibold text-sm mb-1">{title}</p>
           )}
           {message && (
-            <p className="text-sm">{message}</p>
+            <p className="text-sm leading-5 break-words">{message}</p>
           )}
           
           {showRetry && onRetry && (
@@ -106,10 +113,11 @@ const Toast = ({
         <button
           onClick={handleClose}
           className={`
-            flex-shrink-0 p-1 rounded-md hover:bg-black/5 
+            flex-shrink-0 p-1 rounded-md hover:bg-black/5
             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent
             ${style.text}
           `}
+          aria-label="Close notification"
         >
           <X className="w-4 h-4" />
         </button>
