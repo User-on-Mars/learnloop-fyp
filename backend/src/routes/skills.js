@@ -165,7 +165,7 @@ router.get('/', async (req, res) => {
     const maxSkillMaps = limits.maxSkillMaps;
     const skillsWithAccess = skills.map((skill, index) => ({
       ...skill,
-      locked: index >= maxSkillMaps
+      locked: Number.isFinite(maxSkillMaps) ? index >= maxSkillMaps : false
     }));
     
     console.log(`✅ Found ${skills.length} skills (tier: ${tier}, limit: ${maxSkillMaps})`);
@@ -268,8 +268,9 @@ router.get('/:id', async (req, res) => {
     const allSkills = await SkillService.getUserSkills(req.user.id);
     const { limits } = await SubscriptionService.getLimits(req.user.id);
     const skillIndex = allSkills.findIndex(s => s._id.toString() === req.params.id);
+    const maxSkillMaps = limits.maxSkillMaps;
     
-    if (skillIndex >= 0 && skillIndex >= limits.maxSkillMaps) {
+    if (skillIndex >= 0 && Number.isFinite(maxSkillMaps) && skillIndex >= maxSkillMaps) {
       return res.status(403).json({
         type: 'SUBSCRIPTION_REQUIRED',
         message: 'This skill map is locked. Upgrade to Pro to access all your skill maps.',

@@ -138,12 +138,13 @@ class SkillService {
 
     try {
       // Try to get from cache
-      const cacheKey = `user_skills:${userId}`;
       if (cacheService.isAvailable()) {
         const cachedSkills = await cacheService.getUserProgression(userId, 'all_skills');
-        if (cachedSkills) {
+        if (Array.isArray(cachedSkills)) {
           console.log('⚡ Cache hit: getUserSkills');
           return cachedSkills;
+        } else if (cachedSkills) {
+          console.warn('Ignoring malformed cached skill list for user:', userId);
         }
       }
 
@@ -164,6 +165,7 @@ class SkillService {
 
       // Group nodes by skillId in memory
       const nodesBySkill = allNodes.reduce((acc, node) => {
+        if (!node.skillId) return acc;
         const skillId = node.skillId.toString();
         if (!acc[skillId]) acc[skillId] = [];
         acc[skillId].push(node);

@@ -302,7 +302,7 @@ class NodeService {
         if (nextNode) {
           await cacheService.invalidateNodeCache(nextNode._id.toString(), userId);
         }
-        await cacheService.invalidateNodeCache('all_skills', userId);
+        await cacheService.invalidateUserProgression(userId, 'all_skills');
       }
 
       // Log successful status update
@@ -936,7 +936,7 @@ class NodeService {
       if (cacheService.isAvailable()) {
         await cacheService.invalidateSkillMapCache(node.skillId.toString(), userId);
         await cacheService.invalidateNodeCache(nodeId, userId);
-        await cacheService.invalidateNodeCache('all_skills', userId);
+        await cacheService.invalidateUserProgression(userId, 'all_skills');
       }
       
       // Log successful deletion
@@ -998,9 +998,11 @@ class NodeService {
       // Try to get from cache
       if (cacheService.isAvailable()) {
         const cachedProgression = await cacheService.getUserProgression(userId, skillId);
-        if (cachedProgression) {
+        if (Array.isArray(cachedProgression)) {
           console.log(`⚡ Cache hit: getSkillNodes ${skillId}`);
           return cachedProgression;
+        } else if (cachedProgression) {
+          console.warn('Ignoring malformed cached node progression:', { userId, skillId });
         }
       }
 

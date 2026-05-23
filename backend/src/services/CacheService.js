@@ -248,7 +248,7 @@ class CacheService {
     try {
       const key = `${this.keyPrefixes.USER_PROGRESSION}${userId}:${skillId}`;
       const value = JSON.stringify({
-        ...progressionData,
+        data: progressionData,
         cachedAt: new Date().toISOString()
       });
       
@@ -271,7 +271,10 @@ class CacheService {
       const cached = await this.client.get(key);
       
       if (cached) {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        return Object.prototype.hasOwnProperty.call(parsed, 'data')
+          ? parsed.data
+          : parsed;
       }
       return null;
     } catch (error) {

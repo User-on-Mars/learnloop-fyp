@@ -258,6 +258,23 @@ describe('CacheService', () => {
         expect.stringContaining('"progressPercentage":60')
       );
     });
+
+    it('should preserve cached array progression data', async () => {
+      const cachedData = {
+        data: [
+          { id: 'skill1', completedNodes: 1 },
+          { id: 'skill2', completedNodes: 0 }
+        ],
+        cachedAt: '2023-01-01T00:00:00.000Z'
+      };
+
+      mockRedisClient.get.mockResolvedValue(JSON.stringify(cachedData));
+
+      const result = await cacheService.getUserProgression('user456', 'all_skills');
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toEqual(cachedData.data);
+    });
   });
 
   describe('Unlock Validation Caching', () => {
