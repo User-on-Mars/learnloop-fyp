@@ -395,12 +395,12 @@ export default function RoomDetail() {
       <Sidebar />
 
       <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 py-6 lg:py-8">
+        <div className="px-4 sm:px-6 py-4 lg:py-5">
           
           {/* ═══ Back Button ═══ */}
           <button
             onClick={() => navigate("/roomspace")}
-            className="group flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-pink-300 hover:text-pink-600 transition-all mb-6 shadow-sm"
+            className="group flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-pink-300 hover:text-pink-600 transition-all mb-4 shadow-sm"
           >
             <div 
               className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
@@ -413,7 +413,7 @@ export default function RoomDetail() {
 
           {/* ═══ Hero Header ═══ */}
           <div 
-            className="relative overflow-hidden rounded-2xl border p-6 sm:p-7 mb-6"
+            className="relative overflow-hidden rounded-2xl border p-5 sm:p-6 mb-5"
             style={{ 
               background: `linear-gradient(135deg, ${themeColor}08 0%, ${themeColor}15 100%)`,
               borderColor: `${themeColor}30`
@@ -425,9 +425,9 @@ export default function RoomDetail() {
               style={{ backgroundColor: themeColor }}
             />
             
-            <div className="relative flex flex-col gap-4 sm:gap-6">
+            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
               {/* Top row: Icon, Title, and Description */}
-              <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
                 <div 
                   className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0"
                   style={{ 
@@ -461,7 +461,7 @@ export default function RoomDetail() {
               </div>
 
               {/* Action Buttons - Full width on mobile, inline on desktop */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 lg:flex-shrink-0">
                 {isOwner ? (
                   <>
                     <button
@@ -512,10 +512,10 @@ export default function RoomDetail() {
           </div>
 
           {/* ═══ Content Grid ═══ */}
-          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_32rem] gap-4 sm:gap-6">
             
             {/* Left Column - Leaderboard & Skill Maps */}
-            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               
               {/* Leaderboard Section */}
               <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden">
@@ -614,8 +614,8 @@ export default function RoomDetail() {
             </div>
 
             {/* Right Column - Members */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden lg:sticky lg:top-24">
+            <div>
+              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden xl:sticky xl:top-24">
                 <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#e8ece3] flex items-center justify-between">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div 

@@ -348,6 +348,40 @@ router.patch('/invitations/:invitationId/accept', async (req, res) => {
   }
 });
 
+// Backward-compatible route for older frontend bundles.
+router.post('/invitations/:invitationId/accept', async (req, res) => {
+  try {
+    const result = await InvitationService.acceptInvitation(
+      req.params.invitationId,
+      req.user.id
+    );
+
+    res.json({
+      invitation: result.invitation,
+      membership: result.membership,
+      message: 'Invitation accepted successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    let statusCode = error.statusCode || 500;
+    let errorType = error.code || 'SERVER_ERROR';
+
+    if (error.name === 'CastError') {
+      statusCode = 400;
+      errorType = 'INVALID_ID';
+    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+      statusCode = 503;
+      errorType = 'DATABASE_ERROR';
+    }
+
+    res.status(statusCode).json({
+      type: errorType,
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // PATCH /api/invitations/:invitationId/decline - Decline invitation
 // Requirements: 9.1-9.4
 router.patch('/invitations/:invitationId/decline', async (req, res) => {
@@ -402,6 +436,39 @@ router.patch('/invitations/:invitationId/decline', async (req, res) => {
       message: error.message,
       timestamp: new Date().toISOString(),
       ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    });
+  }
+});
+
+// Backward-compatible route for older frontend bundles.
+router.post('/invitations/:invitationId/decline', async (req, res) => {
+  try {
+    const invitation = await InvitationService.declineInvitation(
+      req.params.invitationId,
+      req.user.id
+    );
+
+    res.json({
+      invitation,
+      message: 'Invitation declined',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    let statusCode = error.statusCode || 500;
+    let errorType = error.code || 'SERVER_ERROR';
+
+    if (error.name === 'CastError') {
+      statusCode = 400;
+      errorType = 'INVALID_ID';
+    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+      statusCode = 503;
+      errorType = 'DATABASE_ERROR';
+    }
+
+    res.status(statusCode).json({
+      type: errorType,
+      message: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });

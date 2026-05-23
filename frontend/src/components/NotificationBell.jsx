@@ -308,9 +308,21 @@ export default function NotificationBell() {
   };
 
   // Combine and sort all notifications by date
+  const invitationRoomIds = new Set(
+    invitations
+      .map((inv) => inv.room?._id || inv.roomId)
+      .filter(Boolean)
+      .map(String)
+  );
+  const visibleNotifications = notifications.filter((notif) => {
+    if (notif.type !== 'room_invitation_received') return true;
+    const roomId = notif.data?.roomId;
+    return !roomId || !invitationRoomIds.has(String(roomId));
+  });
+
   const allNotifications = [
     ...invitations.map(inv => ({ ...inv, notifType: 'invitation' })),
-    ...notifications.map(notif => ({ ...notif, notifType: 'general' }))
+    ...visibleNotifications.map(notif => ({ ...notif, notifType: 'general' }))
   ].sort((a, b) => {
     const dateA = new Date(a.createdAt || a.submittedAt);
     const dateB = new Date(b.createdAt || b.submittedAt);
