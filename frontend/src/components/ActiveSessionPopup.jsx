@@ -77,9 +77,9 @@ export default function ActiveSessionPopup() {
         }
     }, [primarySession, navigate]);
 
-    // Don't show on auth pages or log-practice
+    // Don't show on auth pages or the page that already displays active sessions.
     if (!user) return null;
-    const hiddenPages = ['/login', '/signup', '/forgot', '/reset', '/'];
+    const hiddenPages = ['/login', '/signup', '/forgot', '/reset', '/', '/log-practice'];
     if (hiddenPages.includes(location.pathname)) return null;
 
     // Hide on admin panel pages
@@ -100,21 +100,24 @@ export default function ActiveSessionPopup() {
 
     return (
         <>
-            <div className="fixed bottom-6 right-6 z-50">
+            <div className="fixed left-4 right-4 bottom-20 z-40 sm:left-auto sm:right-6 sm:bottom-6 sm:w-72">
                 <div 
                     onClick={handleNavigate}
-                    className={`w-72 rounded-2xl shadow-2xl border-2 cursor-pointer transition-all hover:shadow-3xl hover:scale-[1.02] ${
+                    className={`mx-auto max-w-sm overflow-hidden rounded-xl sm:rounded-2xl shadow-lg sm:shadow-2xl border cursor-pointer transition-all hover:shadow-3xl sm:hover:scale-[1.02] ${
                         isRunning ? 'bg-green-50 border-green-500' : 'bg-white border-gray-300'
                     }`}
                 >
-                    <div className={`flex items-center justify-between px-4 py-2.5 rounded-t-2xl ${isRunning ? 'bg-green-600' : 'bg-site-accent'}`}>
+                    <div className={`flex items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-2.5 sm:rounded-t-2xl ${isRunning ? 'bg-green-600' : 'bg-site-accent'}`}>
                         <div className="flex items-center gap-2 min-w-0">
                             <Clock className="w-4 h-4 text-white flex-shrink-0" />
                             <span className="text-sm font-semibold text-white truncate">
                                 {primarySession.skillName}{primarySession.notes ? ` — ${primarySession.notes}` : ''}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="sm:hidden text-sm font-bold font-mono text-white tabular-nums">
+                                {formatTimer(primarySession.timer)}
+                            </span>
                             {isRunning && <span className="w-2 h-2 bg-green-300 rounded-full animate-pulse" />}
                             <button onClick={handleDismiss} className="p-1 text-white/70 hover:text-white rounded hover:bg-white/20 transition-colors" aria-label="Hide">
                                 <X className="w-4 h-4" />
@@ -126,7 +129,7 @@ export default function ActiveSessionPopup() {
                             <div className={`h-full transition-all duration-1000 ${isRunning ? 'bg-green-500' : 'bg-site-accent'}`} style={{ width: `${progress}%` }} />
                         </div>
                     )}
-                    <div className="px-4 py-3">
+                    <div className="hidden sm:block px-4 py-3">
                         <div className={`text-3xl font-bold font-mono text-center ${
                             primarySession.isCountdown && primarySession.timer <= 0 ? 'text-red-600' : isRunning ? 'text-green-700' : 'text-site-ink'
                         }`}>

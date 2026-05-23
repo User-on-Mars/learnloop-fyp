@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
+import { useAuth } from "../useAuth";
 import { useActiveSessions } from "../context/ActiveSessionContext";
 import { useAdmin } from "../hooks/useAdmin";
 import { useSubscription } from "../context/SubscriptionContext";
@@ -36,7 +37,7 @@ const navItems = [
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const user = auth.currentUser;
+  const user = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);

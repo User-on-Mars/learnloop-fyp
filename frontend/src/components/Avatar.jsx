@@ -46,13 +46,13 @@ export function Avatar({
   isPro = false,
 }) {
   const [imageError, setImageError] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const { avatarUrl } = useCustomAvatar();
 
   // Reset error state when photoURL changes
   useEffect(() => {
     setImageError(false);
-    setIsLoading(!!photoURL && !avatarUrl);
+    setIsImageLoaded(false);
   }, [photoURL, avatarUrl]);
 
   const getInitials = () => {
@@ -77,6 +77,7 @@ export function Avatar({
   };
 
   const sizeClass = sizeClasses[size] || sizeClasses.md;
+  const initials = getInitials();
 
   // Show custom avatar if set
   if (avatarUrl) {
@@ -96,26 +97,24 @@ export function Avatar({
   // Show photo if available and no error
   if (photoURL && !imageError) {
     return (
-      <div className={`relative flex-shrink-0 ${className}`}>
+      <div className={`relative ${sizeClass} rounded-full flex-shrink-0 overflow-hidden ring-2 ring-white bg-site-accent text-white flex items-center justify-center font-semibold ${className}`}>
+        <span className={`${isImageLoaded ? "opacity-0" : "opacity-100"} transition-opacity duration-200`}>
+          {initials}
+        </span>
         <img
           src={photoURL}
           alt={displayName || "User avatar"}
           onError={() => {
             setImageError(true);
-            setIsLoading(false);
+            setIsImageLoaded(false);
           }}
-          onLoad={() => setIsLoading(false)}
-          className={`${sizeClass} rounded-full object-cover ring-2 ring-white ${
-            isLoading ? "opacity-0" : "opacity-100"
+          onLoad={() => setIsImageLoaded(true)}
+          referrerPolicy="no-referrer"
+          className={`absolute inset-0 w-full h-full object-cover ${
+            isImageLoaded ? "opacity-100" : "opacity-0"
           } transition-opacity duration-200`}
           loading="lazy"
         />
-        {/* Loading skeleton */}
-        {isLoading && (
-          <div
-            className={`${sizeClass} rounded-full bg-site-accent/20 absolute inset-0 animate-pulse`}
-          />
-        )}
         {isPro && <CrownBadge size={size} />}
       </div>
     );
