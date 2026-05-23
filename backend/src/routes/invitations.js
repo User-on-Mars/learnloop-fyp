@@ -16,6 +16,15 @@ const createInvitationSchema = z.object({
     .min(1, 'Email is required')
 });
 
+const legacyCreateInvitationSchema = z.object({
+  roomId: z.string().trim().min(1, 'Room ID is required'),
+  invitedEmail: z.string().trim().email('Invalid email address').optional(),
+  email: z.string().trim().email('Invalid email address').optional()
+}).refine((data) => data.invitedEmail || data.email, {
+  message: 'Email is required',
+  path: ['email']
+});
+
 // Validation middleware
 const validateRequest = (schema) => {
   return (req, res, next) => {
@@ -108,6 +117,46 @@ router.post('/rooms/:roomId/invitations', validateRequest(createInvitationSchema
       errorType = 'DATABASE_ERROR';
     }
     
+    res.status(statusCode).json({
+      type: errorType,
+      message: error.message,
+      timestamp: new Date().toISOString(),
+      ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    });
+  }
+});
+
+// Backward-compatible route for older frontend bundles that posted to /api/invitations.
+router.post('/invitations', validateRequest(legacyCreateInvitationSchema), async (req, res) => {
+  try {
+    const invitedEmail = req.body.invitedEmail || req.body.email;
+    console.log('📧 Creating invitation for room:', req.body.roomId, 'by user:', req.user.id);
+
+    const invitation = await InvitationService.createInvitation(
+      req.body.roomId,
+      req.user.id,
+      invitedEmail
+    );
+
+    res.status(201).json({
+      invitation,
+      message: 'Invitation sent successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error creating legacy invitation:', error.message);
+
+    let statusCode = error.statusCode || 500;
+    let errorType = error.code || 'SERVER_ERROR';
+
+    if (error.name === 'CastError') {
+      statusCode = 400;
+      errorType = 'INVALID_ID';
+    } else if (error.name === 'MongoNetworkError' || error.name === 'MongoTimeoutError') {
+      statusCode = 503;
+      errorType = 'DATABASE_ERROR';
+    }
+
     res.status(statusCode).json({
       type: errorType,
       message: error.message,

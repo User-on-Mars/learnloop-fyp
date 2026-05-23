@@ -62,10 +62,26 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 app.set('trust proxy', 1);
-const corsOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
-  .split(',')
+const defaultCorsOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://learnloop-fyp-frontend.vercel.app',
+  'https://learnloop-fyp.vercel.app'
+];
+
+const corsOrigins = [
+  ...(process.env.CLIENT_URL || '').split(','),
+  ...defaultCorsOrigins
+]
   .map((origin) => origin.trim().replace(/\/$/, ''))
   .filter(Boolean);
+
+const isAllowedCorsOrigin = (origin) => {
+  if (!origin) return true;
+  const normalizedOrigin = origin.replace(/\/$/, '');
+  return corsOrigins.includes(normalizedOrigin) ||
+    /^https:\/\/learnloop[-\w]*\.vercel\.app$/.test(normalizedOrigin);
+};
 
 // Compression middleware for faster responses
 app.use(compression({
@@ -84,28 +100,26 @@ app.use(securityHeaders);
 // Request ID middleware for tracing
 app.use(requestIdMiddleware);
 
+const corsOptions = {
+  origin(origin, callback) {
+    return callback(null, isAllowedCorsOrigin(origin));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
+  exposedHeaders: ["X-Request-ID"],
+  maxAge: 86400 // 24 hours
+};
+
+// DEV CORS: allow configured origins + preflight
+app.use(cors(corsOptions));
+// Ensure preflights are answered
+app.options("*", cors(corsOptions));
+
 // Rate limiting - apply general rate limiting to all routes (disabled in development)
 if (process.env.NODE_ENV === 'production') {
   app.use(generalRateLimit);
 }
-
-// DEV CORS: allow all origins + preflight (fixes your browser's OPTIONS failure)
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin) return callback(null, true);
-      const normalizedOrigin = origin.replace(/\/$/, '');
-      return callback(null, corsOrigins.includes(normalizedOrigin));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
-    exposedHeaders: ["X-Request-ID"],
-    maxAge: 86400 // 24 hours
-  })
-);
-// Ensure preflights are answered
-app.options("*", cors());
 
 app.use(express.json({ limit: '10mb' })); // Limit payload size for security
 

@@ -76,9 +76,9 @@ const Toast = ({
   return (
     <div 
       className={`
-        pointer-events-auto w-fit max-w-full min-w-0 sm:min-w-80 sm:max-w-md
+        pointer-events-auto w-fit max-w-full min-w-0 sm:w-full
         ${style.bg} ${style.border} ${style.text}
-        border rounded-xl shadow-lg px-3 py-2.5 sm:p-4
+        border rounded-xl shadow-lg px-3 py-2.5 sm:px-4 sm:py-3.5
         transform transition-all duration-300 ease-in-out
         ${isExiting ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'}
       `}
