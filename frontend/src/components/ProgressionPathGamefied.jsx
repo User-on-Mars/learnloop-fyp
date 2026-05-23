@@ -484,9 +484,9 @@ export default function ProgressionPathGamefied() {
 
       {/* Right Sidebar - Details Panel */}
       <div
-        className={`fixed top-16 right-0 h-[calc(100vh-4rem)] bg-white border-l border-[#e2e6dc] shadow-lg transition-transform duration-300 z-20 ${
+        className={`fixed top-16 right-0 bottom-16 sm:bottom-0 sm:h-[calc(100vh-4rem)] bg-white border-l border-[#e2e6dc] shadow-lg transition-transform duration-300 z-30 ${
           isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-        } w-full sm:w-80 flex flex-col`}
+        } w-[calc(100vw-2rem)] max-w-sm sm:w-80 sm:max-w-none flex flex-col`}
       >
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#e2e6dc] bg-[#f8faf6]">
@@ -795,7 +795,7 @@ export default function ProgressionPathGamefied() {
       {/* Toggle sidebar button - always visible at same position */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`fixed top-20 p-2 bg-white border border-[#e2e6dc] rounded-xl shadow-md hover:shadow-lg transition-all z-20 hover:bg-[#edf5e9] ${isSidebarOpen ? 'right-[calc(100%-2.5rem)] sm:right-[20.5rem]' : 'right-4'}`}
+        className={`fixed top-20 p-2 bg-white border border-[#e2e6dc] rounded-xl shadow-md hover:shadow-lg transition-all z-40 hover:bg-[#edf5e9] ${isSidebarOpen ? 'right-3 sm:right-[20.5rem]' : 'right-3 sm:right-4'}`}
         aria-label={isSidebarOpen ? 'Close details' : 'Open details'}
       >
         {isSidebarOpen ? <ChevronRight className="w-5 h-5 text-[#2e5023]" /> : <ChevronLeft className="w-5 h-5 text-[#2e5023]" />}
@@ -818,7 +818,7 @@ export default function ProgressionPathGamefied() {
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/30 z-10 sm:hidden"
+          className="fixed inset-0 bg-black/30 z-20 sm:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -827,7 +827,7 @@ export default function ProgressionPathGamefied() {
       {showBackToTop && (
         <button
           onClick={() => { const m = document.querySelector('main'); if (m) m.scrollTo({ top: 0, behavior: 'smooth' }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-          className={`fixed bottom-6 w-11 h-11 bg-site-accent text-white rounded-full shadow-lg hover:bg-site-accent-hover transition-all z-50 flex items-center justify-center hover:scale-110 ${isSidebarOpen ? 'right-[calc(100%-2.5rem)] sm:right-[21.5rem]' : 'right-6'}`}
+          className={`fixed bottom-20 sm:bottom-6 w-11 h-11 bg-site-accent text-white rounded-full shadow-lg hover:bg-site-accent-hover transition-all z-50 flex items-center justify-center hover:scale-110 ${isSidebarOpen ? 'right-4 sm:right-[21.5rem]' : 'right-4 sm:right-6'}`}
           aria-label="Back to top"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>

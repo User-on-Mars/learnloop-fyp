@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useActiveSessions } from '../context/ActiveSessionContext';
 import { auth } from '../firebase';
-import { X, Clock } from 'lucide-react';
+import { X, Clock, AlarmClock } from 'lucide-react';
 
 const MINI_SESSION_KEY = 'miniPopupSessionId';
 
@@ -10,7 +10,14 @@ export default function ActiveSessionPopup() {
     const navigate = useNavigate();
     const location = useLocation();
     const user = auth.currentUser;
-    const { activeSessions, toggleSession, formatTimer, getProgress } = useActiveSessions();
+    const {
+        activeSessions,
+        toggleSession,
+        formatTimer,
+        getProgress,
+        completedSessionNotice,
+        clearCompletedSessionNotice,
+    } = useActiveSessions();
     
     // Track the single session shown in mini popup (persisted in localStorage)
     const [miniSessionId, setMiniSessionId] = useState(() => localStorage.getItem(MINI_SESSION_KEY) || null);
@@ -61,8 +68,26 @@ export default function ActiveSessionPopup() {
         localStorage.removeItem(MINI_SESSION_KEY);
     }, [primarySession, toggleSession]);
 
+    const getSessionPath = useCallback((session) => {
+        if (!session) return null;
+        const sid = session.skillId;
+        const nid = session.nodeId;
+        if (session.roomId && session.roomSkillMapId) {
+            return `/roomspace/${session.roomId}/skill-maps/${session.roomSkillMapId}/nodes/${nid}`;
+        }
+        if (sid && nid) {
+            return `/skills/${sid}/nodes/${nid}`;
+        }
+        return '/log-practice';
+    }, []);
+
     const handleNavigate = useCallback(() => {
         if (!primarySession) return;
+        const path = getSessionPath(primarySession);
+        if (path) {
+            navigate(path);
+            return;
+        }
         const sid = primarySession.skillId;
         const nid = primarySession.nodeId;
         // Room session — navigate to room node detail
@@ -75,15 +100,51 @@ export default function ActiveSessionPopup() {
         } else {
             navigate('/log-practice');
         }
-    }, [primarySession, navigate]);
+    }, [primarySession, getSessionPath, navigate]);
+
+    const handleCompletedNavigate = useCallback(() => {
+        const path = getSessionPath(completedSessionNotice);
+        clearCompletedSessionNotice?.();
+        if (path) navigate(path);
+    }, [completedSessionNotice, clearCompletedSessionNotice, getSessionPath, navigate]);
+
+    const timeUpNotice = completedSessionNotice ? (
+        <div className="fixed left-4 right-4 top-20 z-[60] sm:left-auto sm:right-6 sm:w-80">
+            <div className="relative mx-auto max-w-sm rounded-xl border border-amber-200 bg-white shadow-xl overflow-hidden">
+                <button
+                    type="button"
+                    onClick={handleCompletedNavigate}
+                    className="w-full flex items-center gap-3 px-3 py-3 pr-10 text-left hover:bg-amber-50 transition-colors"
+                >
+                    <span className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                        <AlarmClock className="w-5 h-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-bold text-[#1c1f1a]">Time's up</span>
+                        <span className="block text-xs text-[#565c52] truncate">
+                            {completedSessionNotice.skillName || 'Practice session'} finished. Tap to open.
+                        </span>
+                    </span>
+                </button>
+                <button
+                    type="button"
+                    onClick={clearCompletedSessionNotice}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg text-[#9aa094] hover:text-[#1c1f1a] hover:bg-[#f5f7f2]"
+                    aria-label="Dismiss time's up notification"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    ) : null;
 
     // Don't show on auth pages or the page that already displays active sessions.
     if (!user) return null;
     const hiddenPages = ['/login', '/signup', '/forgot', '/reset', '/', '/log-practice'];
-    if (hiddenPages.includes(location.pathname)) return null;
+    if (hiddenPages.includes(location.pathname)) return timeUpNotice;
 
     // Hide on admin panel pages
-    if (location.pathname.startsWith('/admin')) return null;
+    if (location.pathname.startsWith('/admin')) return timeUpNotice;
 
     // Hide if on the node detail page that owns this session
     const nodeMatch = location.pathname.match(/\/skills\/[^/]+\/nodes\/([^/]+)/);
@@ -92,7 +153,7 @@ export default function ActiveSessionPopup() {
     const isOnOwnNode = primarySession && currentNodeId && primarySession.nodeId === currentNodeId;
 
     if (!primarySession || isOnOwnNode) {
-        return null;
+        return timeUpNotice;
     }
 
     const isRunning = primarySession.isRunning;
@@ -100,6 +161,7 @@ export default function ActiveSessionPopup() {
 
     return (
         <>
+            {timeUpNotice}
             <div className="fixed left-4 right-4 bottom-20 z-40 sm:left-auto sm:right-6 sm:bottom-6 sm:w-72">
                 <div 
                     onClick={handleNavigate}

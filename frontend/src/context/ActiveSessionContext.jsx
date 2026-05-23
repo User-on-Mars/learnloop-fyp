@@ -61,6 +61,7 @@ export function ActiveSessionProvider({ children }) {
     const [syncError, setSyncError] = useState(null);
 
     const [showPopup, setShowPopup] = useState(false);
+    const [completedSessionNotice, setCompletedSessionNotice] = useState(null);
     
     // Sound settings
     const [soundEnabled, setSoundEnabled] = useState(() => {
@@ -208,24 +209,32 @@ export function ActiveSessionProvider({ children }) {
         let interval;
         if (activeSessions.some(s => s.isRunning)) {
             interval = setInterval(() => {
-                setActiveSessions(prev =>
-                    prev.map(session => {
+                setActiveSessions(prev => {
+                    let completedSession = null;
+                    const nextSessions = prev.map(session => {
                         if (!session.isRunning) return session;
                         if (session.isCountdown) {
                             const newTimer = session.timer - 1;
                             if (newTimer <= 0) {
-                                // Play sound when countdown reaches zero
-                                if (soundEnabled && !completedSoundsRef.current.has(session.id)) {
+                                // Notify once when countdown reaches zero; sound is optional.
+                                if (!completedSoundsRef.current.has(session.id)) {
                                     completedSoundsRef.current.add(session.id);
-                                    createNotificationSound();
+                                    if (soundEnabled) createNotificationSound();
+                                    completedSession = { ...session, timer: 0, isRunning: false };
                                 }
                                 return { ...session, timer: 0, isRunning: false };
                             }
                             return { ...session, timer: newTimer };
                         }
                         return { ...session, timer: session.timer + 1 };
-                    })
-                );
+                    });
+
+                    if (completedSession) {
+                        setCompletedSessionNotice(completedSession);
+                    }
+
+                    return nextSessions;
+                });
             }, 1000);
         }
         return () => clearInterval(interval);
@@ -412,6 +421,8 @@ export function ActiveSessionProvider({ children }) {
         soundEnabled,
         setSoundEnabled,
         testSound,
+        completedSessionNotice,
+        clearCompletedSessionNotice: () => setCompletedSessionNotice(null),
         isLoading,
         syncError
     };
