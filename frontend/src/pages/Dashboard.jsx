@@ -13,8 +13,14 @@ import HeroSection from "../components/HeroSection";
 import DataTable from "../components/DataTable";
 
 const MAPS_PER_PAGE = 5;
+const DASHBOARD_CACHE_TTL_MS = 60 * 1000;
+let dashboardCache = null;
 
 import FilterDropdown from "../components/FilterDropdown";
+
+function getDashboardUserKey(user) {
+  return user?.uid || user?.id || user?.email || null;
+}
 
 function DashboardSkeleton() {
   return (
@@ -34,38 +40,73 @@ function DashboardSkeleton() {
 export default function Dashboard() {
   const navigate = useNavigate();
   const user = useAuth();
-  const [stats, setStats] = useState(null);
-  const [practices, setPractices] = useState([]);
-  const [skills, setSkills] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const userKey = getDashboardUserKey(user);
+  const initialCache = dashboardCache?.userKey === userKey ? dashboardCache : null;
+  const [stats, setStats] = useState(() => initialCache?.stats || null);
+  const [practices, setPractices] = useState(() => initialCache?.practices || []);
+  const [skills, setSkills] = useState(() => initialCache?.skills || []);
+  const [isLoading, setIsLoading] = useState(() => !initialCache);
   const [error, setError] = useState("");
-  const [xpProfile, setXpProfile] = useState(null);
-  const [xpLoading, setXpLoading] = useState(true);
-  const [xpError, setXpError] = useState(false);
-  const [reflections, setReflections] = useState([]);
+  const [xpProfile, setXpProfile] = useState(() => initialCache?.xpProfile || null);
+  const [xpLoading, setXpLoading] = useState(() => !initialCache);
+  const [xpError, setXpError] = useState(() => initialCache?.xpError || false);
+  const [reflections, setReflections] = useState(() => initialCache?.reflections || []);
   const [mapPage, setMapPage] = useState(1);
   const [activeTab, setActiveTab] = useState('skills');
   const [statusFilter, setStatusFilter] = useState('all');
   const [moodFilter, setMoodFilter] = useState('all');
   const [sessionTypeFilter, setSessionTypeFilter] = useState('all');
 
-  const fetchDashboard = useCallback(async () => {
+  const applyDashboardData = useCallback((data) => {
+    setStats(data.stats);
+    setPractices(data.practices);
+    setSkills(data.skills);
+    setReflections(data.reflections);
+    setXpProfile(data.xpProfile);
+    setXpError(data.xpError);
+    setXpLoading(false);
+  }, []);
+
+  const fetchDashboard = useCallback(async ({ force = false } = {}) => {
+    if (!userKey) return;
+    const now = Date.now();
+    const hasUserCache = dashboardCache?.userKey === userKey;
+    const hasFreshCache = hasUserCache && now - dashboardCache.fetchedAt < DASHBOARD_CACHE_TTL_MS;
+    if (!force && hasFreshCache) {
+      applyDashboardData(dashboardCache);
+      return;
+    }
+
     try {
-      setIsLoading(true); setError("");
-      const [statsRes, practicesRes, skillsRes] = await Promise.all([
+      if (!hasUserCache) setIsLoading(true);
+      setError("");
+      setXpLoading(!hasUserCache);
+
+      const [statsRes, practicesRes, skillsRes, reflectionsRes, xpRes] = await Promise.all([
         practiceAPI.getStats().catch(() => ({ data: { summary: { totalMinutes: 0, totalSessions: 0 }, topSkills: [] } })),
         practiceAPI.getPractices({ limit: 500 }).catch(() => ({ data: { practices: [] } })),
         skillsAPI.getAll().catch(() => ({ data: { skills: [] } })),
+        client.get('/reflections').catch(() => ({ data: [] })),
+        xpAPI.getProfile()
+          .then((res) => ({ data: res.data, error: false }))
+          .catch(() => ({ data: null, error: true })),
       ]);
-      setStats(statsRes.data); setPractices(practicesRes.data.practices || []); setSkills(skillsRes.data.skills || []);
-      // Fetch reflections
-      try { const refRes = await client.get('/reflections'); setReflections(refRes.data || []); } catch { setReflections([]); }
-      setXpLoading(true); setXpError(false);
-      try { const r = await xpAPI.getProfile(); setXpProfile(r.data); }
-      catch { setXpError(true); } finally { setXpLoading(false); }
+
+      const data = {
+        stats: statsRes.data,
+        practices: practicesRes.data.practices || [],
+        skills: skillsRes.data.skills || [],
+        reflections: reflectionsRes.data || [],
+        xpProfile: xpRes.data,
+        xpError: xpRes.error,
+        userKey,
+        fetchedAt: Date.now(),
+      };
+      dashboardCache = data;
+      applyDashboardData(data);
     } catch (err) { console.error("Dashboard fetch error:", err); setError("Failed to load dashboard data"); }
     finally { setIsLoading(false); }
-  }, []);
+  }, [applyDashboardData, userKey]);
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
   useEffect(() => {
