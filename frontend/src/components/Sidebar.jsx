@@ -9,7 +9,7 @@ import LogoMark from "./LogoMark";
 import { Avatar } from "./Avatar";
 import NotificationBell from "./NotificationBell";
 import Modal, { ModalButton } from "./Modal";
-import { Menu, Plus, PenLine } from "lucide-react";
+import { Menu, Plus, PenLine, X } from "lucide-react";
 
 /* ─── Icon components (unchanged) ─── */
 const HomeIcon = () => (<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>);
@@ -38,6 +38,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const user = auth.currentUser;
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showAdminConfirm, setShowAdminConfirm] = useState(false);
@@ -55,11 +56,31 @@ export default function Sidebar() {
     return location.pathname === path;
   };
 
+  const goTo = (path) => {
+    navigate(path);
+    setMobileMenuOpen(false);
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowUserMenu(false); };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false);
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMenuOpen]);
 
   const handleLogoutClick = () => { setShowUserMenu(false); setShowLogoutConfirm(true); };
   const performLogout = async () => { try { clearAllSessions(); await signOut(auth); navigate("/login", { replace: true }); } catch (e) { console.error("Logout error:", e); } };
@@ -69,10 +90,22 @@ export default function Sidebar() {
   return (
     <>
       {/* ═══ TOP BAR ═══ */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-[#dde1d6] flex items-center px-4 gap-4 z-30 shadow-sm shadow-black/[0.02]">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-[#dde1d6] flex items-center px-3 sm:px-4 gap-2 sm:gap-4 z-30 shadow-sm shadow-black/[0.02]">
         {/* Hamburger */}
-        <button onClick={() => setSidebarOpen(o => !o)} className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg flex items-center justify-center text-[#565c52] hover:bg-[#eef0ea] transition-colors">
-          <Menu className="w-5 h-5" />
+        <button
+          onClick={() => {
+            const isDesktop = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
+            if (isDesktop) {
+              setSidebarOpen(o => !o);
+            } else {
+              setMobileMenuOpen(o => !o);
+            }
+          }}
+          aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={mobileMenuOpen}
+          className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg flex items-center justify-center text-[#565c52] hover:bg-[#eef0ea] transition-colors"
+        >
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
 
         {/* Logo */}
@@ -85,7 +118,7 @@ export default function Sidebar() {
         <div className="flex-1" />
 
         {/* Right actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-0.5 sm:gap-1.5">
           <button onClick={() => navigate("/skills")} title="Create Skill Map"
             className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg flex items-center justify-center text-[#565c52] hover:bg-[#eef0ea] transition-colors">
             <Plus className="w-5 h-5" />
@@ -146,6 +179,56 @@ export default function Sidebar() {
           )}
         </nav>
       </aside>
+
+      {/* Mobile navigation drawer */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 top-16 z-40 md:hidden">
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <aside className="relative h-full w-[calc(100vw-2rem)] max-w-80 bg-white border-r border-[#dde1d6] shadow-2xl overflow-y-auto">
+            <nav className="p-3 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.path);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => goTo(item.path)}
+                    className={`w-full min-h-[48px] px-3 rounded-xl flex items-center gap-3 text-left transition-all ${
+                      active
+                        ? 'bg-[#2e5023] text-white shadow-sm'
+                        : 'text-[#565c52] hover:bg-[#eef0ea]'
+                    }`}
+                  >
+                    <span className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/10">
+                      <Icon />
+                    </span>
+                    <span className="text-sm font-semibold">{item.label}</span>
+                  </button>
+                );
+              })}
+              {isAdmin && (
+                <>
+                  <div className="border-t border-[#dde1d6] my-2" />
+                  <button
+                    onClick={() => { setMobileMenuOpen(false); handleAdminClick(); }}
+                    className="w-full min-h-[48px] px-3 rounded-xl flex items-center gap-3 text-left text-red-600 hover:bg-red-50 transition-all"
+                  >
+                    <span className="w-9 h-9 rounded-lg flex items-center justify-center bg-red-50">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                    </span>
+                    <span className="text-sm font-semibold">Admin Panel</span>
+                  </button>
+                </>
+              )}
+            </nav>
+          </aside>
+        </div>
+      )}
 
       {/* ═══ Modals ═══ */}
       {showAdminConfirm && (

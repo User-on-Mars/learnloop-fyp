@@ -161,7 +161,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8faf6]">
-      <div className="px-4 sm:px-6 py-6 lg:py-8 space-y-6">
+      <div className="px-3 sm:px-6 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
 
           {/* Hero Greeting */}
           <HeroSection
@@ -205,21 +205,21 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
             {/* LEFT: Practice Overview — stats | divider | donut + legend */}
-            <div className="lg:col-span-3 bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden flex">
+            <div className="lg:col-span-3 bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden flex flex-col sm:flex-row">
               {/* Left section: title + stats */}
-              <div className="flex-1 p-6 sm:p-7">
-                <h2 className="text-[17px] font-bold text-site-ink mb-6">Practice Overview</h2>
-                <div className="grid grid-cols-3 gap-3">
+              <div className="flex-1 p-4 sm:p-7">
+                <h2 className="text-[16px] sm:text-[17px] font-bold text-site-ink mb-4 sm:mb-6">Practice Overview</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <StatBubble icon={<Clock className="w-6 h-6 text-blue-500" />} bg="bg-blue-100" value={`${totalHours}h ${totalMins}m`} label="Total Time" sub={todayMinutes > 0 ? `↑ ${todayMinutes}m today` : null} subUp={todayMinutes > 0} />
                   <StatBubble icon={<BarChart3 className="w-6 h-6 text-amber-600" />} bg="bg-amber-100" value={totalSessions} label="Total Sessions" sub={totalSessions > 0 ? `${Math.round((summary.totalMinutes || 0) / totalSessions)}m avg` : null} subUp={totalSessions > 0} />
                   <StatBubble icon={<Target className="w-6 h-6 text-emerald-600" />} bg="bg-emerald-100" value={totalNodes} label="Total Nodes" sub={`${completedNodes} completed`} subUp={completedNodes > 0} />
                 </div>
               </div>
               {/* Full-height divider */}
-              <div className="w-px bg-[#e2e6dc]" />
+              <div className="h-px sm:h-auto sm:w-px bg-[#e2e6dc]" />
               {/* Right section: donut + legend */}
-              <div className="flex items-center gap-3 sm:gap-5 p-6 sm:p-7">
-                <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 p-4 sm:p-7">
+                <div className="w-28 h-28 sm:w-40 sm:h-40 flex-shrink-0">
                   <DonutWithCenter
                     segments={[
                       { value: completedNodes, color: '#2e5023' },
@@ -236,10 +236,10 @@ export default function Dashboard() {
             </div>
 
             {/* RIGHT: Skill Category — donut + legend */}
-            <div className="lg:col-span-2 bg-white rounded-2xl border border-[#e2e6dc] p-6 sm:p-7">
-              <h2 className="text-[17px] font-bold text-site-ink mb-6">Skill Category</h2>
-              <div className="flex items-center gap-3 sm:gap-5">
-                <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-[#e2e6dc] p-4 sm:p-7">
+              <h2 className="text-[16px] sm:text-[17px] font-bold text-site-ink mb-4 sm:mb-6">Skill Category</h2>
+              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+                <div className="w-28 h-28 sm:w-40 sm:h-40 flex-shrink-0">
                   <DonutWithCenter
                     segments={[
                       { value: completedMaps, color: '#2e5023' },
@@ -262,27 +262,27 @@ export default function Dashboard() {
 
           {/* Tab Switcher */}
           <div className="bg-white rounded-2xl border border-[#e2e6dc]">
-            <div className="px-4 py-3">
-              <div className="flex bg-[#f5f7f2] rounded-xl p-1 border border-[#e8ebe4]">
+            <div className="px-3 sm:px-4 py-3">
+              <div className="grid grid-cols-3 bg-[#f5f7f2] rounded-xl p-1 border border-[#e8ebe4]">
                 {[
                   { id: 'skills', label: 'Skill Maps', count: unlockedSkills.length },
                   { id: 'reflections', label: 'Reflections', count: reflections.length },
                   { id: 'sessions', label: 'Sessions', count: practices.length },
                 ].map(tab => (
                   <button key={tab.id} onClick={() => { setActiveTab(tab.id); setMapPage(1); setStatusFilter('all'); setMoodFilter('all'); setSessionTypeFilter('all'); }}
-                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                    className={`min-w-0 px-2 sm:px-4 py-2.5 rounded-lg text-[11px] min-[380px]:text-xs sm:text-sm font-semibold transition-all ${
                       activeTab === tab.id
                         ? 'bg-white text-[#1c1f1a] shadow-sm'
                         : 'text-[#9aa094] hover:text-[#565c52]'
                     }`}>
-                    {tab.label} <span className="text-[10px] opacity-60">({tab.count})</span>
+                    <span className="block truncate">{tab.label} <span className="text-[10px] opacity-60">({tab.count})</span></span>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Filter row */}
-            <div className="px-6 py-3 flex items-center gap-3 border-t border-[#e2e6dc] bg-[#f8faf6] rounded-b-2xl">
+            <div className="px-3 sm:px-6 py-3 flex flex-wrap items-center gap-2 sm:gap-3 border-t border-[#e2e6dc] bg-[#f8faf6] rounded-b-2xl">
               {/* Skills filter */}
               {activeTab === 'skills' && (
                 <>
@@ -342,7 +342,7 @@ export default function Dashboard() {
               )}
 
               <button onClick={() => setMapPage(1)}
-                className="px-5 py-2 bg-gradient-to-r from-sky-600 to-blue-600 text-white text-[12px] font-bold rounded-xl hover:from-sky-700 hover:to-blue-700 shadow-sm transition-all active:scale-[0.97]">
+                className="ml-auto px-4 sm:px-5 py-2 bg-gradient-to-r from-sky-600 to-blue-600 text-white text-[12px] font-bold rounded-xl hover:from-sky-700 hover:to-blue-700 shadow-sm transition-all active:scale-[0.97]">
                 Filter
               </button>
             </div>
@@ -350,7 +350,7 @@ export default function Dashboard() {
 
           {/* ── Result Card (separate) ── */}
           <div className="bg-white rounded-2xl border border-[#e2e6dc]">
-            <div className="px-6 pb-6 pt-4">
+            <div className="px-3 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-4">
               {/* Skill Maps tab */}
               {activeTab === 'skills' && (
                 <>
@@ -811,17 +811,19 @@ export default function Dashboard() {
 
 const StatBubble = memo(function StatBubble({ icon, bg, value, label, sub, subUp }) {
   return (
-    <div className="flex flex-col items-center text-center">
-      <div className={`w-12 h-12 rounded-full ${bg} flex items-center justify-center mb-2`}>
+    <div className="flex items-center gap-3 rounded-xl bg-[#f8faf6] border border-[#eef0ea] p-3 text-left sm:flex-col sm:text-center sm:bg-transparent sm:border-0 sm:p-0">
+      <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full ${bg} flex items-center justify-center flex-shrink-0 sm:mb-2`}>
         {icon}
       </div>
-      <p className="text-xs text-site-faint mb-0.5">{label}</p>
-      <p className="text-2xl font-bold text-site-ink leading-none">{value}</p>
+      <div className="min-w-0">
+      <p className="text-xs text-site-faint mb-0.5 truncate">{label}</p>
+      <p className="text-xl sm:text-2xl font-bold text-site-ink leading-none break-words">{value}</p>
       {sub && (
-        <p className={`text-[11px] mt-1.5 font-medium ${subUp ? 'text-emerald-600' : 'text-site-muted'}`}>
+        <p className={`text-[11px] mt-1.5 font-medium break-words ${subUp ? 'text-emerald-600' : 'text-site-muted'}`}>
           {subUp && '↑ '}{sub}
         </p>
       )}
+      </div>
     </div>
   );
 });

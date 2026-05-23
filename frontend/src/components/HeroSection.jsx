@@ -57,13 +57,13 @@ const HeroSection = memo(function HeroSection({
       {/* Content */}
       <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-5">
         {/* Left: Title + Description */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2 sm:mb-3">
             <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-${iconGradientFrom} to-${iconGradientTo} flex items-center justify-center shadow-sm`}>
               {Icon && <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#1c1f1a]">{title}</h1>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#1c1f1a] leading-tight break-words">{title}</h1>
               {subtitle && (
                 <p className={`text-xs sm:text-sm text-${subtitleColor} font-medium`}>{subtitle}</p>
               )}

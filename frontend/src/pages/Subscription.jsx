@@ -61,6 +61,18 @@ export default function Subscription() {
 
   useEffect(() => { fetchBillingHistory(); }, [fetchBillingHistory]);
 
+  useEffect(() => {
+    const resetRedirectState = () => setUpgrading(false);
+
+    window.addEventListener("pageshow", resetRedirectState);
+    window.addEventListener("focus", resetRedirectState);
+
+    return () => {
+      window.removeEventListener("pageshow", resetRedirectState);
+      window.removeEventListener("focus", resetRedirectState);
+    };
+  }, []);
+
   const handleUpgrade = async () => {
     try {
       setUpgrading(true); setMessage(null);
