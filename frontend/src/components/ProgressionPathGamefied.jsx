@@ -500,6 +500,14 @@ export default function ProgressionPathGamefied() {
             ) : !isTemplateMap ? (
               <button onClick={handleEditClick} className="min-w-[44px] min-h-[44px] p-2 text-[#9aa094] hover:text-[#2e5023] hover:bg-[#edf5e9] rounded-lg transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>
             ) : null}
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="min-w-[44px] min-h-[44px] p-2 text-[#9aa094] hover:text-[#1c1f1a] hover:bg-[#eef0ea] rounded-lg transition-colors"
+              title="Close details"
+              aria-label="Close details"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
