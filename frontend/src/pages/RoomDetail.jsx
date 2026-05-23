@@ -512,13 +512,9 @@ export default function RoomDetail() {
           </div>
 
           {/* ═══ Content Grid ═══ */}
-          <div className="flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_32rem] gap-4 sm:gap-6">
-            
-            {/* Left Column - Leaderboard & Skill Maps */}
-            <div className="space-y-4 sm:space-y-6">
-              
-              {/* Leaderboard Section */}
-              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_32rem]">
+              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden min-w-0">
                 <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#e8ece3] flex items-center justify-between">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-100 flex items-center justify-center">
@@ -539,83 +535,7 @@ export default function RoomDetail() {
                 </div>
               </div>
 
-              {/* Skill Maps Section */}
-              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden">
-                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#e8ece3] flex items-center justify-between">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
-                      <Map className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-base sm:text-lg font-bold text-[#1c1f1a]">Skill Maps</h2>
-                      {skillMaps.length > 0 && (
-                        <p className="text-[10px] sm:text-xs text-[#9aa094]">{skillMaps.length}/6 maps added</p>
-                      )}
-                    </div>
-                  </div>
-                  {isOwner && (
-                    <button
-                      onClick={() => setShowAddSkillMapModal(true)}
-                      disabled={skillMaps.length >= 6}
-                      className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-xl font-semibold transition-all ${
-                        skillMaps.length >= 6
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-[#2e5023] text-white hover:bg-[#3a6b2e] shadow-md shadow-[#2e5023]/20'
-                      }`}
-                    >
-                      <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Add Skill Map</span>
-                      <span className="sm:hidden">Add</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className="p-4 sm:p-6">
-                  {skillMaps.length === 0 ? (
-                    <div className="text-center py-8 sm:py-10">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#f5f7f2] rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                        <BookOpen className="w-7 h-7 sm:w-8 sm:h-8 text-[#c8cec0]" />
-                      </div>
-                      <h3 className="text-sm sm:text-base font-bold text-[#1c1f1a] mb-2">No skill maps yet</h3>
-                      {isOwner ? (
-                        <>
-                          <p className="text-xs sm:text-sm text-[#9aa094] mb-3 sm:mb-4 max-w-sm mx-auto px-4">
-                            Add skill maps to give your team something to practice and compete on
-                          </p>
-                          <button
-                            onClick={() => setShowAddSkillMapModal(true)}
-                            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#2e5023] text-white rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#3a6b2e] transition-all shadow-md"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Add Your First Skill Map
-                          </button>
-                        </>
-                      ) : (
-                        <p className="text-xs sm:text-sm text-[#9aa094] max-w-sm mx-auto px-4">
-                          The room owner hasn't added any skill maps yet
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      {skillMaps.map((skillMap) => (
-                        <SkillMapCard
-                          key={skillMap._id}
-                          skillMap={skillMap}
-                          isOwner={isOwner}
-                          onRemove={() => showRemoveSkillMapConfirm(skillMap)}
-                          onClick={() => navigate(`/roomspace/${roomId}/skill-maps/${skillMap._id}`)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - Members */}
-            <div>
-              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden xl:sticky xl:top-24">
+              <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden h-fit">
                 <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#e8ece3] flex items-center justify-between">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div 
@@ -646,6 +566,79 @@ export default function RoomDetail() {
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Skill Maps Section */}
+            <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#e8ece3] flex items-center justify-between">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <Map className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-[#1c1f1a]">Skill Maps</h2>
+                    {skillMaps.length > 0 && (
+                      <p className="text-[10px] sm:text-xs text-[#9aa094]">{skillMaps.length}/6 maps added</p>
+                    )}
+                  </div>
+                </div>
+                {isOwner && (
+                  <button
+                    onClick={() => setShowAddSkillMapModal(true)}
+                    disabled={skillMaps.length >= 6}
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-xl font-semibold transition-all ${
+                      skillMaps.length >= 6
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-[#2e5023] text-white hover:bg-[#3a6b2e] shadow-md shadow-[#2e5023]/20'
+                    }`}
+                  >
+                    <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Add Skill Map</span>
+                    <span className="sm:hidden">Add</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="p-4 sm:p-6">
+                {skillMaps.length === 0 ? (
+                  <div className="text-center py-8 sm:py-10">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#f5f7f2] rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                      <BookOpen className="w-7 h-7 sm:w-8 sm:h-8 text-[#c8cec0]" />
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold text-[#1c1f1a] mb-2">No skill maps yet</h3>
+                    {isOwner ? (
+                      <>
+                        <p className="text-xs sm:text-sm text-[#9aa094] mb-3 sm:mb-4 max-w-sm mx-auto px-4">
+                          Add skill maps to give your team something to practice and compete on
+                        </p>
+                        <button
+                          onClick={() => setShowAddSkillMapModal(true)}
+                          className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#2e5023] text-white rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#3a6b2e] transition-all shadow-md"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Your First Skill Map
+                        </button>
+                      </>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-[#9aa094] max-w-sm mx-auto px-4">
+                        The room owner hasn't added any skill maps yet
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                    {skillMaps.map((skillMap) => (
+                      <SkillMapCard
+                        key={skillMap._id}
+                        skillMap={skillMap}
+                        isOwner={isOwner}
+                        onRemove={() => showRemoveSkillMapConfirm(skillMap)}
+                        onClick={() => navigate(`/roomspace/${roomId}/skill-maps/${skillMap._id}`)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
