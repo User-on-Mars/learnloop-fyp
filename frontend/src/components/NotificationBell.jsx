@@ -328,26 +328,31 @@ export default function NotificationBell() {
           />
           {/* Dropdown panel */}
           <div
-            className="fixed w-80 bg-site-surface rounded-xl shadow-2xl border border-site-border overflow-hidden"
-            style={{ ...getDropdownStyle(), zIndex: 9999 }}
+            className="fixed left-3 right-3 top-[calc(env(safe-area-inset-top)+4.75rem)] max-h-[min(32rem,calc(100dvh-9rem))] bg-site-surface rounded-2xl shadow-2xl border border-site-border overflow-hidden sm:left-auto sm:right-auto sm:top-auto sm:w-96"
+            style={{ ...(window.innerWidth < 640 ? {} : getDropdownStyle()), zIndex: 9999 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-site-border">
-              <h3 className="font-semibold text-site-ink text-sm">Notifications</h3>
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-site-border bg-white/95">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-site-ink text-base sm:text-sm">Notifications</h3>
+                {unreadCount > 0 && (
+                  <p className="text-xs text-site-muted mt-0.5">{unreadCount} unread</p>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllRead}
-                    className="flex items-center gap-1 text-xs text-site-accent hover:text-site-accent-hover font-medium transition-colors"
+                    className="min-h-9 inline-flex items-center gap-1 rounded-lg bg-site-accent/10 px-2.5 text-xs text-site-accent hover:text-site-accent-hover font-medium transition-colors"
                     title="Mark all as read"
                   >
                     <CheckCheck className="w-3.5 h-3.5" />
-                    Mark all read
+                    <span className="hidden min-[380px]:inline">Mark all read</span>
                   </button>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center text-site-muted hover:text-site-ink rounded transition-colors"
+                  className="min-w-10 min-h-10 w-10 h-10 flex items-center justify-center text-site-muted hover:text-site-ink rounded-lg hover:bg-site-bg transition-colors"
                   aria-label="Close notifications"
                 >
                   <X className="w-4 h-4" />
@@ -356,7 +361,7 @@ export default function NotificationBell() {
             </div>
 
             {/* Content */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[calc(min(32rem,100dvh-9rem)-4.25rem)] overflow-y-auto bg-[#fbfcfa] sm:bg-site-surface">
               {error && (
                 <div className="mx-3 mt-3 p-2 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs">
                   {error}
@@ -369,13 +374,15 @@ export default function NotificationBell() {
                   <p className="text-xs text-site-muted">Loading...</p>
                 </div>
               ) : allNotifications.length === 0 ? (
-                <div className="p-8 text-center">
-                  <Bell className="w-8 h-8 text-site-border mx-auto mb-2" />
-                  <p className="text-sm text-site-muted">No notifications</p>
-                  <p className="text-xs text-site-faint mt-1">You're all caught up</p>
+                <div className="px-6 py-10 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-site-bg">
+                    <Bell className="w-6 h-6 text-site-border" />
+                  </div>
+                  <p className="text-sm font-semibold text-site-ink">No notifications</p>
+                  <p className="text-xs text-site-muted mt-1">You're all caught up</p>
                 </div>
               ) : (
-                <div className="py-1">
+                <div className="space-y-2 p-3 sm:space-y-0 sm:p-0">
                   {allNotifications.map((item) => {
                     if (item.notifType === 'invitation') {
                       // Render invitation notification
@@ -397,12 +404,12 @@ export default function NotificationBell() {
                           role={isClickable ? "button" : undefined}
                           tabIndex={isClickable ? 0 : undefined}
                           onKeyDown={(e) => { if (isClickable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleInvitationClick(inv); } }}
-                          className={`px-4 py-3 border-b border-site-border/50 last:border-b-0 transition-colors ${
-                            isRead ? "bg-transparent" : "bg-site-accent/5"
+                          className={`rounded-xl border px-3 py-3 shadow-sm transition-colors sm:rounded-none sm:border-x-0 sm:border-t-0 sm:shadow-none sm:px-4 ${
+                            isRead ? "bg-white border-site-border/70 sm:bg-transparent" : "bg-site-accent/5 border-site-accent/20"
                           } ${isClickable ? "cursor-pointer hover:bg-site-accent/10" : ""}`}
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                            <div className={`w-9 h-9 sm:w-8 sm:h-8 rounded-xl sm:rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                               isAccepted ? "bg-green-50" : isDeclined ? "bg-red-50" : isExpired ? "bg-gray-100" : "bg-teal-50"
                             }`}>
                               {isAccepted ? (
@@ -414,7 +421,7 @@ export default function NotificationBell() {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-site-ink">
+                              <p className="text-sm leading-5 text-site-ink">
                                 <span className="font-semibold">{inviterName}</span>
                                 {" invited you to "}
                                 <span className="font-semibold">{roomName}</span>
@@ -447,11 +454,11 @@ export default function NotificationBell() {
                               </div>
 
                               {isPending && (
-                                <div className="flex gap-2 mt-2">
+                                <div className="grid grid-cols-2 gap-2 mt-3">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleAccept(inv._id); }}
                                     disabled={isProcessing}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-site-accent text-white rounded-lg text-xs font-medium hover:bg-site-accent-hover transition-colors disabled:opacity-50"
+                                    className="min-h-9 flex items-center justify-center gap-1 px-3 py-1.5 bg-site-accent text-white rounded-lg text-xs font-medium hover:bg-site-accent-hover transition-colors disabled:opacity-50"
                                   >
                                     <CheckCircle className="w-3 h-3" />
                                     {isProcessing ? "..." : "Accept"}
@@ -459,7 +466,7 @@ export default function NotificationBell() {
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleDecline(inv._id); }}
                                     disabled={isProcessing}
-                                    className="flex items-center gap-1 px-3 py-1.5 border border-site-border text-site-muted rounded-lg text-xs font-medium hover:bg-site-bg transition-colors disabled:opacity-50"
+                                    className="min-h-9 flex items-center justify-center gap-1 px-3 py-1.5 border border-site-border text-site-muted rounded-lg text-xs font-medium hover:bg-site-bg transition-colors disabled:opacity-50"
                                   >
                                     <XCircle className="w-3 h-3" />
                                     {isProcessing ? "..." : "Decline"}
@@ -484,12 +491,12 @@ export default function NotificationBell() {
                           role={isClickable ? "button" : undefined}
                           tabIndex={isClickable ? 0 : undefined}
                           onKeyDown={(e) => { if (isClickable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleNotificationClick(notif); } }}
-                          className={`px-4 py-3 border-b border-site-border/50 last:border-b-0 transition-colors ${
-                            isRead ? "bg-transparent" : "bg-site-accent/5"
+                          className={`rounded-xl border px-3 py-3 shadow-sm transition-colors sm:rounded-none sm:border-x-0 sm:border-t-0 sm:shadow-none sm:px-4 ${
+                            isRead ? "bg-white border-site-border/70 sm:bg-transparent" : "bg-site-accent/5 border-site-accent/20"
                           } ${isClickable ? "cursor-pointer hover:bg-site-accent/10" : ""}`}
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                            <div className={`w-9 h-9 sm:w-8 sm:h-8 rounded-xl sm:rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                               notif.type === 'publish_request_approved' ? "bg-green-50" :
                               notif.type === 'publish_request_rejected' ? "bg-orange-50" :
                               notif.type === 'published_template_removed' ? "bg-red-50" :
@@ -500,10 +507,10 @@ export default function NotificationBell() {
                               {getNotificationIcon(notif.type)}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-site-ink">{notif.title}</p>
-                              <p className="text-xs text-site-muted mt-0.5">{notif.message}</p>
+                              <p className="text-sm font-semibold leading-5 text-site-ink">{notif.title}</p>
+                              <p className="text-xs leading-5 text-site-muted mt-0.5">{notif.message}</p>
 
-                              <div className="flex items-center justify-between mt-1">
+                              <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
                                 <div className="flex items-center gap-1">
                                   <Clock className="w-3 h-3 text-site-faint" />
                                   <span className="text-xs text-site-faint">
@@ -512,14 +519,14 @@ export default function NotificationBell() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {isClickable && (
-                                    <span className="flex items-center gap-0.5 text-xs text-site-accent">
+                                    <span className="min-h-7 inline-flex items-center gap-1 rounded-md bg-site-accent/10 px-2 text-xs font-medium text-site-accent">
                                       <ExternalLink className="w-3 h-3" />
                                       View
                                     </span>
                                   )}
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleDismissNotification(notif._id); }}
-                                    className="text-xs text-site-muted hover:text-site-ink transition-colors"
+                                    className="min-h-7 rounded-md px-2 text-xs text-site-muted hover:text-site-ink hover:bg-site-bg transition-colors"
                                   >
                                     Dismiss
                                   </button>
