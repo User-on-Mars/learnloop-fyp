@@ -61,6 +61,7 @@ import PaymentCleanupScheduler from "./services/PaymentCleanupScheduler.js";
 dotenv.config();
 const app = express();
 const server = createServer(app);
+app.set('trust proxy', 1);
 const corsOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim().replace(/\/$/, ''))

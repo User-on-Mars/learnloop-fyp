@@ -92,6 +92,34 @@ router.post('/login', async (req, res) => {
   }
 })
 
+router.post('/password-reset-status', async (req, res) => {
+  try {
+    const email = req.body.email
+    if (!email) return res.status(400).json({ message: 'Email is required' })
+
+    try {
+      const firebaseUser = await admin.auth().getUserByEmail(email)
+      const user = await User.findOne({ email })
+      if (user?.accountStatus === 'banned' || user?.accountStatus === 'deleted') {
+        return res.json({ exists: false, emailVerified: false })
+      }
+
+      return res.json({
+        exists: true,
+        emailVerified: Boolean(firebaseUser.emailVerified)
+      })
+    } catch (error) {
+      if (error?.code === 'auth/user-not-found') {
+        return res.json({ exists: false, emailVerified: false })
+      }
+      throw error
+    }
+  } catch (error) {
+    console.error('Password reset status check failed:', error.message)
+    return res.status(500).json({ message: 'Could not check this account right now' })
+  }
+})
+
 // Very simple reset token using JWT for demo; in production use a separate token store
 router.post('/forgot', async (req, res) => {
   try {

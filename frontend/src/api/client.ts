@@ -27,6 +27,7 @@ const client = buildHttpClient()
 export const authAPI = {
   register: (data: any) => client.post('/auth/register', data),
   login: (data: any) => client.post('/auth/login', data),
+  passwordResetStatus: (email: string) => client.post('/auth/password-reset-status', { email }),
   forgotPassword: (email: string) => client.post('/auth/forgot', { email }),
   resetPassword: (token: string, password: string) => 
     client.post('/auth/reset', { token, password }),

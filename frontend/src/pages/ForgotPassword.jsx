@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { auth } from "../firebase";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { Mail, ArrowLeft, Loader, CheckCircle } from "lucide-react";
 import LogoMark from "../components/LogoMark";
 import { authAPI } from "../api/client";
@@ -33,7 +35,17 @@ export default function ForgotPassword() {
     e.preventDefault();
     setErr(""); setLoading(true);
     try {
-      await authAPI.forgotPassword(email);
+      const { data } = await authAPI.passwordResetStatus(email);
+      if (!data.exists) {
+        setErr("No account found with this email.");
+        return;
+      }
+      if (!data.emailVerified) {
+        setErr("This email is not verified yet. Please verify your email before resetting your password.");
+        return;
+      }
+
+      await sendPasswordResetEmail(auth, email);
       setSent(true);
     } catch (e) {
       setErr(e?.response?.data?.message || e.message || "Failed to send reset email.");
