@@ -395,12 +395,12 @@ export default function RoomDetail() {
       <Sidebar />
 
       <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 py-4 lg:py-5">
+        <div className="px-4 sm:px-6 pt-2 pb-4 lg:pt-3 lg:pb-5">
           
           {/* ═══ Back Button ═══ */}
           <button
             onClick={() => navigate("/roomspace")}
-            className="group flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-pink-300 hover:text-pink-600 transition-all mb-4 shadow-sm"
+            className="group flex items-center gap-2.5 px-3.5 py-2 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-pink-300 hover:text-pink-600 transition-all mb-3 shadow-sm"
           >
             <div 
               className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
@@ -413,7 +413,7 @@ export default function RoomDetail() {
 
           {/* ═══ Hero Header ═══ */}
           <div 
-            className="relative overflow-hidden rounded-2xl border p-5 sm:p-6 mb-5"
+            className="relative overflow-hidden rounded-2xl border p-5 sm:p-6 mb-4"
             style={{ 
               background: `linear-gradient(135deg, ${themeColor}08 0%, ${themeColor}15 100%)`,
               borderColor: `${themeColor}30`
@@ -425,7 +425,7 @@ export default function RoomDetail() {
               style={{ backgroundColor: themeColor }}
             />
             
-            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+            <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-8">
               {/* Top row: Icon, Title, and Description */}
               <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
                 <div 
@@ -461,7 +461,7 @@ export default function RoomDetail() {
               </div>
 
               {/* Action Buttons - Full width on mobile, inline on desktop */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 lg:flex-shrink-0">
+              <div className="flex flex-col sm:flex-row lg:justify-end items-stretch sm:items-center gap-2 sm:gap-2 lg:min-w-[24rem]">
                 {isOwner ? (
                   <>
                     <button
@@ -513,7 +513,7 @@ export default function RoomDetail() {
 
           {/* ═══ Content Grid ═══ */}
           <div className="space-y-4 sm:space-y-6">
-            <div className="grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_32rem]">
+            <div className="grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_38rem]">
               <div className="bg-white rounded-2xl border border-[#e2e6dc] overflow-hidden min-w-0">
                 <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#e8ece3] flex items-center justify-between">
                   <div className="flex items-center gap-2 sm:gap-3">
