@@ -129,7 +129,7 @@ export class PermissionError extends SkillMapError {
  */
 export class NotFoundError extends SkillMapError {
   constructor(resource, identifier, context = {}) {
-    const message = `${resource} not found${identifier ? `: ${identifier}` : ''}`;
+    const message = context.message || `${resource} not found${identifier ? `: ${identifier}` : ''}`;
     super(message, 'NOT_FOUND', 404, {
       resource,
       identifier,

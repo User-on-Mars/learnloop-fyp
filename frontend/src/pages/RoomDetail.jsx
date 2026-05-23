@@ -1459,9 +1459,10 @@ function InviteModal({ roomId, onClose }) {
         onClose();
       }, 2000);
     } catch (err) {
+      const status = err?.response?.status;
       const msg = err?.response?.data?.message || "";
       // Map backend error messages to user-friendly messages
-      if (err?.response?.status === 409 || err?.response?.status === 400) {
+      if (status === 409 || status === 400 || status === 404) {
         if (msg.includes("already a member")) {
           setError("This user is already a member of this room.");
         } else if (msg.includes("Invitation already sent")) {
@@ -1470,8 +1471,16 @@ function InviteModal({ roomId, onClose }) {
           setError("This room is full (5/5 members). Remove a member before inviting someone new.");
         } else if (msg.includes("cannot invite yourself")) {
           setError("You can't invite yourself to your own room.");
-        } else if (msg.includes("not found") || msg.includes("registered")) {
-          setError("No account found with this email. The user must sign up first.");
+        } else if (msg.includes("No account found") || msg.includes("registered") || msg.includes("User not found")) {
+          const friendlyMessage = "No registered LearnLoop account found for this email.";
+          setEmailError(friendlyMessage);
+          setError("Ask them to sign up first, then send the invitation again.");
+          showError(`${friendlyMessage} They need to create an account before you can invite them.`, {
+            title: "User Not Registered",
+            duration: 6000
+          });
+        } else if (status === 404) {
+          setError(msg || "We couldn't find that user or room. Please check the email and try again.");
         } else {
           setError(msg || "Failed to send invitation. Please try again.");
         }

@@ -208,9 +208,9 @@ export const roomsAPI = {
 // ============ INVITATIONS API ============
 export const invitationsAPI = {
   getInvitations: () => client.get('/invitations'),
-  acceptInvitation: (invitationId: string) => client.post(`/invitations/${invitationId}/accept`),
-  declineInvitation: (invitationId: string) => client.post(`/invitations/${invitationId}/decline`),
-  createInvitation: (roomId: string, email: string) => client.post('/invitations', { roomId, email }),
+  acceptInvitation: (invitationId: string) => client.patch(`/invitations/${invitationId}/accept`),
+  declineInvitation: (invitationId: string) => client.patch(`/invitations/${invitationId}/decline`),
+  createInvitation: (roomId: string, email: string) => client.post(`/rooms/${roomId}/invitations`, { invitedEmail: email }),
   cancelInvitation: (invitationId: string) => client.delete(`/invitations/${invitationId}`),
 }
 
