@@ -409,7 +409,7 @@ export default function Subscription() {
             </div>
 
             {/* Billing Filters */}
-            <div className="px-5 pt-4 pb-2 flex flex-wrap items-center gap-2 border-b border-[#f0f2eb]">
+            <div className="px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 border-b border-[#f0f2eb] bg-[#fbfcfa]">
               <div className="flex gap-1">
                 <button onClick={() => { setBillingType(''); setBillingPage(1) }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${!billingType ? 'bg-violet-100 text-violet-700' : 'bg-[#f8faf6] text-[#9aa094] hover:bg-[#f0f2eb]'}`}>
@@ -424,23 +424,23 @@ export default function Subscription() {
                   Rewards
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:ml-auto">
+              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:min-w-[320px] sm:ml-auto">
                 <label className="relative">
                   <span className="block text-[10px] font-semibold text-[#9aa094] mb-1">From</span>
                   <Calendar className="absolute left-2 bottom-2.5 w-3.5 h-3.5 text-[#9aa094] pointer-events-none" />
                   <input type="date" value={billingStartDate} onChange={e => { setBillingStartDate(e.target.value); setBillingPage(1) }}
-                    className="w-full min-h-[38px] pl-7 pr-2 py-1.5 border border-[#e2e6dc] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-[#f8faf6]" />
+                    className="w-full min-h-[38px] pl-7 pr-2 py-1.5 border border-[#dfe4d9] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-white appearance-none" />
                 </label>
                 <label className="relative">
                   <span className="block text-[10px] font-semibold text-[#9aa094] mb-1">To</span>
                   <Calendar className="absolute left-2 bottom-2.5 w-3.5 h-3.5 text-[#9aa094] pointer-events-none" />
                   <input type="date" value={billingEndDate} onChange={e => { setBillingEndDate(e.target.value); setBillingPage(1) }}
-                    className="w-full min-h-[38px] pl-7 pr-2 py-1.5 border border-[#e2e6dc] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-[#f8faf6]" />
+                    className="w-full min-h-[38px] pl-7 pr-2 py-1.5 border border-[#dfe4d9] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-violet-200 bg-white appearance-none" />
                 </label>
               </div>
               {(billingType || billingStartDate || billingEndDate) && (
                 <button onClick={() => { setBillingType(''); setBillingStartDate(''); setBillingEndDate(''); setBillingPage(1) }}
-                  className="text-xs text-[#9aa094] hover:text-red-500 transition-colors">
+                  className="self-start sm:self-end h-[38px] px-3 rounded-lg border border-[#e2e6dc] bg-white text-xs font-semibold text-[#9aa094] hover:text-red-500 hover:border-red-200 transition-colors">
                   Clear
                 </button>
               )}
@@ -496,14 +496,14 @@ export default function Subscription() {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <p className="text-xs text-[#9aa094]">{fmtDate(item.date)}</p>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+                            <p className="text-xs text-[#9aa094] whitespace-nowrap">{fmtDate(item.date)}</p>
                             <span className="text-[#d0d5ca]">·</span>
-                            <p className="text-xs text-[#9aa094]">Paid with {item.method}</p>
+                            <p className="text-xs text-[#9aa094] whitespace-nowrap">Paid with {item.method}</p>
                             {item.transactionId && (
                               <>
-                                <span className="text-[#d0d5ca]">·</span>
-                                <p className="text-xs text-[#9aa094] font-mono truncate max-w-[120px]">{item.transactionId}</p>
+                                <span className="hidden sm:inline text-[#d0d5ca]">·</span>
+                                <p className="hidden sm:block text-xs text-[#9aa094] font-mono truncate max-w-[120px]">{item.transactionId}</p>
                               </>
                             )}
                           </div>

@@ -16,10 +16,13 @@ import { getIconComponent } from "../utils/iconLibrary";
 import { COLOR_THEMES } from "../components/ColorPicker";
 import { useSubscription } from "../context/SubscriptionContext";
 
+const ROOMSPACE_CACHE_TTL_MS = 60 * 1000;
+let roomSpaceCache = null;
+
 export default function RoomSpace() {
   const navigate = useNavigate();
-  const [rooms, setRooms] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [rooms, setRooms] = useState(() => roomSpaceCache?.displayRooms || []);
+  const [isLoading, setIsLoading] = useState(() => !roomSpaceCache);
   const [error, setError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,46 +43,57 @@ export default function RoomSpace() {
   const maxRooms = limits?.maxRooms === -1 ? Infinity : (limits?.maxRooms ?? 1);
   const hasReachedLimit = ownedRoomsCount >= maxRooms;
 
-  const fetchRooms = useCallback(async () => {
+  const applyRoomData = useCallback((roomsData) => {
+    const roomsWithOwnership = roomsData.map(room => ({
+      ...room,
+      isOwner: room.role === 'owner'
+    }));
+
+    const ownedRooms = roomsWithOwnership.filter(r => r.isOwner).sort((a, b) =>
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    const roomsWithLockStatus = roomsWithOwnership.map((room) => {
+      if (!room.isOwner) return room;
+      const ownedIndex = ownedRooms.findIndex(r => r._id === room._id);
+      return {
+        ...room,
+        isLocked: isFree && ownedIndex >= maxRooms
+      };
+    });
+
+    roomSpaceCache = {
+      ...(roomSpaceCache || {}),
+      rooms: roomsData,
+      displayRooms: roomsWithLockStatus,
+      fetchedAt: roomSpaceCache?.fetchedAt || Date.now()
+    };
+    setRooms(roomsWithLockStatus);
+  }, [isFree, maxRooms]);
+
+  const fetchRooms = useCallback(async ({ force = false } = {}) => {
+    const now = Date.now();
+    const hasFreshCache = roomSpaceCache && now - roomSpaceCache.fetchedAt < ROOMSPACE_CACHE_TTL_MS;
+    if (!force && hasFreshCache) {
+      applyRoomData(roomSpaceCache.rooms);
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      setIsLoading(true);
+      if (!roomSpaceCache) setIsLoading(true);
       setError("");
       const response = await roomsAPI.getRooms();
       const roomsData = response.data.rooms || [];
-      
-      const roomsWithOwnership = roomsData.map(room => ({
-        ...room,
-        isOwner: room.role === 'owner'
-      }));
-      
-      // Sort owned rooms by creation date (newest first) to identify accessible rooms
-      const ownedRooms = roomsWithOwnership.filter(r => r.isOwner).sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      const joinedRooms = roomsWithOwnership.filter(r => !r.isOwner);
-      
-      // Mark rooms as locked if user is on free plan and has exceeded limit
-      // The newest N rooms (index < maxRooms) are unlocked
-      const roomsWithLockStatus = roomsWithOwnership.map((room, index) => {
-        if (!room.isOwner) return room; // Joined rooms are always accessible
-        
-        const ownedIndex = ownedRooms.findIndex(r => r._id === room._id);
-        const isLocked = isFree && ownedIndex >= maxRooms;
-        
-        return {
-          ...room,
-          isLocked
-        };
-      });
-      
-      setRooms(roomsWithLockStatus);
+      roomSpaceCache = { rooms: roomsData, fetchedAt: Date.now() };
+      applyRoomData(roomsData);
     } catch (err) {
       console.error("Failed to fetch rooms:", err);
       setError("Failed to load rooms");
     } finally {
       setIsLoading(false);
     }
-  }, [isFree, maxRooms]);
+  }, [applyRoomData]);
 
   useEffect(() => {
     fetchRooms();
@@ -132,7 +146,7 @@ export default function RoomSpace() {
     try {
       await roomsAPI.deleteRoom(room._id);
       showSuccess("Room Deleted", `"${room.name}" has been permanently deleted`);
-      fetchRooms();
+      fetchRooms({ force: true });
       setConfirmDialog({ isOpen: false, roomToDelete: null });
     } catch (err) {
       handleApiError(err, {
@@ -163,7 +177,7 @@ export default function RoomSpace() {
     try {
       await roomsAPI.updateRoom(roomId, { color: newColor });
       showSuccess('Room color updated!');
-      fetchRooms();
+      fetchRooms({ force: true });
     } catch (err) {
       handleApiError(err, {
         title: "Failed to Update Color",
@@ -402,7 +416,7 @@ export default function RoomSpace() {
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             setShowCreateModal(false);
-            fetchRooms();
+            fetchRooms({ force: true });
           }}
         />
       )}

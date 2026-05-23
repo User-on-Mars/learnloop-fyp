@@ -1,41 +1,16 @@
 import { useState, useEffect } from "react";
 import { useCustomAvatar } from "../context/AvatarContext";
 
-/**
- * Golden crown SVG for pro users
- */
-function CrownBadge({ size }) {
-  const crownSizes = {
-    sm: "w-4 h-4 -top-1.5 -right-1.5",
-    md: "w-[18px] h-[18px] -top-1.5 -right-1.5",
-    lg: "w-5 h-5 -top-2 -right-1.5",
-    xl: "w-6 h-6 -top-2 -right-1.5",
-  };
-  const crownClass = crownSizes[size] || crownSizes.md;
-
-  return (
-    <span className={`absolute ${crownClass} z-10 rounded-full bg-amber-400 border-2 border-white shadow-sm flex items-center justify-center`}>
-      <svg viewBox="0 0 24 24" className="w-[78%] h-[78%]" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M2 17L3.5 9L7.5 12L12 5L16.5 12L20.5 9L22 17H2Z"
-          fill="#FFD700"
-          stroke="#DAA520"
-          strokeWidth="1"
-          strokeLinejoin="round"
-        />
-        <circle cx="3.5" cy="8" r="1.5" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5" />
-        <circle cx="12" cy="4" r="1.5" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5" />
-        <circle cx="20.5" cy="8" r="1.5" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5" />
-        <rect x="2" y="17" width="20" height="3" rx="1" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5" />
-      </svg>
-    </span>
-  );
+function getProAuraClass(isPro) {
+  return isPro
+    ? "ring-[3px] ring-amber-300 shadow-[0_0_0_3px_rgba(255,255,255,0.95),0_0_18px_rgba(245,158,11,0.58)]"
+    : "ring-2 ring-white";
 }
 
 /**
  * Avatar component that displays custom avatar, user photo, or initials fallback.
  * Priority: customAvatar > photoURL > initials
- * Pro users get a golden crown badge overlay.
+ * Pro users get a gold aura around the avatar.
  */
 export function Avatar({ 
   photoURL, 
@@ -78,6 +53,7 @@ export function Avatar({
 
   const sizeClass = sizeClasses[size] || sizeClasses.md;
   const initials = getInitials();
+  const auraClass = getProAuraClass(isPro);
 
   // Show custom avatar if set
   if (avatarUrl) {
@@ -86,10 +62,9 @@ export function Avatar({
         <img
           src={avatarUrl}
           alt={displayName || "User avatar"}
-          className={`${sizeClass} rounded-full object-cover`}
+          className={`${sizeClass} rounded-full object-cover ${auraClass}`}
           loading="lazy"
         />
-        {isPro && <CrownBadge size={size} />}
       </div>
     );
   }
@@ -98,7 +73,7 @@ export function Avatar({
   if (photoURL && !imageError) {
     return (
       <div className={`relative inline-block flex-shrink-0 ${className}`}>
-        <div className={`relative ${sizeClass} rounded-full overflow-hidden ring-2 ring-white bg-site-accent text-white flex items-center justify-center font-semibold`}>
+        <div className={`relative ${sizeClass} rounded-full overflow-hidden ${auraClass} bg-site-accent text-white flex items-center justify-center font-semibold`}>
           <span className={`${isImageLoaded ? "opacity-0" : "opacity-100"} transition-opacity duration-200`}>
             {initials}
           </span>
@@ -117,7 +92,6 @@ export function Avatar({
             loading="lazy"
           />
         </div>
-        {isPro && <CrownBadge size={size} />}
       </div>
     );
   }
@@ -126,11 +100,10 @@ export function Avatar({
   return (
     <div className={`relative inline-block flex-shrink-0 ${className}`}>
       <div
-        className={`${sizeClass} rounded-full bg-site-accent text-white flex items-center justify-center font-semibold ring-2 ring-white`}
+        className={`${sizeClass} rounded-full bg-site-accent text-white flex items-center justify-center font-semibold ${auraClass}`}
       >
         {getInitials()}
       </div>
-      {isPro && <CrownBadge size={size} />}
     </div>
   );
 }
