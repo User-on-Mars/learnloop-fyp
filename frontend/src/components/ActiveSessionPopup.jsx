@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useActiveSessions } from '../context/ActiveSessionContext';
 import { auth } from '../firebase';
-import { X, Clock } from 'lucide-react';
+import { X, Clock, AlarmClock } from 'lucide-react';
 
 const MINI_SESSION_KEY = 'miniPopupSessionId';
 
@@ -123,15 +123,56 @@ export default function ActiveSessionPopup() {
         }
     }, [primarySession, getSessionPath, navigate]);
 
+    const visibleCompletedNotice = completedSessionNotice && activeSessions.some(session =>
+        isSameSession(session, completedSessionNotice.id) ||
+        isSameSession(session, completedSessionNotice._id)
+    ) ? completedSessionNotice : null;
+
+    const handleCompletedNavigate = useCallback(() => {
+        const path = getSessionPath(visibleCompletedNotice);
+        clearCompletedSessionNotice?.();
+        if (path) navigate(path);
+    }, [visibleCompletedNotice, clearCompletedSessionNotice, getSessionPath, navigate]);
+
+    const timeUpNotice = visibleCompletedNotice ? (
+        <div className="fixed left-4 right-4 top-20 z-[60] sm:left-auto sm:right-6 sm:w-80">
+            <div className="relative mx-auto max-w-sm rounded-xl border border-amber-200 bg-white shadow-xl overflow-hidden">
+                <button
+                    type="button"
+                    onClick={handleCompletedNavigate}
+                    className="w-full flex items-center gap-3 px-3 py-3 pr-10 text-left hover:bg-amber-50 transition-colors"
+                >
+                    <span className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                        <AlarmClock className="w-5 h-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-bold text-[#1c1f1a]">Time's up</span>
+                        <span className="block text-xs text-[#565c52] truncate">
+                            {visibleCompletedNotice.skillName || 'Practice session'} finished. Tap to open.
+                        </span>
+                    </span>
+                </button>
+                <button
+                    type="button"
+                    onClick={clearCompletedSessionNotice}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg text-[#9aa094] hover:text-[#1c1f1a] hover:bg-[#f5f7f2]"
+                    aria-label="Dismiss time's up notification"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    ) : null;
+
     // Don't show on auth pages or the page that already displays active sessions.
     if (!user) return null;
     if (location.pathname === '/log-practice') return null;
 
     const hiddenPages = ['/login', '/signup', '/forgot', '/reset', '/'];
-    if (hiddenPages.includes(location.pathname)) return null;
+    if (hiddenPages.includes(location.pathname)) return timeUpNotice;
 
     // Hide on admin panel pages
-    if (location.pathname.startsWith('/admin')) return null;
+    if (location.pathname.startsWith('/admin')) return timeUpNotice;
 
     // Hide if on the node detail page that owns this session
     const nodeMatch = location.pathname.match(/\/skills\/[^/]+\/nodes\/([^/]+)/);
@@ -140,7 +181,7 @@ export default function ActiveSessionPopup() {
     const isOnOwnNode = primarySession && currentNodeId && primarySession.nodeId === currentNodeId;
 
     if (!primarySession || isOnOwnNode) {
-        return null;
+        return timeUpNotice;
     }
 
     const isRunning = primarySession.isRunning;
@@ -148,6 +189,7 @@ export default function ActiveSessionPopup() {
 
     return (
         <>
+            {timeUpNotice}
             <div className="fixed left-4 right-4 bottom-20 z-40 sm:left-auto sm:right-6 sm:bottom-6 sm:w-72">
                 <div 
                     onClick={handleNavigate}
