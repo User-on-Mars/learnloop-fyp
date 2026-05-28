@@ -668,7 +668,7 @@ export default function LogPractice() {
 
       {/* ═══ New Session Modal ═══ */}
       {showNew && createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
             {/* Header */}
             <div className="px-6 py-4 flex-shrink-0 bg-gradient-to-r from-orange-600 to-amber-600">
@@ -856,7 +856,7 @@ export default function LogPractice() {
 
       {/* ═══ Confirm Modals ═══ */}
       {resetConfirmId != null && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-[#e2e6dc]">
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
               <div className="flex items-center gap-3">
@@ -881,7 +881,7 @@ export default function LogPractice() {
       )}
 
       {removeId != null && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-[#e2e6dc]">
             <div className="bg-gradient-to-r from-red-500 to-rose-500 px-6 py-4">
               <div className="flex items-center gap-3">

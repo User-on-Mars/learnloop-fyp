@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance } from 'axios'
 import type { Mood, Session, SkillMapFull, SkillNode, NodeState, NodeType } from '../types/skillmap'
 import { auth } from '../firebase.js'
+import { signOut } from 'firebase/auth'
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 
@@ -18,6 +19,30 @@ function buildHttpClient(): AxiosInstance {
     }
     return config
   })
+  client.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const status = error.response?.status
+      const accountStatus = error.response?.data?.accountStatus
+      if (status === 403 && ['deleted', 'banned', 'suspended'].includes(accountStatus)) {
+        const messages: Record<string, string> = {
+          deleted: 'This account has been deleted. Contact an admin if this was a mistake.',
+          banned: 'This account has been banned and cannot access LearnLoop.',
+          suspended: 'This account has been suspended.'
+        }
+        sessionStorage.setItem('authStatusMessage', messages[accountStatus] || 'Your account cannot access LearnLoop.')
+        try {
+          await signOut(auth)
+        } catch {
+          // Ignore sign-out failures; redirecting still clears the broken app state.
+        }
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.assign('/login')
+        }
+      }
+      return Promise.reject(error)
+    }
+  )
   return client
 }
 

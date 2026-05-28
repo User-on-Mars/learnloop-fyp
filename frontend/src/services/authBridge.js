@@ -6,6 +6,8 @@ const profileSyncState = {
   inFlight: new Map()
 };
 
+const TERMINAL_ACCOUNT_STATUSES = ['deleted', 'banned', 'suspended'];
+
 function getProfileSyncKey(user) {
   return [
     user.uid,
@@ -39,6 +41,10 @@ export const authBridge = {
         profileSyncState.lastKey = syncKey;
         return response.data;
       } catch (error) {
+        const accountStatus = error.response?.data?.accountStatus;
+        if (error.response?.status === 403 && TERMINAL_ACCOUNT_STATUSES.includes(accountStatus)) {
+          throw error;
+        }
         if (error.code !== 'ERR_NETWORK') {
           console.error('Frontend profile sync failed:', error);
         }

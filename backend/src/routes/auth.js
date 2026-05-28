@@ -47,6 +47,12 @@ router.post('/register', async (req, res) => {
           accountStatus: 'banned'
         })
       }
+      if (existing.accountStatus === 'deleted') {
+        return res.status(403).json({
+          message: 'This account has been deleted.',
+          accountStatus: 'deleted'
+        })
+      }
       // If user exists, update their name if provided
       if (name && !existing.name) {
         await User.updateOne({ email }, { name })
@@ -76,6 +82,12 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({
         message: 'This account has been banned and cannot access the platform.',
         accountStatus: 'banned'
+      })
+    }
+    if (user.accountStatus === 'deleted') {
+      return res.status(403).json({
+        message: 'This account has been deleted.',
+        accountStatus: 'deleted'
       })
     }
 
@@ -256,6 +268,13 @@ router.post('/sync-profile', async (req, res) => {
           accountStatus: 'banned'
         })
       }
+      if (user.accountStatus === 'deleted') {
+        console.log(`🗑️ Deleted user attempted to sync profile: ${email}`)
+        return res.status(403).json({
+          message: 'This account has been deleted.',
+          accountStatus: 'deleted'
+        })
+      }
 
       console.log(`👤 User exists: ${user._id}, current name: ${user.name}, current firebaseUid: ${user.firebaseUid}`)
       // Always update name if displayName is provided and different
@@ -304,6 +323,9 @@ router.post('/update-avatar', async (req, res) => {
 
     if (user.accountStatus === 'banned') {
       return res.status(403).json({ message: 'This account has been banned.' })
+    }
+    if (user.accountStatus === 'deleted') {
+      return res.status(403).json({ message: 'This account has been deleted.', accountStatus: 'deleted' })
     }
 
     await User.updateOne({ email }, { avatar })

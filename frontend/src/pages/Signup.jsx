@@ -6,6 +6,7 @@ import { UserPlus, Loader, Eye, EyeOff } from "lucide-react";
 import LogoMark from "../components/LogoMark";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import { validatePassword } from "../utils/passwordValidator";
+import { authBridge } from "../services/authBridge.js";
 
 /* Same leaf decoration used on the landing-page hero */
 function LeafDecoration({ className = "" }) {
@@ -74,16 +75,21 @@ export default function Signup() {
   async function handleGoogle() {
     setErr(""); setMsg(""); setLoading(true);
     try {
-      await signInWithGoogle();
+      const user = await signInWithGoogle();
+      await authBridge.syncProfileToBackend(user);
       nav("/dashboard", { replace: true });
     } catch (e) {
       const code = e?.code || "";
+      const authStatusMessage = sessionStorage.getItem('authStatusMessage');
+      if (authStatusMessage) {
+        sessionStorage.removeItem('authStatusMessage');
+      }
       const map = {
         "auth/popup-closed-by-user": "Sign-in was cancelled.",
         "auth/popup-blocked": "Please allow popups for this site.",
         "auth/cancelled-popup-request": "Sign-in was cancelled.",
       };
-      setErr(map[code] || "Google sign-up failed. Please try again.");
+      setErr(authStatusMessage || e.response?.data?.message || map[code] || "Google sign-up failed. Please try again.");
     } finally { setLoading(false); }
   }
 

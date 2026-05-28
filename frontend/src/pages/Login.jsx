@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth, signInWithGoogle } from "../firebase.js";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { LogIn, Loader, Eye, EyeOff } from "lucide-react";
 import LogoMark from "../components/LogoMark";
+import { authBridge } from "../services/authBridge.js";
 
 /* Same leaf decoration used on the landing-page hero */
 function LeafDecoration({ className = "" }) {
@@ -34,6 +35,14 @@ export default function Login() {
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
 
+  useEffect(() => {
+    const authStatusMessage = sessionStorage.getItem('authStatusMessage');
+    if (authStatusMessage) {
+      setErr(authStatusMessage);
+      sessionStorage.removeItem('authStatusMessage');
+    }
+  }, []);
+
   async function handleLogin(e) {
     e.preventDefault();
     setErr(""); setMsg(""); setLoading(true);
@@ -44,6 +53,7 @@ export default function Login() {
         setErr("Please verify your email first. Check your inbox.");
         setLoading(false); return;
       }
+      await authBridge.syncProfileToBackend(cred.user);
       setMsg("Welcome back!");
       nav("/dashboard", { replace: true });
     } catch (e) {
@@ -56,16 +66,28 @@ export default function Login() {
         "auth/user-disabled": "Account disabled.",
         "auth/too-many-requests": "Too many attempts. Try later.",
       };
-      setErr(map[code] || "Login failed.");
+      const authStatusMessage = sessionStorage.getItem('authStatusMessage');
+      if (authStatusMessage) {
+        sessionStorage.removeItem('authStatusMessage');
+      }
+      setErr(authStatusMessage || e.response?.data?.message || map[code] || "Login failed.");
     } finally { setLoading(false); }
   }
 
   async function handleGoogle() {
     setErr(""); setMsg(""); setLoading(true);
-    try { await signInWithGoogle(); nav("/dashboard", { replace: true }); }
+    try {
+      const user = await signInWithGoogle();
+      await authBridge.syncProfileToBackend(user);
+      nav("/dashboard", { replace: true });
+    }
     catch (e) {
       const code = e?.code || "";
-      setErr(code === "auth/popup-closed-by-user" ? "Cancelled." : "Google sign-in failed.");
+      const authStatusMessage = sessionStorage.getItem('authStatusMessage');
+      if (authStatusMessage) {
+        sessionStorage.removeItem('authStatusMessage');
+      }
+      setErr(authStatusMessage || e.response?.data?.message || (code === "auth/popup-closed-by-user" ? "Cancelled." : "Google sign-in failed."));
     } finally { setLoading(false); }
   }
 

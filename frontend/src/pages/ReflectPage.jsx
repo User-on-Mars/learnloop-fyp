@@ -491,7 +491,7 @@ export default function ReflectPage() {
 
       {/* New Reflection Modal - Step by Step */}
       {showForm && createPortal(
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col border border-[#e2e6dc]">
 
             {/* Header */}
