@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   RefreshCw, Trophy, Crown, Flame, Zap, TrendingUp, 
-  ChevronLeft, ChevronRight, Medal, Award, Star, 
-  Target, Gift, Calendar, Lightbulb, BookOpen, Check
+  Medal, Award, Star, Target, Gift, Calendar, Lightbulb, 
+  BookOpen, Check
 } from 'lucide-react';
 import { leaderboardAPI, xpAPI, subscriptionAPI } from '../api/client';
 import HeroSection from '../components/HeroSection';
@@ -87,8 +87,6 @@ export default function Leaderboard() {
   }, [activeTab, fetchBoard]);
 
   const handleTabChange = (tab) => setActiveTab(tab);
-  const handlePageChange = (newPage) => fetchBoard(activeTab, newPage);
-
   const metricLabel = activeTab === 'streaks' ? 'Days' : 'XP';
   const activeTabConfig = TABS.find(t => t.id === activeTab);
 
@@ -221,7 +219,6 @@ export default function Leaderboard() {
                     currentUserId={currentUserId}
                     metricLabel={metricLabel}
                     showTierBadge={activeTab === 'weekly'}
-                    onPageChange={handlePageChange}
                   />
                 )}
               </div>
@@ -335,19 +332,11 @@ function StatCard({ icon: Icon, color, bg, label, value }) {
 /* Top 5 Leaderboard - Always shows 5 slots */
 function TopFiveLeaderboard({
   entries = [],
-  total = 0,
-  page = 1,
-  pageSize = 10,
   isLoading = false,
   currentUserId,
   metricLabel = 'XP',
   showTierBadge = false,
-  onPageChange,
 }) {
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const hasPrev = page > 1;
-  const hasNext = page < totalPages;
-
   // Always show 5 slots
   const slots = [1, 2, 3, 4, 5];
 
@@ -453,29 +442,6 @@ function TopFiveLeaderboard({
           );
         })}
       </div>
-
-      {/* Pagination */}
-      {total > pageSize && (
-        <div className="flex items-center justify-between px-3 py-2.5 border-t border-[#e8ece3] bg-[#fafbf8]">
-          <span className="text-xs text-[#9aa094]">Page {page}/{totalPages}</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => onPageChange?.(page - 1)}
-              disabled={!hasPrev}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-[#e2e6dc] text-[#565c52] hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-all font-medium"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" /> Prev
-            </button>
-            <button
-              onClick={() => onPageChange?.(page + 1)}
-              disabled={!hasNext}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-[#e2e6dc] text-[#565c52] hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-all font-medium"
-            >
-              Next <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
