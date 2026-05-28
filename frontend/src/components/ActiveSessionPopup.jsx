@@ -166,9 +166,7 @@ export default function ActiveSessionPopup() {
 
     // Don't show on auth pages or the page that already displays active sessions.
     if (!user) return null;
-    if (location.pathname === '/log-practice') return null;
-
-    const hiddenPages = ['/login', '/signup', '/forgot', '/reset', '/'];
+    const hiddenPages = ['/login', '/signup', '/forgot', '/reset', '/', '/log-practice'];
     if (hiddenPages.includes(location.pathname)) return timeUpNotice;
 
     // Hide on admin panel pages
