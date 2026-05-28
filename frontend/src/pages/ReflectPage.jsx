@@ -63,7 +63,12 @@ export default function ReflectPage() {
   const addTag = (e) => { e.preventDefault(); const t = tagInput.trim(); if (t && !tags.includes(t) && tags.length < 10) { setTags([...tags, t]); setTagInput(''); } };
 
   const openNewReflection = () => {
-    setShowForm(true); setFormStep(1); setTitle(''); setContent(''); setMood(null); setTags([]); setTagInput('');
+    setError(null); setSuccess(false); setShowForm(true); setFormStep(1); setTitle(''); setContent(''); setMood(null); setTags([]); setTagInput('');
+  };
+
+  const closeReflectionForm = () => {
+    setShowForm(false);
+    setError(null);
   };
 
   const handleSave = async () => {
@@ -164,7 +169,7 @@ export default function ReflectPage() {
 
           {/* Alerts */}
           {success && <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm font-medium"><CheckCircle className="w-4 h-4 flex-shrink-0" />Reflection saved successfully!</div>}
-          {error && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium"><AlertCircle className="w-4 h-4 flex-shrink-0" />{error}</div>}
+          {!showForm && error && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium"><AlertCircle className="w-4 h-4 flex-shrink-0" />{error}</div>}
 
           {/* Search & Filter */}
           <div className="bg-white rounded-2xl border border-[#e2e6dc] p-4">
@@ -507,7 +512,7 @@ export default function ReflectPage() {
                   </div>
                 </div>
                 <button 
-                  onClick={() => setShowForm(false)} 
+                  onClick={closeReflectionForm}
                   className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg bg-white/20 hover:bg-white/30 active:bg-white/40 flex items-center justify-center text-white transition-colors"
                   aria-label="Close modal"
                 >
@@ -660,15 +665,16 @@ export default function ReflectPage() {
                     </div>
                   </div>
 
-                  {error && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-xl text-[12px] flex items-center gap-2"><AlertCircle className="w-4 h-4" />{error}</div>}
                 </div>
               )}
+
+              {error && <div className="mt-5 bg-red-50 border border-red-200 text-red-600 px-4 py-2.5 rounded-xl text-[12px] flex items-center gap-2"><AlertCircle className="w-4 h-4 flex-shrink-0" />{error}</div>}
             </div>
 
             {/* Footer */}
             <div className="flex-shrink-0 px-5 sm:px-6 py-4 bg-[#f8faf6] border-t border-[#e2e6dc]">
               <div className="flex flex-col sm:flex-row gap-3">
-                <button type="button" onClick={formStep === 1 ? () => setShowForm(false) : () => setFormStep(s => s - 1)} disabled={saving}
+                <button type="button" onClick={formStep === 1 ? closeReflectionForm : () => { setError(null); setFormStep(s => s - 1); }} disabled={saving}
                   className="flex-1 py-3 min-h-[44px] border-2 border-[#e2e6dc] text-[#565c52] rounded-xl font-semibold text-sm hover:bg-white active:bg-[#f4f7f2] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                   {formStep === 1 ? (<><X className="w-4 h-4" /> Cancel</>) : (<><ArrowRight className="w-4 h-4 rotate-180" /> Back</>)}
                 </button>
@@ -679,6 +685,7 @@ export default function ReflectPage() {
                       if (formStep === 1 && (!title.trim() || !content.trim())) { setError('Title and content are required.'); setTimeout(() => setError(null), 3000); return; }
                       if (formStep === 1 && title.trim().length > 20) { setError('Title must be 20 characters or less.'); setTimeout(() => setError(null), 3000); return; }
                       if (formStep === 2 && !mood) { setError('Please select a mood.'); setTimeout(() => setError(null), 3000); return; }
+                      setError(null);
                       setFormStep(s => s + 1);
                     }}
                     className="flex-1 py-3 min-h-[44px] bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold text-sm hover:from-emerald-700 hover:to-teal-700 active:from-emerald-800 active:to-teal-800 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
