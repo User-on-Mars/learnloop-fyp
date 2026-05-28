@@ -284,6 +284,10 @@ export function ActiveSessionProvider({ children }) {
         const session = activeSessions.find(s => s.id === sessionId || s._id === sessionId);
         
         setActiveSessions(prev => prev.filter(s => s.id !== sessionId && s._id !== sessionId));
+        setCompletedSessionNotice(prev => {
+            if (!prev) return prev;
+            return prev.id === sessionId || prev._id === sessionId ? null : prev;
+        });
         
         // Delete from backend
         if (auth.currentUser && session?._id) {
@@ -298,6 +302,7 @@ export function ActiveSessionProvider({ children }) {
     const clearAllSessions = useCallback(() => {
         completedSoundsRef.current.clear();
         setActiveSessions([]);
+        setCompletedSessionNotice(null);
         localStorage.removeItem('activeSessions');
         
         // Clear from backend
@@ -336,6 +341,10 @@ export function ActiveSessionProvider({ children }) {
     // Reset session timer
     const resetSession = useCallback((sessionId) => {
         completedSoundsRef.current.delete(sessionId);
+        setCompletedSessionNotice(prev => {
+            if (!prev) return prev;
+            return prev.id === sessionId || prev._id === sessionId ? null : prev;
+        });
         setActiveSessions(prev =>
             prev.map(s => {
                 if (s.id !== sessionId && s._id !== sessionId) return s;
