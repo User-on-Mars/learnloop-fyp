@@ -73,6 +73,16 @@ export function ActiveSessionProvider({ children }) {
     const completedSoundsRef = useRef(new Set());
     const hasLoadedRef = useRef(false);
 
+    const isSameSession = useCallback((session, sessionId) => {
+        if (sessionId === null || sessionId === undefined) return false;
+        return (
+            session?.id === sessionId ||
+            session?._id === sessionId ||
+            String(session?.id) === String(sessionId) ||
+            String(session?._id) === String(sessionId)
+        );
+    }, []);
+
     // Load sessions from backend when user is authenticated
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -150,6 +160,20 @@ export function ActiveSessionProvider({ children }) {
 
         syncSessions();
     }, [activeSessions]);
+
+    // Clear stale countdown notices once their session has been logged or removed.
+    useEffect(() => {
+        if (!completedSessionNotice) return;
+
+        const stillActive = activeSessions.some(session =>
+            isSameSession(session, completedSessionNotice.id) ||
+            isSameSession(session, completedSessionNotice._id)
+        );
+
+        if (!stillActive) {
+            setCompletedSessionNotice(null);
+        }
+    }, [activeSessions, completedSessionNotice, isSameSession]);
 
     // Save sessions to localStorage and backend when browser/tab is closing
     useEffect(() => {
@@ -281,12 +305,12 @@ export function ActiveSessionProvider({ children }) {
         completedSoundsRef.current.delete(sessionId);
         
         // Find the session to get its _id
-        const session = activeSessions.find(s => s.id === sessionId || s._id === sessionId);
+        const session = activeSessions.find(s => isSameSession(s, sessionId));
         
-        setActiveSessions(prev => prev.filter(s => s.id !== sessionId && s._id !== sessionId));
+        setActiveSessions(prev => prev.filter(s => !isSameSession(s, sessionId)));
         setCompletedSessionNotice(prev => {
             if (!prev) return prev;
-            return prev.id === sessionId || prev._id === sessionId ? null : prev;
+            return isSameSession(prev, sessionId) ? null : prev;
         });
         
         // Delete from backend
@@ -296,7 +320,7 @@ export function ActiveSessionProvider({ children }) {
                 setSyncError(error.message);
             });
         }
-    }, [activeSessions]);
+    }, [activeSessions, isSameSession]);
 
     // Clear all sessions (for logout)
     const clearAllSessions = useCallback(() => {
@@ -343,11 +367,11 @@ export function ActiveSessionProvider({ children }) {
         completedSoundsRef.current.delete(sessionId);
         setCompletedSessionNotice(prev => {
             if (!prev) return prev;
-            return prev.id === sessionId || prev._id === sessionId ? null : prev;
+            return isSameSession(prev, sessionId) ? null : prev;
         });
         setActiveSessions(prev =>
             prev.map(s => {
-                if (s.id !== sessionId && s._id !== sessionId) return s;
+                if (!isSameSession(s, sessionId)) return s;
                 
                 const updated = {
                     ...s,
@@ -369,7 +393,7 @@ export function ActiveSessionProvider({ children }) {
                 return updated;
             })
         );
-    }, []);
+    }, [isSameSession]);
 
     // Update session
     const updateSession = useCallback((sessionId, updates) => {
