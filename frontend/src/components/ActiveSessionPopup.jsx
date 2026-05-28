@@ -6,6 +6,16 @@ import { X, Clock, AlarmClock } from 'lucide-react';
 
 const MINI_SESSION_KEY = 'miniPopupSessionId';
 
+const isSameSession = (session, sessionId) => {
+    if (sessionId === null || sessionId === undefined) return false;
+    return (
+        session?.id === sessionId ||
+        session?._id === sessionId ||
+        String(session?.id) === String(sessionId) ||
+        String(session?._id) === String(sessionId)
+    );
+};
+
 export default function ActiveSessionPopup() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -63,18 +73,9 @@ export default function ActiveSessionPopup() {
 
     useEffect(() => {
         if (!completedSessionNotice) return;
-        const sameSession = (session, sessionId) => {
-            if (sessionId === null || sessionId === undefined) return false;
-            return (
-                session?.id === sessionId ||
-                session?._id === sessionId ||
-                String(session?.id) === String(sessionId) ||
-                String(session?._id) === String(sessionId)
-            );
-        };
         const stillActive = activeSessions.some(session =>
-            sameSession(session, completedSessionNotice.id) ||
-            sameSession(session, completedSessionNotice._id)
+            isSameSession(session, completedSessionNotice.id) ||
+            isSameSession(session, completedSessionNotice._id)
         );
         if (!stillActive) {
             clearCompletedSessionNotice?.();
@@ -122,13 +123,18 @@ export default function ActiveSessionPopup() {
         }
     }, [primarySession, getSessionPath, navigate]);
 
+    const visibleCompletedNotice = completedSessionNotice && activeSessions.some(session =>
+        isSameSession(session, completedSessionNotice.id) ||
+        isSameSession(session, completedSessionNotice._id)
+    ) ? completedSessionNotice : null;
+
     const handleCompletedNavigate = useCallback(() => {
-        const path = getSessionPath(completedSessionNotice);
+        const path = getSessionPath(visibleCompletedNotice);
         clearCompletedSessionNotice?.();
         if (path) navigate(path);
-    }, [completedSessionNotice, clearCompletedSessionNotice, getSessionPath, navigate]);
+    }, [visibleCompletedNotice, clearCompletedSessionNotice, getSessionPath, navigate]);
 
-    const timeUpNotice = completedSessionNotice ? (
+    const timeUpNotice = visibleCompletedNotice ? (
         <div className="fixed left-4 right-4 top-20 z-[60] sm:left-auto sm:right-6 sm:w-80">
             <div className="relative mx-auto max-w-sm rounded-xl border border-amber-200 bg-white shadow-xl overflow-hidden">
                 <button
@@ -142,7 +148,7 @@ export default function ActiveSessionPopup() {
                     <span className="min-w-0 flex-1">
                         <span className="block text-sm font-bold text-[#1c1f1a]">Time's up</span>
                         <span className="block text-xs text-[#565c52] truncate">
-                            {completedSessionNotice.skillName || 'Practice session'} finished. Tap to open.
+                            {visibleCompletedNotice.skillName || 'Practice session'} finished. Tap to open.
                         </span>
                     </span>
                 </button>
