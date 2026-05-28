@@ -33,7 +33,7 @@ export default function LogPractice() {
   const [fDate, setFDate] = useState('');
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState(null);
-  const { activeSessions, addSession, removeSession, toggleSession, resetSession, formatTimer, getProgress } = useActiveSessions();
+  const { activeSessions, addSession, removeSession, toggleSession, resetSession, formatTimer, getProgress, clearCompletedSessionNotice } = useActiveSessions();
 
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ skillName:'', tags:[], notes:'' });
@@ -188,6 +188,7 @@ export default function LogPractice() {
         showXpNotification(showSuccess,response.data.xpAwarded);
       }
       removeSession(compSess.id);
+      clearCompletedSessionNotice?.();
       setShowComp(false);
       setCompSess(null);
       doFetch();

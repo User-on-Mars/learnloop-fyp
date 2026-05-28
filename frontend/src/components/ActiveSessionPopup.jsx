@@ -61,6 +61,26 @@ export default function ActiveSessionPopup() {
         return runningAny || null;
     })();
 
+    useEffect(() => {
+        if (!completedSessionNotice) return;
+        const sameSession = (session, sessionId) => {
+            if (sessionId === null || sessionId === undefined) return false;
+            return (
+                session?.id === sessionId ||
+                session?._id === sessionId ||
+                String(session?.id) === String(sessionId) ||
+                String(session?._id) === String(sessionId)
+            );
+        };
+        const stillActive = activeSessions.some(session =>
+            sameSession(session, completedSessionNotice.id) ||
+            sameSession(session, completedSessionNotice._id)
+        );
+        if (!stillActive) {
+            clearCompletedSessionNotice?.();
+        }
+    }, [activeSessions, clearCompletedSessionNotice, completedSessionNotice]);
+
     const handleDismiss = useCallback((e) => {
         e.stopPropagation();
         if (primarySession?.isRunning) toggleSession(primarySession.id);
