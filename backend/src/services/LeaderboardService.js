@@ -93,10 +93,6 @@ class LeaderboardService {
    * @param {number} pageSize - default 50
    */
   static async getWeeklyBoard(page = 1, pageSize = 50) {
-    const cacheKey = `weekly:${page}:${pageSize}`;
-    const cached = await LeaderboardService._getCached(cacheKey);
-    if (cached) return cached;
-
     const weekStart = LeaderboardService._getWeekStart();
     const skip = (page - 1) * pageSize;
 
@@ -175,7 +171,6 @@ class LeaderboardService {
     );
 
     const data = { entries, total, page };
-    await LeaderboardService._setCache(cacheKey, data);
     return data;
   }
 
@@ -185,10 +180,6 @@ class LeaderboardService {
    * Excludes users with streak of 0.
    */
   static async getStreakBoard(page = 1, pageSize = 50) {
-    const cacheKey = `streaks:${page}:${pageSize}`;
-    const cached = await LeaderboardService._getCached(cacheKey);
-    if (cached) return cached;
-
     const skip = (page - 1) * pageSize;
 
     const pipeline = [
@@ -235,7 +226,6 @@ class LeaderboardService {
     );
 
     const data = { entries, total, page };
-    await LeaderboardService._setCache(cacheKey, data);
     return data;
   }
 
@@ -244,10 +234,6 @@ class LeaderboardService {
    * Tiebreaker: earlier user registration (createdAt on User) wins.
    */
   static async getAllTimeBoard(page = 1, pageSize = 50) {
-    const cacheKey = `alltime:${page}:${pageSize}`;
-    const cached = await LeaderboardService._getCached(cacheKey);
-    if (cached) return cached;
-
     const skip = (page - 1) * pageSize;
 
     const pipeline = [
@@ -310,7 +296,6 @@ class LeaderboardService {
     });
 
     const data = { entries, total, page };
-    await LeaderboardService._setCache(cacheKey, data);
     return data;
   }
 
