@@ -437,6 +437,7 @@ class LeaderboardService {
 
       // Reset all weekly XP to 0 (use $set to avoid wiping other fields)
       await UserXpProfile.updateMany({}, { $set: { weeklyXp: 0 } });
+      await LeaderboardService.clearCache();
 
       // Persist history
       await WeeklyResetHistory.create({
@@ -468,10 +469,9 @@ class LeaderboardService {
   static async clearCache() {
     if (!cacheService.isAvailable()) return;
     try {
-      // Clear all leaderboard cache keys
-      const keys = ['weekly:1:50', 'weekly:2:50', 'weekly:3:50', 'streaks:1:50', 'streaks:2:50', 'alltime:1:50', 'alltime:2:50'];
-      for (const key of keys) {
-        await cacheService.client.del(`${CACHE_PREFIX}${key}`);
+      const keys = await cacheService.client.keys(`${CACHE_PREFIX}*`);
+      if (keys.length > 0) {
+        await cacheService.client.del(keys);
       }
     } catch (error) {
       console.error('Failed to clear leaderboard cache:', error);

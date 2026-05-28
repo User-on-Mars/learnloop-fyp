@@ -161,6 +161,7 @@ class XpService {
             { leagueTier: newTier }
           );
         }
+        await LeaderboardService.clearCache();
       } catch (profileError) {
         await ErrorLoggingService.logError(
           { message: `UserXpProfile update failed: ${profileError.message}`, category: 'xp', code: 'XP_PROFILE_UPDATE_FAILED' },
