@@ -34,6 +34,8 @@ export const PasswordStrength = {
   VERY_STRONG: 5
 };
 
+export const MAX_PASSWORD_LENGTH = 128;
+
 /**
  * Calculate password strength score (0-5)
  * @param {string} password - The password to evaluate
@@ -168,6 +170,9 @@ export function validatePassword(password) {
   // Length check
   if (password.length < 8) {
     errors.push('Password must be at least 8 characters long');
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    errors.push(`Password must be ${MAX_PASSWORD_LENGTH} characters or less`);
   }
 
   // Character type checks

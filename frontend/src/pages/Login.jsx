@@ -5,6 +5,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { LogIn, Loader, Eye, EyeOff } from "lucide-react";
 import LogoMark from "../components/LogoMark";
 import { authBridge } from "../services/authBridge.js";
+import { MAX_PASSWORD_LENGTH } from "../utils/passwordValidator";
 
 /* Same leaf decoration used on the landing-page hero */
 function LeafDecoration({ className = "" }) {
@@ -218,8 +219,9 @@ export default function Login() {
                     <div className="relative">
                       <input
                         id="login-pw" type={showPassword ? "text" : "password"} value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => setPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
                         required placeholder="Enter your password"
+                        maxLength={MAX_PASSWORD_LENGTH}
                         className="w-full px-4 py-3 pr-12 min-h-[44px] bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                         autoComplete="current-password"
                       />

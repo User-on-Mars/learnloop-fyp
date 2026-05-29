@@ -5,7 +5,7 @@ import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/
 import { UserPlus, Loader, Eye, EyeOff } from "lucide-react";
 import LogoMark from "../components/LogoMark";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
-import { validatePassword } from "../utils/passwordValidator";
+import { MAX_PASSWORD_LENGTH, validatePassword } from "../utils/passwordValidator";
 import { authBridge } from "../services/authBridge.js";
 
 /* Same leaf decoration used on the landing-page hero */
@@ -244,8 +244,9 @@ export default function Signup() {
                     <div className="relative">
                       <input
                         id="signup-pw" type={showPassword ? "text" : "password"} value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => setPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
                         required placeholder="Create a strong password"
+                        maxLength={MAX_PASSWORD_LENGTH}
                         className="w-full h-11 px-4 pr-12 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                         autoComplete="new-password"
                       />
@@ -264,8 +265,9 @@ export default function Signup() {
                     <div className="relative">
                       <input
                         id="signup-confirm" type={showConfirm ? "text" : "password"} value={confirm}
-                        onChange={(e) => setConfirm(e.target.value)}
+                        onChange={(e) => setConfirm(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
                         required placeholder="Re-enter password"
+                        maxLength={MAX_PASSWORD_LENGTH}
                         className="w-full h-11 px-4 pr-12 bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all backdrop-blur-sm"
                         autoComplete="new-password"
                       />

@@ -17,7 +17,9 @@ import { useCustomAvatar } from "../context/AvatarContext";
 import { useSubscription } from "../context/SubscriptionContext";
 import MyPublishRequests from "../components/MyPublishRequests";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
-import { validatePassword } from "../utils/passwordValidator";
+import { MAX_PASSWORD_LENGTH, validatePassword } from "../utils/passwordValidator";
+
+const DISPLAY_NAME_MAX_LENGTH = 30;
 
 export default function Profile() {
   const user = useAuth();
@@ -150,6 +152,7 @@ export default function Profile() {
   const handleSaveName = async () => {
     const trimmedName = displayName.trim();
     if (!trimmedName) { setNameUpdateMessage({ variant: "error", text: "Display name cannot be empty." }); return; }
+    if (trimmedName.length > DISPLAY_NAME_MAX_LENGTH) { setNameUpdateMessage({ variant: "error", text: `Display name must be ${DISPLAY_NAME_MAX_LENGTH} characters or less.` }); return; }
     try {
       setIsUpdatingName(true); setNameUpdateMessage(null);
       await updateProfile(auth.currentUser, { displayName: trimmedName });
@@ -320,9 +323,12 @@ export default function Profile() {
 
               {/* Display Name */}
               <div>
-                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">Display Name</label>
+                <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
+                  Display Name
+                  {isEditingName && <span className="ml-2 text-xs font-normal text-[#9aa094]">{displayName.length}/{DISPLAY_NAME_MAX_LENGTH}</span>}
+                </label>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input type="text" value={displayName} disabled={!isEditingName} onChange={(e) => setDisplayName(e.target.value)}
+                  <input type="text" value={displayName} disabled={!isEditingName} maxLength={DISPLAY_NAME_MAX_LENGTH} onChange={(e) => setDisplayName(e.target.value.slice(0, DISPLAY_NAME_MAX_LENGTH))}
                     placeholder={!displayName && !isEditingName ? "No name set" : ""}
                     className={`flex-1 px-4 py-3 border-2 rounded-xl outline-none transition-all text-sm ${
                       isEditingName ? "border-rose-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-400/15 bg-white text-[#1c1f1a]" : "border-[#e2e6dc] bg-[#f8faf6] text-[#565c52] cursor-not-allowed"
@@ -374,7 +380,7 @@ export default function Profile() {
                   <div>
                     <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">Current Password</label>
                     <div className="relative">
-                      <input type={showCurrentPassword ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                      <input type={showCurrentPassword ? "text" : "password"} value={currentPassword} maxLength={MAX_PASSWORD_LENGTH} onChange={(e) => setCurrentPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
                         required disabled={isChangingPassword} autoComplete="new-password" placeholder="Enter current password"
                         className="w-full px-4 py-3 pr-10 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 bg-[#f8faf6] focus:bg-white text-sm transition-all disabled:opacity-50" />
                       <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] text-[#9aa094] hover:text-[#565c52] flex items-center justify-center" aria-label={showCurrentPassword ? "Hide password" : "Show password"}>
@@ -387,7 +393,7 @@ export default function Profile() {
                 <div>
                   <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">{hasPasswordProvider ? "New Password" : "Password"}</label>
                   <div className="relative">
-                    <input type={showNewPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                    <input type={showNewPassword ? "text" : "password"} value={newPassword} maxLength={MAX_PASSWORD_LENGTH} onChange={(e) => setNewPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
                       required minLength={8} disabled={isChangingPassword} autoComplete="new-password" placeholder="Create a strong password"
                       className="w-full px-4 py-3 pr-10 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 bg-[#f8faf6] focus:bg-white text-sm transition-all disabled:opacity-50" />
                     <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] text-[#9aa094] hover:text-[#565c52] flex items-center justify-center" aria-label={showNewPassword ? "Hide password" : "Show password"}>
@@ -400,7 +406,7 @@ export default function Profile() {
                 <div>
                   <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">{hasPasswordProvider ? "Confirm New Password" : "Confirm Password"}</label>
                   <div className="relative">
-                    <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                    <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} maxLength={MAX_PASSWORD_LENGTH} onChange={(e) => setConfirmPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
                       required disabled={isChangingPassword} autoComplete="new-password" placeholder="Re-enter password"
                       className="w-full px-4 py-3 pr-10 border-2 border-[#e2e6dc] rounded-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 bg-[#f8faf6] focus:bg-white text-sm transition-all disabled:opacity-50" />
                     <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] text-[#9aa094] hover:text-[#565c52] flex items-center justify-center" aria-label={showConfirmPassword ? "Hide password" : "Show password"}>

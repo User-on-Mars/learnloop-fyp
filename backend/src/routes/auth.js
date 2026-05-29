@@ -11,12 +11,15 @@ import { requireAuth } from '../middleware/auth.js'
 import admin from '../config/firebase.js'
 
 const router = Router()
+const MAX_DISPLAY_NAME_LENGTH = 30
+const MAX_PASSWORD_LENGTH = 128
 
 const registerSchema = z.object({
-  name: z.string().min(2),
+  name: z.string().trim().min(2).max(MAX_DISPLAY_NAME_LENGTH, `Name must be ${MAX_DISPLAY_NAME_LENGTH} characters or less`),
   email: z.string().email(),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
+    .max(MAX_PASSWORD_LENGTH, `Password must be ${MAX_PASSWORD_LENGTH} characters or less`)
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/\d/, 'Password must contain at least one number')
@@ -25,7 +28,21 @@ const registerSchema = z.object({
 
 const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1)
+  password: z.string().min(1).max(MAX_PASSWORD_LENGTH, `Password must be ${MAX_PASSWORD_LENGTH} characters or less`)
+})
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(MAX_PASSWORD_LENGTH, `Password must be ${MAX_PASSWORD_LENGTH} characters or less`)
+})
+
+const syncProfileSchema = z.object({
+  email: z.string().email(),
+  displayName: z.string().trim().max(MAX_DISPLAY_NAME_LENGTH, `Display name must be ${MAX_DISPLAY_NAME_LENGTH} characters or less`).optional(),
+  firebaseUid: z.string().optional(),
+  emailVerified: z.boolean().optional()
 })
 
 router.post('/register', async (req, res) => {
@@ -206,8 +223,7 @@ router.post('/forgot', async (req, res) => {
 
 router.post('/reset', async (req, res) => {
   try {
-    const { token, password } = req.body
-    if (!token || !password) return res.status(400).json({ message: 'Missing token or password' })
+    const { token, password } = resetPasswordSchema.parse(req.body)
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     const hash = await bcrypt.hash(password, 10)
     await User.findByIdAndUpdate(decoded.id, { passwordHash: hash })
@@ -222,8 +238,7 @@ router.post('/reset', async (req, res) => {
 // This is where we create the user in our database AFTER email verification
 router.post('/sync-profile', async (req, res) => {
   try {
-    const { email, displayName, firebaseUid, emailVerified } = req.body
-    if (!email) return res.status(400).json({ message: 'Email is required' })
+    const { email, displayName, firebaseUid, emailVerified } = syncProfileSchema.parse(req.body)
 
     // Validate email domain
     const emailValidation = validateEmail(email)
@@ -231,7 +246,7 @@ router.post('/sync-profile', async (req, res) => {
       return res.status(400).json({ message: emailValidation.message })
     }
 
-    const name = displayName || email.split('@')[0]
+    const name = displayName || email.split('@')[0].slice(0, MAX_DISPLAY_NAME_LENGTH)
 
     console.log(`🔄 Syncing profile for ${email} with name: ${name}, emailVerified: ${emailVerified}`)
 

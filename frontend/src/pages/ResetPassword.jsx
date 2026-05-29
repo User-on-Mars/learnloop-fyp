@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle, Eye, EyeOff, KeyRound, Loader } from "lucide-re
 import { auth } from "../firebase";
 import LogoMark from "../components/LogoMark";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
-import { validatePassword } from "../utils/passwordValidator";
+import { MAX_PASSWORD_LENGTH, validatePassword } from "../utils/passwordValidator";
 
 function LeafDecoration({ className = "" }) {
   return (
@@ -149,8 +149,9 @@ export default function ResetPassword() {
                               id="reset-pw"
                               type={showPassword ? "text" : "password"}
                               value={password}
-                              onChange={(e) => setPassword(e.target.value)}
+                              onChange={(e) => setPassword(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
                               required
+                              maxLength={MAX_PASSWORD_LENGTH}
                               placeholder="Create a strong password"
                               className="w-full px-4 py-3 pr-12 min-h-[44px] bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all"
                               autoComplete="new-password"
@@ -169,8 +170,9 @@ export default function ResetPassword() {
                               id="reset-confirm"
                               type={showConfirm ? "text" : "password"}
                               value={confirm}
-                              onChange={(e) => setConfirm(e.target.value)}
+                              onChange={(e) => setConfirm(e.target.value.slice(0, MAX_PASSWORD_LENGTH))}
                               required
+                              maxLength={MAX_PASSWORD_LENGTH}
                               placeholder="Re-enter password"
                               className="w-full px-4 py-3 pr-12 min-h-[44px] bg-white/90 border border-[#d4d9cf] text-[#1c1f1a] text-sm rounded-xl outline-none placeholder:text-[#9aa094] focus:border-[#4f7942] focus:ring-2 focus:ring-[#4f7942]/15 hover:border-[#c8cec0] transition-all"
                               autoComplete="new-password"
