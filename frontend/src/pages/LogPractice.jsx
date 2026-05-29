@@ -126,7 +126,7 @@ export default function LogPractice() {
       setTimeout(()=>setBlockMsg(''),5000);
       return;
     }
-    addSession({
+    const created = addSession({
       skillName:form.skillName.trim(),
       tags:form.tags,
       notes:form.notes,
@@ -135,6 +135,11 @@ export default function LogPractice() {
       isCountdown:countdown,
       isRunning:now
     });
+    if(!created){
+      setBlockMsg('Another session is already running. Pause or complete it first.');
+      setTimeout(()=>setBlockMsg(''),5000);
+      return;
+    }
     resetForm();
     setShowNew(false);
     setSuccess(now?'Session started!':'Session saved.');

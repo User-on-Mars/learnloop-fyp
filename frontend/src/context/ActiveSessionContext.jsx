@@ -175,6 +175,17 @@ export function ActiveSessionProvider({ children }) {
         }
     }, [activeSessions, completedSessionNotice, isSameSession]);
 
+    // Keep only one running session if older state/backend data contains more.
+    useEffect(() => {
+        const runningSessions = activeSessions.filter(s => s.isRunning);
+        if (runningSessions.length <= 1) return;
+
+        const keepId = runningSessions[0].id ?? runningSessions[0]._id;
+        setActiveSessions(prev => prev.map(session =>
+            isSameSession(session, keepId) ? session : { ...session, isRunning: false }
+        ));
+    }, [activeSessions, isSameSession]);
+
     // Save sessions to localStorage and backend when browser/tab is closing
     useEffect(() => {
         const saveToLocalStorage = () => {
@@ -273,6 +284,11 @@ export function ActiveSessionProvider({ children }) {
 
     // Add a new session
     const addSession = useCallback((session) => {
+        if (session.isRunning && activeSessions.some(s => s.isRunning)) {
+            setSyncError('Another session is already running');
+            return null;
+        }
+
         const newSession = {
             id: Date.now(),
             ...session,
@@ -306,7 +322,7 @@ export function ActiveSessionProvider({ children }) {
         }
         
         return newSession;
-    }, []);
+    }, [activeSessions]);
 
     // Remove a session
     const removeSession = useCallback((sessionId) => {
@@ -347,8 +363,14 @@ export function ActiveSessionProvider({ children }) {
 
     // Toggle session timer
     const toggleSession = useCallback((sessionId) => {
-        setActiveSessions(prev =>
-            prev.map(s => {
+        setActiveSessions(prev => {
+            const target = prev.find(s => isSameSession(s, sessionId));
+            if (target && !target.isRunning && prev.some(s => s.isRunning && !isSameSession(s, sessionId))) {
+                setSyncError('Another session is already running');
+                return prev;
+            }
+
+            return prev.map(s => {
                 if (s.id === sessionId || s._id === sessionId) {
                     const updated = { ...s, isRunning: !s.isRunning };
                     
@@ -367,9 +389,9 @@ export function ActiveSessionProvider({ children }) {
                     return updated;
                 }
                 return s;
-            })
-        );
-    }, []);
+            });
+        });
+    }, [isSameSession]);
 
     // Reset session timer
     const resetSession = useCallback((sessionId) => {

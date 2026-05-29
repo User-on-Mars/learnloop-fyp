@@ -33,6 +33,7 @@ export default function NodeDetailPage() {
   const [editDesc, setEditDesc] = useState(false);
   const [descIn, setDescIn] = useState('');
   const [showPractice, setShowPractice] = useState(false);
+  const [practiceErr, setPracticeErr] = useState('');
   const [sessTitle, setSessTitle] = useState('');
   const [tgtM, setTgtM] = useState(25);
   const [cd, setCd] = useState(true);
@@ -131,18 +132,35 @@ export default function NodeDetailPage() {
   const saveDesc = async () => { try { await updateNodeContent(nodeId, { description: descIn.trim() }); setEditDesc(false); flash('Saved!'); fetchD(); } catch { flash('Failed to save', true); } };
 
   const startPractice = () => {
+    setPracticeErr('');
     if (!node || !sessTitle.trim()) return;
-    if (activeS) { flash('Complete or remove the current session first', true); return; }
+    if (activeS) { setPracticeErr('Complete or remove the current session first.'); return; }
     const running = activeSessions.find(s => s.isRunning);
-    if (running) { flash(`"${running.skillName}" is running. Pause it first.`, true); return; }
+    if (running) { setPracticeErr(`"${running.skillName}" is running. Pause or complete it first.`); return; }
     const durationMinutes = Number(tgtM) || 0;
     if (cd && durationMinutes < 1) {
-      flash('Duration must be at least 1 minute', true);
+      setPracticeErr('Duration must be at least 1 minute.');
       return;
     }
     const t = cd ? durationMinutes * 60 : 0;
-    addSession({ skillName: node.title.slice(0, 20), nodeId, skillId, tags: [currentSkill?.name || ''], notes: sessTitle.trim(), timer: cd ? t : 0, targetTime: t, isCountdown: cd, isRunning: true });
+    const created = addSession({ skillName: node.title.slice(0, 20), nodeId, skillId, tags: [currentSkill?.name || ''], notes: sessTitle.trim(), timer: cd ? t : 0, targetTime: t, isCountdown: cd, isRunning: true });
+    if (!created) {
+      setPracticeErr('Another session is already running. Pause or complete it first.');
+      return;
+    }
     setShowPractice(false); setSessTitle(''); flash('Session started!');
+  };
+
+  const tryToggleActive = () => {
+    if (!activeS) return;
+    if (!activeS.isRunning) {
+      const running = activeSessions.find(s => s.isRunning && String(s.id) !== String(activeS.id) && String(s._id) !== String(activeS._id));
+      if (running) {
+        flash(`"${running.skillName}" is running. Pause or complete it first.`, true);
+        return;
+      }
+    }
+    toggleSession(activeS.id);
   };
 
   const openComp = (s) => {
@@ -368,7 +386,7 @@ export default function NodeDetailPage() {
                     )}
                   </div>
                   <div className="bg-[#fafbf8] border-t border-[#f0f2ec] px-5 py-3 flex gap-2">
-                    <button onClick={() => toggleSession(activeS.id)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-xl font-semibold text-sm transition-all active:scale-[0.97] ${activeS.isRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{activeS.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{activeS.isRunning ? 'Pause' : 'Resume'}</button>
+                    <button onClick={tryToggleActive} className={`flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-xl font-semibold text-sm transition-all active:scale-[0.97] ${activeS.isRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{activeS.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{activeS.isRunning ? 'Pause' : 'Resume'}</button>
                     <button onClick={() => resetSession(activeS.id)} className="px-3 py-2.5 min-h-[44px] min-w-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl hover:bg-white transition-colors flex items-center justify-center"><RotateCcw className="w-4 h-4" /></button>
                     <button onClick={() => openComp(activeS)} disabled={(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60; })()} className="flex-1 py-2.5 min-h-[44px] bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">{(() => { const e = activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer; return e < 60 ? `${60 - e}s left` : 'Complete'; })()}</button>
                   </div>
@@ -609,6 +627,12 @@ export default function NodeDetailPage() {
       {showPractice && (<div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4"><div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <h3 className="text-lg font-bold text-[#1c1f1a] mb-0.5">Start Practice</h3>
         <p className="text-[12px] text-[#9aa094] mb-5">{node?.title}</p>
+        {practiceErr && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-600">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>{practiceErr}</span>
+          </div>
+        )}
         <div className="mb-4">
           <label className="block text-[13px] font-medium text-[#1c1f1a] mb-1.5">Session title *</label>
           <input type="text" value={sessTitle} onChange={e => { if (e.target.value.length <= 20) setSessTitle(e.target.value); }} placeholder="e.g. Fundamentals review" maxLength={20} autoFocus className="w-full px-4 py-2.5 min-h-[44px] border border-[#e8ebe4] rounded-xl text-sm focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none transition-all" />
@@ -621,7 +645,7 @@ export default function NodeDetailPage() {
         {cd && <div className="mb-5"><label className="block text-[12px] text-[#9aa094] mb-1.5">Duration (minutes)</label><input type="number" min={0} max={120} value={tgtM} onChange={e => setTgtM(e.target.value === '' ? 0 : Math.max(0, Math.min(120, parseInt(e.target.value, 10) || 0)))} className="w-full px-4 py-2.5 min-h-[44px] border border-[#e8ebe4] rounded-xl text-sm text-center focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none" /></div>}
         <div className="flex gap-2">
           <button onClick={startPractice} disabled={!sessTitle.trim() || (cd && (Number(tgtM) || 0) < 1)} className="flex-1 py-3 min-h-[44px] bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#3d6b30] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Start</button>
-          <button onClick={() => { setShowPractice(false); setSessTitle(''); }} className="flex-1 py-3 min-h-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Cancel</button>
+          <button onClick={() => { setShowPractice(false); setSessTitle(''); setPracticeErr(''); }} className="flex-1 py-3 min-h-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Cancel</button>
         </div>
       </div></div>)}
 
