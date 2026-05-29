@@ -112,10 +112,24 @@ export default function NodeDetailPage() {
   const isLocked = node?.status === 'Locked' && !isFirst;
   const isUnlocked = !isLocked && node?.status !== 'Completed';
   const isCompleted = node?.status === 'Completed';
-  const totalM = hist.reduce((s, p) => s + Math.floor((p.timerSeconds || p.minutesPracticed * 60 || 0) / 60), 0);
-  const timeStr = totalM >= 60 ? `${Math.floor(totalM / 60)}h ${totalM % 60}m` : `${totalM}m`;
-  const avgConf = hist.length > 0 ? (hist.reduce((s, p) => s + (p.confidence || 0), 0) / hist.length).toFixed(1) : '—';
-  const dispStatus = isCompleted ? 'Completed' : isLocked ? 'Locked' : hist.length > 0 || node?.status === 'In_Progress' ? 'In Progress' : 'Not Started';
+  const templateSessionDetails = node?.completedSessionDetails || [];
+  const templateTotalSec = templateSessionDetails.reduce((sum, detail) => sum + (detail.elapsedSeconds || 0), 0);
+  const activeElapsedSec = activeS ? (activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer) : 0;
+  const practiceTotalSec = hist.reduce((sum, p) => sum + (p.timerSeconds || p.minutesPracticed * 60 || 0), 0);
+  const totalStatSec = hasTPL ? templateTotalSec : practiceTotalSec + activeElapsedSec;
+  const sessionStatCount = hasTPL ? doneTPL.length : hist.length + (activeS ? 1 : 0);
+  const formatDurationStat = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) return `${hrs}h ${mins}m`;
+    if (mins > 0 && secs > 0) return `${mins}m ${secs}s`;
+    if (mins > 0) return `${mins}m`;
+    return `${secs}s`;
+  };
+  const timeStr = formatDurationStat(totalStatSec);
+  const avgConf = !hasTPL && hist.length > 0 ? (hist.reduce((s, p) => s + (p.confidence || 0), 0) / hist.length).toFixed(1) : '—';
+  const dispStatus = isCompleted ? 'Completed' : isLocked ? 'Locked' : hist.length > 0 || activeS || node?.status === 'In_Progress' ? 'In Progress' : 'Not Started';
   const paged = hist.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const totPages = Math.max(1, Math.ceil(hist.length / PER_PAGE));
 
@@ -161,19 +175,12 @@ export default function NodeDetailPage() {
   const removeActive = () => { if (activeS) { removeSession(activeS.id); setShowRemove(false); } };
 
   /* ── Derived stats for redesigned layout ── */
-  const totalSec = hist.reduce((s, p) => s + (p.timerSeconds || p.minutesPracticed * 60 || 0), 0);
-  const avgSessionMin = hist.length > 0 ? Math.round(totalSec / hist.length / 60) : 0;
-  const templateSessionDetails = node?.completedSessionDetails || [];
+  const avgSessionSec = sessionStatCount > 0 ? Math.round(totalStatSec / sessionStatCount) : 0;
   const getTemplateSessionSeconds = (idx) => {
     const detail = templateSessionDetails.find(d => d.sessionIndex === idx);
     return detail?.elapsedSeconds || 0;
   };
-  const formatElapsed = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (mins <= 0) return `${secs}s`;
-    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
-  };
+  const formatElapsed = formatDurationStat;
 
   if (loading && !node) return (
     <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
@@ -382,7 +389,7 @@ export default function NodeDetailPage() {
                   <div className="w-10 h-10 rounded-xl bg-violet-50 ring-4 ring-violet-100 flex items-center justify-center mb-3">
                     <Target className="w-5 h-5 text-violet-500" />
                   </div>
-                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{hist.length}</p>
+                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{sessionStatCount}</p>
                   <p className="text-[11px] text-[#9aa094] font-medium">Sessions</p>
                 </div>
                 <div className="bg-white rounded-2xl border border-[#e8ebe4] p-5 hover:shadow-md hover:shadow-black/[0.03] transition-shadow">
@@ -396,7 +403,7 @@ export default function NodeDetailPage() {
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 ring-4 ring-emerald-100 flex items-center justify-center mb-3">
                     <Clock className="w-5 h-5 text-emerald-500" />
                   </div>
-                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{avgSessionMin}m</p>
+                  <p className="text-2xl font-bold text-[#1c1f1a] leading-none mb-1">{formatDurationStat(avgSessionSec)}</p>
                   <p className="text-[11px] text-[#9aa094] font-medium">Avg Session</p>
                 </div>
               </div>
@@ -568,10 +575,10 @@ export default function NodeDetailPage() {
       {showBackConfirm && (<div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[60] p-4"><div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center">
         <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-6 h-6 text-amber-500" /></div>
         <h3 className="text-base font-bold text-[#1c1f1a] mb-1">Leave this page?</h3>
-        <p className="text-[13px] text-[#565c52] mb-5">Session is running. Progress won't be saved.</p>
+        <p className="text-[13px] text-[#565c52] mb-5">Session will be paused and kept for later.</p>
         <div className="flex gap-2">
           <button onClick={() => setShowBackConfirm(false)} className="flex-1 py-2.5 min-h-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Stay</button>
-          <button onClick={() => { setTplRunning(false); setShowBackConfirm(false); nav(`/skills/${skillId}`); }} className="flex-1 py-2.5 min-h-[44px] bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 text-sm transition-colors">Leave</button>
+          <button onClick={() => { if (activeS?.isRunning) toggleSession(activeS.id); setTplRunning(false); setShowBackConfirm(false); nav(`/skills/${skillId}`); }} className="flex-1 py-2.5 min-h-[44px] bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 text-sm transition-colors">Leave</button>
         </div>
       </div></div>)}
 

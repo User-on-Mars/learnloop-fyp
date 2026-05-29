@@ -237,6 +237,9 @@ export function ActiveSessionProvider({ children }) {
                     let completedSession = null;
                     const nextSessions = prev.map(session => {
                         if (!session.isRunning) return session;
+                        if (session.nodeId && !window.location.pathname.includes(`/nodes/${session.nodeId}`)) {
+                            return { ...session, isRunning: false };
+                        }
                         if (session.isCountdown) {
                             const newTimer = session.timer - 1;
                             if (newTimer <= 0) {
