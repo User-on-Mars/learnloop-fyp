@@ -114,10 +114,9 @@ export default function NodeDetailPage() {
   const isCompleted = node?.status === 'Completed';
   const templateSessionDetails = node?.completedSessionDetails || [];
   const templateTotalSec = templateSessionDetails.reduce((sum, detail) => sum + (detail.elapsedSeconds || 0), 0);
-  const activeElapsedSec = activeS ? (activeS.isCountdown ? Math.max(0, activeS.targetTime - activeS.timer) : activeS.timer) : 0;
   const practiceTotalSec = hist.reduce((sum, p) => sum + (p.timerSeconds || p.minutesPracticed * 60 || 0), 0);
-  const totalStatSec = hasTPL ? templateTotalSec : practiceTotalSec + activeElapsedSec;
-  const sessionStatCount = hasTPL ? doneTPL.length : hist.length + (activeS ? 1 : 0);
+  const totalStatSec = hasTPL ? templateTotalSec : practiceTotalSec;
+  const sessionStatCount = hasTPL ? doneTPL.length : hist.length;
   const formatDurationStat = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
