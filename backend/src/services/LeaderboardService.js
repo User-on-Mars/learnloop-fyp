@@ -156,12 +156,13 @@ class LeaderboardService {
     const settings = await XpSettings.getSettings();
 
     // Enrich with display names and rank - try multiple sources
-    const entries = await Promise.all(
+    const entries = (await Promise.all(
       result.entries.map(async (entry, idx) => {
         let displayName = 'Unknown';
         
         // Try to get name from User collection by firebaseUid
         let user = await LeaderboardService._findUserForLeaderboard(entry.userId);
+        if (!user) return null;
         
         if (user?.name && user.name !== user.email?.split('@')[0]) {
           displayName = user.name;
@@ -184,7 +185,9 @@ class LeaderboardService {
           leagueTier
         };
       })
-    );
+    ))
+      .filter(Boolean)
+      .map((entry, idx) => ({ ...entry, rank: skip + idx + 1 }));
 
     const data = { entries, total, page };
     return data;
@@ -216,12 +219,13 @@ class LeaderboardService {
     const [result] = await UserStreak.aggregate(pipeline);
     const total = result.total[0]?.count || 0;
 
-    const entries = await Promise.all(
+    const entries = (await Promise.all(
       result.entries.map(async (entry, idx) => {
         let displayName = 'Unknown';
         
         // Try to get name from User collection
         const user = await LeaderboardService._findUserForLeaderboard(entry.userId);
+        if (!user) return null;
         if (user?.name && user.name !== user.email?.split('@')[0]) {
           displayName = user.name;
           console.log(`✅ Found user by firebaseUid ${entry.userId}: ${displayName}`);
@@ -239,7 +243,9 @@ class LeaderboardService {
           rank: skip + idx + 1
         };
       })
-    );
+    ))
+      .filter(Boolean)
+      .map((entry, idx) => ({ ...entry, rank: skip + idx + 1 }));
 
     const data = { entries, total, page };
     return data;
@@ -290,6 +296,7 @@ class LeaderboardService {
 
     const entries = result.entries.map((entry, idx) => {
       let displayName = 'Unknown';
+      if (!entry.userName && !entry.userEmail) return null;
       
       // Use name if it's set and not just email prefix
       if (entry.userName && entry.userName !== entry.userEmail?.split('@')[0]) {
@@ -309,7 +316,9 @@ class LeaderboardService {
         totalXp: entry.totalXp,
         rank: skip + idx + 1
       };
-    });
+    })
+      .filter(Boolean)
+      .map((entry, idx) => ({ ...entry, rank: skip + idx + 1 }));
 
     const data = { entries, total, page };
     return data;

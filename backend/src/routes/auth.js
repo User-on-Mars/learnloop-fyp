@@ -9,6 +9,7 @@ import nodemailer from 'nodemailer'
 import { validateEmail } from '../utils/emailValidator.js'
 import { requireAuth } from '../middleware/auth.js'
 import admin from '../config/firebase.js'
+import UserIdentityService from '../services/UserIdentityService.js'
 
 const router = Router()
 const MAX_DISPLAY_NAME_LENGTH = 30
@@ -302,6 +303,7 @@ router.post('/sync-profile', async (req, res) => {
       // account can have a new UID while the LearnLoop account keeps the same email.
       if (firebaseUid && user.firebaseUid !== firebaseUid) {
         console.log(`🔄 Setting firebaseUid to ${firebaseUid}`)
+        await UserIdentityService.migrateUserId(user.firebaseUid, firebaseUid)
         updateData.firebaseUid = firebaseUid
       }
       // Ensure emailVerified is true for Firebase users

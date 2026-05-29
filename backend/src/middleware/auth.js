@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import { SECURITY_EVENTS } from './security.js'
 import User from '../models/User.js'
 import admin from '../config/firebase.js'
+import UserIdentityService from '../services/UserIdentityService.js'
 
 // Auth middleware that accepts both JWT and Firebase tokens
 export async function requireAuth(req, res, next) {
@@ -116,6 +117,7 @@ export async function requireAuth(req, res, next) {
       if (dbUser) {
         const updates = {}
         if (userId && dbUser.firebaseUid !== userId) {
+          await UserIdentityService.migrateUserId(dbUser.firebaseUid, userId)
           updates.firebaseUid = userId
         }
         if (!dbUser.emailVerified && emailVerified) {
