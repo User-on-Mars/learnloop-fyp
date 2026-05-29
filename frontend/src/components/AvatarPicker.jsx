@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Check, Trash2, Palette, Smile } from "lucide-react";
 import { getAvatarShapes, getAvatarColors, generateAvatar } from "../data/avatars";
 
@@ -39,8 +40,8 @@ export default function AvatarPicker({ isOpen, onClose, onSelect, currentAvatar 
     onSelect({ id: null, svg: null });
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+  const modalContent = (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
 
         {/* Header */}
@@ -159,4 +160,6 @@ export default function AvatarPicker({ isOpen, onClose, onSelect, currentAvatar 
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
