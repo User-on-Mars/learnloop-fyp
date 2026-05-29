@@ -197,7 +197,8 @@ export function ActiveSessionProvider({ children }) {
                     if (session._id) {
                         await activeSessionAPI.updateSession(session._id, {
                             timer: session.timer,
-                            isRunning: false
+                            isRunning: false,
+                            countdownCompleted: session.countdownCompleted || false
                         });
                     }
                 }
@@ -241,15 +242,18 @@ export function ActiveSessionProvider({ children }) {
                             return { ...session, isRunning: false };
                         }
                         if (session.isCountdown) {
+                            if (session.timer <= 0 && session.countdownCompleted) {
+                                return { ...session, timer: session.timer - 1 };
+                            }
                             const newTimer = session.timer - 1;
                             if (newTimer <= 0) {
                                 // Notify once when countdown reaches zero; sound is optional.
                                 if (!completedSoundsRef.current.has(session.id)) {
                                     completedSoundsRef.current.add(session.id);
                                     if (soundEnabled) createNotificationSound();
-                                    completedSession = { ...session, timer: 0, isRunning: false };
+                                    completedSession = { ...session, timer: 0, isRunning: false, countdownCompleted: true };
                                 }
-                                return { ...session, timer: 0, isRunning: false };
+                                return { ...session, timer: 0, isRunning: false, countdownCompleted: true };
                             }
                             return { ...session, timer: newTimer };
                         }
@@ -287,6 +291,7 @@ export function ActiveSessionProvider({ children }) {
                 targetTime: session.targetTime,
                 isCountdown: session.isCountdown,
                 isRunning: session.isRunning,
+                countdownCompleted: false,
                 nodeId: session.nodeId,
                 skillId: session.skillId
             }).then(response => {
@@ -351,7 +356,8 @@ export function ActiveSessionProvider({ children }) {
                     if (auth.currentUser && s._id) {
                         activeSessionAPI.updateSession(s._id, {
                             isRunning: updated.isRunning,
-                            timer: updated.timer
+                            timer: updated.timer,
+                            countdownCompleted: updated.countdownCompleted || false
                         }).catch(error => {
                             console.error('Error updating session on backend:', error);
                             setSyncError(error.message);
@@ -379,14 +385,16 @@ export function ActiveSessionProvider({ children }) {
                 const updated = {
                     ...s,
                     timer: s.isCountdown ? s.targetTime : 0,
-                    isRunning: false
+                    isRunning: false,
+                    countdownCompleted: false
                 };
                 
                 // Sync to backend
                 if (auth.currentUser && s._id) {
                     activeSessionAPI.updateSession(s._id, {
                         timer: updated.timer,
-                        isRunning: false
+                        isRunning: false,
+                        countdownCompleted: false
                     }).catch(error => {
                         console.error('Error resetting session on backend:', error);
                         setSyncError(error.message);

@@ -103,12 +103,6 @@ export default function NodeDetailPage() {
     clearCompletedSessionNotice?.();
   }, [hasTPL, activeS, removeSession, clearCompletedSessionNotice]);
 
-  const prevTimerRef = useRef(null);
-  useEffect(() => {
-    if (activeS && activeS.isCountdown && activeS.timer === 0 && !activeS.isRunning && prevTimerRef.current > 0 && !showComp) openComp(activeS);
-    prevTimerRef.current = activeS?.timer ?? null;
-  }, [activeS?.timer, activeS?.isRunning]);
-
   const isLocked = node?.status === 'Locked' && !isFirst;
   const isUnlocked = !isLocked && node?.status !== 'Completed';
   const isCompleted = node?.status === 'Completed';
@@ -180,6 +174,16 @@ export default function NodeDetailPage() {
     return detail?.elapsedSeconds || 0;
   };
   const formatElapsed = formatDurationStat;
+  const getActiveSessionElapsed = (session) => {
+    if (!session) return 0;
+    return session.isCountdown ? Math.max(0, session.targetTime - session.timer) : session.timer;
+  };
+  const getCompletedMinuteLabel = (seconds) => {
+    const completedMinutes = Math.floor(seconds / 60);
+    if (completedMinutes <= 0) return '0m completed';
+    const extraSeconds = seconds % 60;
+    return extraSeconds > 0 ? `${completedMinutes}m ${extraSeconds}s completed` : `${completedMinutes}m completed`;
+  };
 
   if (loading && !node) return (
     <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
@@ -355,7 +359,8 @@ export default function NodeDetailPage() {
                     <button onClick={() => setShowRemove(true)} className="text-[12px] text-[#b0b5ae] hover:text-red-500 font-medium transition-colors">Discard</button>
                   </div>
                   <div className="bg-white px-5 py-8 flex flex-col items-center">
-                    <p className={`text-6xl font-bold font-mono tracking-tighter leading-none ${activeS.isRunning ? 'text-emerald-600' : 'text-[#1c1f1a]'}`}>{formatTimer(activeS.timer)}</p>
+                    <p className={`text-6xl font-bold font-mono tracking-tighter leading-none ${activeS.isRunning ? 'text-emerald-600' : 'text-[#1c1f1a]'}`}>{formatTimer(getActiveSessionElapsed(activeS))}</p>
+                    <p className="mt-2 text-[12px] font-semibold text-[#565c52]">{getCompletedMinuteLabel(getActiveSessionElapsed(activeS))}</p>
                     {activeS.isCountdown && (
                       <div className="w-full max-w-xs mt-5 h-2 bg-[#f0f2ec] rounded-full overflow-hidden">
                         <div className={`h-full rounded-full transition-all duration-1000 ${activeS.isRunning ? 'bg-emerald-500' : 'bg-[#2e5023]'}`} style={{ width: `${getProgress(activeS)}%` }} />

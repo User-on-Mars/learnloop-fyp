@@ -13,10 +13,11 @@ const createActiveSessionSchema = z.object({
   skillName: z.string().min(1).max(100).trim(),
   tags: z.array(z.string().max(50).trim()).max(10).default([]),
   notes: z.string().max(1000).trim().optional(),
-  timer: z.number().min(0).default(0),
+  timer: z.number().default(0),
   targetTime: z.number().min(0).default(0),
   isCountdown: z.boolean().default(true),
   isRunning: z.boolean().default(false),
+  countdownCompleted: z.boolean().default(false),
   nodeId: z.string().trim().optional(),
   skillId: z.string().trim().optional()
 })

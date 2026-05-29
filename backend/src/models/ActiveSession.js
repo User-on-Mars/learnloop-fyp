@@ -39,6 +39,10 @@ const ActiveSessionSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  countdownCompleted: {
+    type: Boolean,
+    default: false
+  },
   nodeId: {
     type: String,
     trim: true
