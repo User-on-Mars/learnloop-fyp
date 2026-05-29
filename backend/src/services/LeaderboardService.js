@@ -6,6 +6,7 @@ import User from '../models/User.js';
 import WeeklyResetHistory from '../models/WeeklyResetHistory.js';
 import cacheService from './CacheService.js';
 import ErrorLoggingService from './ErrorLoggingService.js';
+import mongoose from 'mongoose';
 
 const CACHE_TTL = 300; // 5 minutes
 const CACHE_PREFIX = 'leaderboard:';
@@ -15,6 +16,21 @@ const CACHE_PREFIX = 'leaderboard:';
  * manages league tiers, and executes weekly resets.
  */
 class LeaderboardService {
+  static async _findUserForLeaderboard(userId) {
+    let user = await User.findOne({ firebaseUid: userId }).select('name email createdAt').lean();
+    if (!user && mongoose.Types.ObjectId.isValid(userId)) {
+      user = await User.findById(userId).select('name email createdAt').lean();
+    }
+    return user;
+  }
+
+  static _displayNameFromUser(user) {
+    if (!user) return 'Unknown';
+    const emailPrefix = user.email?.split('@')[0];
+    if (user.name && user.name !== emailPrefix) return user.name;
+    return emailPrefix || user.name || 'Unknown';
+  }
+
   /**
    * Get Sunday 00:00 UTC of the week containing the given date.
    */
@@ -145,7 +161,7 @@ class LeaderboardService {
         let displayName = 'Unknown';
         
         // Try to get name from User collection by firebaseUid
-        let user = await User.findOne({ firebaseUid: entry.userId }).select('name email').lean();
+        let user = await LeaderboardService._findUserForLeaderboard(entry.userId);
         
         if (user?.name && user.name !== user.email?.split('@')[0]) {
           displayName = user.name;
@@ -205,7 +221,7 @@ class LeaderboardService {
         let displayName = 'Unknown';
         
         // Try to get name from User collection
-        const user = await User.findOne({ firebaseUid: entry.userId }).select('name email').lean();
+        const user = await LeaderboardService._findUserForLeaderboard(entry.userId);
         if (user?.name && user.name !== user.email?.split('@')[0]) {
           displayName = user.name;
           console.log(`✅ Found user by firebaseUid ${entry.userId}: ${displayName}`);
@@ -354,7 +370,7 @@ class LeaderboardService {
     let allTimeRank = 0;
     if (profile && profile.totalXp > 0) {
       const above = await UserXpProfile.countDocuments({ totalXp: { $gt: profile.totalXp } });
-      const user = await User.findOne({ firebaseUid: userId }).select('createdAt').lean();
+      const user = await LeaderboardService._findUserForLeaderboard(userId);
       let sameTotalEarlier = 0;
       if (user) {
         const tiedProfiles = await UserXpProfile.find({
@@ -363,7 +379,7 @@ class LeaderboardService {
         }).select('userId').lean();
 
         for (const tied of tiedProfiles) {
-          const tiedUser = await User.findOne({ firebaseUid: tied.userId }).select('createdAt').lean();
+          const tiedUser = await LeaderboardService._findUserForLeaderboard(tied.userId);
           if (tiedUser && tiedUser.createdAt < user.createdAt) {
             sameTotalEarlier++;
           }

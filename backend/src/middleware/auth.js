@@ -111,10 +111,11 @@ export async function requireAuth(req, res, next) {
         }
       }
 
-      // Update firebaseUid and emailVerified if not set yet
+      // Keep Firebase UID fresh for the email account. Google/Firebase can issue
+      // a new UID when an auth account is recreated with the same email.
       if (dbUser) {
         const updates = {}
-        if (!dbUser.firebaseUid) {
+        if (userId && dbUser.firebaseUid !== userId) {
           updates.firebaseUid = userId
         }
         if (!dbUser.emailVerified && emailVerified) {

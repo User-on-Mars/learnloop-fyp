@@ -298,8 +298,9 @@ router.post('/sync-profile', async (req, res) => {
         console.log(`🔄 Updating name from "${user.name}" to "${displayName}"`)
         updateData.name = displayName
       }
-      // Only update firebaseUid if it's not set and we have one
-      if (!user.firebaseUid && firebaseUid) {
+      // Keep Firebase UID fresh for the email account. A recreated Google/Firebase
+      // account can have a new UID while the LearnLoop account keeps the same email.
+      if (firebaseUid && user.firebaseUid !== firebaseUid) {
         console.log(`🔄 Setting firebaseUid to ${firebaseUid}`)
         updateData.firebaseUid = firebaseUid
       }
