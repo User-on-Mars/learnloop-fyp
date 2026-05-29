@@ -180,6 +180,12 @@ export default function ActiveSessionPopup() {
     const currentNodeId = nodeMatch ? nodeMatch[1] : roomNodeMatch ? roomNodeMatch[1] : null;
     const isOnOwnNode = primarySession && currentNodeId && primarySession.nodeId === currentNodeId;
 
+    const completedNoticeOnOwnNode = visibleCompletedNotice && currentNodeId && String(visibleCompletedNotice.nodeId) === String(currentNodeId);
+
+    if (completedNoticeOnOwnNode) {
+        return null;
+    }
+
     if (!primarySession || isOnOwnNode) {
         return timeUpNotice;
     }

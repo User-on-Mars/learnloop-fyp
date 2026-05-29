@@ -24,7 +24,7 @@ export default function NodeDetailPage() {
   const nav = useNavigate();
   const { showSuccess } = useToast();
   const { currentSkill, nodes, loadSkillMapFull, updateNodeStatus, updateNodeContent, getNodeDetails } = useSkillMap();
-  const { activeSessions, addSession, removeSession, toggleSession, resetSession, formatTimer, getProgress } = useActiveSessions();
+  const { activeSessions, addSession, removeSession, toggleSession, resetSession, formatTimer, getProgress, clearCompletedSessionNotice } = useActiveSessions();
 
   const [nodeDetails, setNodeDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +58,11 @@ export default function NodeDetailPage() {
   }, [tplRunning]);
   useEffect(() => { const s = localStorage.getItem(`tplTimer_${nodeId}`); setTplTimer(s ? parseInt(s, 10) || 0 : 0); setTplRunning(false); }, [nodeId]);
   useEffect(() => { if (nodeId && tplTimer > 0) localStorage.setItem(`tplTimer_${nodeId}`, String(tplTimer)); }, [tplTimer, nodeId]);
+  const resetTplTimer = useCallback(() => {
+    setTplTimer(0);
+    setTplRunning(false);
+    if (nodeId) localStorage.removeItem(`tplTimer_${nodeId}`);
+  }, [nodeId]);
   const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   const completeTplSession = async (idx) => {
@@ -66,8 +71,10 @@ export default function NodeDetailPage() {
     setTplCompleting(true); setTplRunning(false);
     try {
       const token = await auth.currentUser.getIdToken();
-      const res = await client.post(`/nodes/${nodeId}/complete-template-session`, { sessionIndex: idx }, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.data.node) { await loadSkillMapFull(skillId); fetchD(); }
+      const res = await client.post(`/nodes/${nodeId}/complete-template-session`, { sessionIndex: idx, elapsedSeconds: tplTimer }, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.data.node) {
+        await Promise.all([loadSkillMapFull(skillId), fetchD()]);
+      }
       setTplTimer(0); localStorage.removeItem(`tplTimer_${nodeId}`);
       flash('Session completed!');
     } catch (e) { flash(e.response?.data?.message || 'Failed', true); }
@@ -90,6 +97,12 @@ export default function NodeDetailPage() {
   useEffect(() => { fetchH(); }, [fetchH]);
 
   const activeS = activeSessions.find(s => s.nodeId === nodeId);
+  useEffect(() => {
+    if (!hasTPL || !activeS) return;
+    removeSession(activeS.id);
+    clearCompletedSessionNotice?.();
+  }, [hasTPL, activeS, removeSession, clearCompletedSessionNotice]);
+
   const prevTimerRef = useRef(null);
   useEffect(() => {
     if (activeS && activeS.isCountdown && activeS.timer === 0 && !activeS.isRunning && prevTimerRef.current > 0 && !showComp) openComp(activeS);
@@ -115,7 +128,12 @@ export default function NodeDetailPage() {
     if (activeS) { flash('Complete or remove the current session first', true); return; }
     const running = activeSessions.find(s => s.isRunning);
     if (running) { flash(`"${running.skillName}" is running. Pause it first.`, true); return; }
-    const t = cd ? tgtM * 60 : 0;
+    const durationMinutes = Number(tgtM) || 0;
+    if (cd && durationMinutes < 1) {
+      flash('Duration must be at least 1 minute', true);
+      return;
+    }
+    const t = cd ? durationMinutes * 60 : 0;
     addSession({ skillName: node.title.slice(0, 20), nodeId, skillId, tags: [currentSkill?.name || ''], notes: sessTitle.trim(), timer: cd ? t : 0, targetTime: t, isCountdown: cd, isRunning: true });
     setShowPractice(false); setSessTitle(''); flash('Session started!');
   };
@@ -145,6 +163,17 @@ export default function NodeDetailPage() {
   /* ── Derived stats for redesigned layout ── */
   const totalSec = hist.reduce((s, p) => s + (p.timerSeconds || p.minutesPracticed * 60 || 0), 0);
   const avgSessionMin = hist.length > 0 ? Math.round(totalSec / hist.length / 60) : 0;
+  const templateSessionDetails = node?.completedSessionDetails || [];
+  const getTemplateSessionSeconds = (idx) => {
+    const detail = templateSessionDetails.find(d => d.sessionIndex === idx);
+    return detail?.elapsedSeconds || 0;
+  };
+  const formatElapsed = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins <= 0) return `${secs}s`;
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+  };
 
   if (loading && !node) return (
     <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
@@ -289,12 +318,12 @@ export default function NodeDetailPage() {
                   {/* Action buttons */}
                   {!isLocked && (
                     <div className="flex flex-col gap-2">
-                      {isUnlocked && !isCompleted && !activeS && (
+                      {isUnlocked && !isCompleted && !hasTPL && !activeS && (
                         <button onClick={() => setShowPractice(true)} className="flex items-center justify-center gap-2 w-full px-6 py-3.5 min-h-[44px] bg-[#2e5023] text-white text-sm font-semibold rounded-xl hover:bg-[#3d6b30] transition-all shadow-lg shadow-[#2e5023]/15 active:scale-[0.98]">
                           <Play className="w-4 h-4" />Start Practice Session
                         </button>
                       )}
-                      {isUnlocked && !isCompleted && hist.length > 0 && !activeS && (
+                      {isUnlocked && !isCompleted && !hasTPL && hist.length > 0 && !activeS && (
                         <button onClick={() => setShowMark(true)} className="flex items-center justify-center gap-2 w-full px-6 py-3 min-h-[44px] text-[#2e5023] text-sm font-semibold rounded-xl border-2 border-[#c8dbbe] hover:bg-[#edf5e9] transition-colors">
                           <CheckCircle className="w-4 h-4" />Mark as Complete
                         </button>
@@ -387,6 +416,7 @@ export default function NodeDetailPage() {
                       const isDone = doneTPL.includes(i);
                       const isCur = i === curTPLIdx;
                       const isLk = !isDone && !isCur;
+                      const completedSeconds = getTemplateSessionSeconds(i);
                       return (
                         <div key={i} className={`rounded-xl border p-4 transition-all ${isDone ? 'border-emerald-200 bg-emerald-50/40' : isCur ? 'border-[#2e5023] bg-white shadow-md shadow-[#2e5023]/5' : 'border-[#eef0ea] bg-[#fafbf8] opacity-50'}`}>
                           <div className="flex items-start gap-3">
@@ -396,7 +426,7 @@ export default function NodeDetailPage() {
                             <div className="flex-1 min-w-0">
                               <p className={`text-sm font-semibold ${isDone ? 'text-emerald-700' : isCur ? 'text-[#1c1f1a]' : 'text-[#b0b5ae]'}`}>{sd.title}</p>
                               {sd.description && <p className={`text-[11px] mt-0.5 leading-relaxed ${isDone ? 'text-emerald-600/80' : isCur ? 'text-[#565c52]' : 'text-[#c8cec0]'}`}>{sd.description}</p>}
-                              {isDone && <p className="text-[10px] text-emerald-600 font-semibold mt-1">✓ Completed</p>}
+                              {isDone && <p className="text-[10px] text-emerald-600 font-semibold mt-1">Completed{completedSeconds > 0 ? ` in ${formatElapsed(completedSeconds)}` : ''}</p>}
                             </div>
                           </div>
                           {isCur && !isLocked && (
@@ -404,7 +434,7 @@ export default function NodeDetailPage() {
                               <p className={`text-4xl font-bold font-mono text-center py-4 rounded-xl mb-2 tracking-tight ${tplRunning ? 'bg-emerald-50 text-emerald-600' : 'bg-[#f5f7f2] text-[#1c1f1a]'}`}>{fmtTime(tplTimer)}</p>
                               <div className="flex gap-2">
                                 <button onClick={() => setTplRunning(r => !r)} className={`flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-xl font-semibold text-sm active:scale-[0.97] ${tplRunning ? 'bg-[#1c1f1a] text-white' : 'bg-[#2e5023] text-white hover:bg-[#3d6b30]'}`}>{tplRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}{tplRunning ? 'Pause' : 'Start'}</button>
-                                <button onClick={() => { setTplTimer(0); setTplRunning(false); }} className="px-3 py-2.5 min-h-[44px] min-w-[44px] border border-[#eef0ea] text-[#565c52] rounded-xl hover:bg-[#f5f7f2] flex items-center justify-center"><RotateCcw className="w-4 h-4" /></button>
+                                <button onClick={resetTplTimer} className="px-3 py-2.5 min-h-[44px] min-w-[44px] border border-[#eef0ea] text-[#565c52] rounded-xl hover:bg-[#f5f7f2] flex items-center justify-center"><RotateCcw className="w-4 h-4" /></button>
                               </div>
                               <button onClick={() => completeTplSession(i)} disabled={tplTimer < 60 || tplCompleting} className="w-full mt-2 py-2.5 min-h-[44px] bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">{tplCompleting ? 'Completing...' : tplTimer < 60 ? `${60 - tplTimer}s until 1 min` : 'Complete Session'}</button>
                             </div>
@@ -577,9 +607,9 @@ export default function NodeDetailPage() {
           <button onClick={() => setCd(true)} className={`flex-1 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all ${cd ? 'bg-[#2e5023] text-white shadow-md' : 'bg-[#f5f7f2] text-[#565c52] border border-[#e8ebe4] hover:border-[#c8dbbe]'}`}>Countdown</button>
           <button onClick={() => setCd(false)} className={`flex-1 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all ${!cd ? 'bg-[#2e5023] text-white shadow-md' : 'bg-[#f5f7f2] text-[#565c52] border border-[#e8ebe4] hover:border-[#c8dbbe]'}`}>Stopwatch</button>
         </div>
-        {cd && <div className="mb-5"><label className="block text-[12px] text-[#9aa094] mb-1.5">Duration (minutes)</label><input type="number" min={1} max={120} value={tgtM} onChange={e => setTgtM(Math.max(1, Math.min(120, parseInt(e.target.value) || 25)))} className="w-full px-4 py-2.5 min-h-[44px] border border-[#e8ebe4] rounded-xl text-sm text-center focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none" /></div>}
+        {cd && <div className="mb-5"><label className="block text-[12px] text-[#9aa094] mb-1.5">Duration (minutes)</label><input type="number" min={0} max={120} value={tgtM} onChange={e => setTgtM(e.target.value === '' ? 0 : Math.max(0, Math.min(120, parseInt(e.target.value, 10) || 0)))} className="w-full px-4 py-2.5 min-h-[44px] border border-[#e8ebe4] rounded-xl text-sm text-center focus:border-[#2e5023] focus:ring-2 focus:ring-[#2e5023]/10 outline-none" /></div>}
         <div className="flex gap-2">
-          <button onClick={startPractice} disabled={!sessTitle.trim()} className="flex-1 py-3 min-h-[44px] bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#3d6b30] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Start</button>
+          <button onClick={startPractice} disabled={!sessTitle.trim() || (cd && (Number(tgtM) || 0) < 1)} className="flex-1 py-3 min-h-[44px] bg-[#2e5023] text-white rounded-xl font-semibold text-sm hover:bg-[#3d6b30] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Start</button>
           <button onClick={() => { setShowPractice(false); setSessTitle(''); }} className="flex-1 py-3 min-h-[44px] border border-[#e8ebe4] text-[#565c52] rounded-xl font-medium hover:bg-[#f5f7f2] text-sm transition-colors">Cancel</button>
         </div>
       </div></div>)}

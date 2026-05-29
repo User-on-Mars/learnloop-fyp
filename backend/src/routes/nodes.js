@@ -5,6 +5,7 @@ import { z } from 'zod';
 import NodeService from '../services/NodeService.js';
 import SessionLinkingService from '../services/SessionLinkingService.js';
 import StreakService from '../services/StreakService.js';
+import cacheService from '../services/CacheService.js';
 import Node from '../models/Node.js';
 
 const router = Router();
@@ -356,9 +357,12 @@ router.post('/:id/sessions', async (req, res) => {
 // POST /api/nodes/:id/complete-template-session - Complete a template session by index
 router.post('/:id/complete-template-session', async (req, res) => {
   try {
-    const { sessionIndex } = req.body;
+    const { sessionIndex, elapsedSeconds = 0 } = req.body;
     if (typeof sessionIndex !== 'number' || sessionIndex < 0) {
       return res.status(400).json({ type: 'VALIDATION_ERROR', message: 'sessionIndex must be a non-negative number' });
+    }
+    if (typeof elapsedSeconds !== 'number' || elapsedSeconds < 0) {
+      return res.status(400).json({ type: 'VALIDATION_ERROR', message: 'elapsedSeconds must be a non-negative number' });
     }
     const node = await Node.findOne({ _id: req.params.id, userId: req.user.id });
     if (!node) return res.status(404).json({ type: 'NOT_FOUND', message: 'Node not found' });
@@ -371,17 +375,21 @@ router.post('/:id/complete-template-session', async (req, res) => {
     }
     completed.push(sessionIndex);
     node.completedSessions = completed;
+    node.completedSessionDetails = [
+      ...(node.completedSessionDetails || []).filter(detail => detail.sessionIndex !== sessionIndex),
+      {
+        sessionIndex,
+        elapsedSeconds: Math.floor(elapsedSeconds),
+        completedAt: new Date()
+      }
+    ];
+    /* Streak processing now happens after the response.
     
-    // Process streak for template session completion
-    let streakResult = null;
-    try {
-      streakResult = await StreakService.processSession(req.user.id, new Date());
       console.log(`✅ Streak processed for template session: ${streakResult.streakCount} days`);
-    } catch (streakError) {
       console.error('⚠️ Error processing streak for template session:', streakError.message);
-      // Don't fail the request if streak processing fails
     }
     
+    */
     // If all sessions completed, mark node as Completed and unlock next
     let nextNode = null;
     if (completed.length === node.sessionDefinitions.length) {
@@ -395,12 +403,28 @@ router.post('/:id/complete-template-session', async (req, res) => {
       node.status = 'In_Progress';
     }
     await node.save();
+
+    if (cacheService.isAvailable()) {
+      await cacheService.invalidateSkillMapCache(node.skillId.toString(), req.user.id);
+      await cacheService.invalidateNodeCache(node._id.toString(), req.user.id);
+      if (nextNode) {
+        await cacheService.invalidateNodeCache(nextNode._id.toString(), req.user.id);
+      }
+      await cacheService.invalidateUserProgression(req.user.id, 'all_skills');
+    }
     
-    res.json({ 
-      node: node.toObject(), 
-      nextNode: nextNode ? nextNode.toObject() : null,
-      streakCount: streakResult?.streakCount || null
+    res.json({
+      node: node.toObject(),
+      nextNode: nextNode ? nextNode.toObject() : null
     });
+
+    StreakService.processSession(req.user.id, new Date())
+      .then(streakResult => {
+        console.log(`Template session streak processed: ${streakResult.streakCount} days`);
+      })
+      .catch(streakError => {
+        console.error('Error processing streak for template session:', streakError.message);
+      });
   } catch (error) {
     console.error('Error completing template session:', error.message);
     res.status(500).json({ type: 'SERVER_ERROR', message: error.message });

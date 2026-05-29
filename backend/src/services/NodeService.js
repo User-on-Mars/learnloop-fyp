@@ -1021,7 +1021,7 @@ class NodeService {
 
       const nodes = await dbMonitor.monitorRead(
         () => Node.find({ skillId, userId })
-          .select('_id skillId userId order title description status isStart isGoal sessionDefinitions completedSessions createdAt updatedAt')
+          .select('_id skillId userId order title description status isStart isGoal sessionDefinitions completedSessions completedSessionDetails createdAt updatedAt')
           .sort({ order: 1 })
           .lean(),
         'NodeService.getSkillNodes - fetch nodes'

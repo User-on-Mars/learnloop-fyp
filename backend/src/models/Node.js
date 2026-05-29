@@ -50,6 +50,14 @@ const NodeSchema = new mongoose.Schema({
   completedSessions: {
     type: [Number],
     default: undefined
+  },
+  completedSessionDetails: {
+    type: [{
+      sessionIndex: { type: Number, required: true },
+      elapsedSeconds: { type: Number, default: 0, min: 0 },
+      completedAt: { type: Date, default: Date.now }
+    }],
+    default: undefined
   }
 }, {
   timestamps: true
