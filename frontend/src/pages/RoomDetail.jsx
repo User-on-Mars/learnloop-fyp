@@ -249,7 +249,7 @@ export default function RoomDetail() {
       <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-          <div className="px-4 sm:px-6 py-6 lg:py-8">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
             {/* Back Button */}
             <div className="h-10 w-40 bg-white rounded-xl animate-pulse mb-6" />
             
@@ -307,7 +307,7 @@ export default function RoomDetail() {
       <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-          <div className="px-4 sm:px-6 py-6 lg:py-8">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
             <button
               onClick={() => navigate("/roomspace")}
               className="flex items-center gap-2 text-[#9aa094] hover:text-[#1c1f1a] mb-6"
@@ -333,7 +333,7 @@ export default function RoomDetail() {
       <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-          <div className="px-4 sm:px-6 py-6 lg:py-8">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
             <button
               onClick={() => navigate("/roomspace")}
               className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-[#c8cec0] hover:text-[#1c1f1a] transition-all mb-6 shadow-sm"
@@ -369,7 +369,7 @@ export default function RoomDetail() {
       <div className="flex min-h-screen bg-[#f8faf6]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-          <div className="px-4 sm:px-6 py-6 lg:py-8">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
             <button
               onClick={() => navigate("/roomspace")}
               className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#e2e6dc] rounded-xl text-[#565c52] hover:border-[#c8cec0] hover:text-[#1c1f1a] transition-all mb-6 shadow-sm"
@@ -395,7 +395,7 @@ export default function RoomDetail() {
       <Sidebar />
 
       <main className="flex-1 overflow-y-auto w-full pt-16 md:pl-14">
-        <div className="px-4 sm:px-6 pt-2 pb-4 lg:pt-3 lg:pb-5">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           
           {/* ═══ Back Button ═══ */}
           <button

@@ -96,7 +96,16 @@ export default function RoomSpace() {
   }, [applyRoomData]);
 
   useEffect(() => {
-    fetchRooms();
+    fetchRooms({ force: true });
+
+    const refreshRooms = () => fetchRooms({ force: true });
+    window.addEventListener("focus", refreshRooms);
+    window.addEventListener("pageshow", refreshRooms);
+
+    return () => {
+      window.removeEventListener("focus", refreshRooms);
+      window.removeEventListener("pageshow", refreshRooms);
+    };
   }, [fetchRooms]);
 
   // Filter and sort rooms (unlocked first, then locked)
@@ -190,7 +199,7 @@ export default function RoomSpace() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="px-4 sm:px-6 py-6 lg:py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         <div className="animate-pulse space-y-6">
           <div className="h-48 bg-white rounded-2xl border border-[#e2e6dc]" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -206,7 +215,7 @@ export default function RoomSpace() {
   // Error state
   if (error) {
     return (
-      <div className="px-4 sm:px-6 py-6 lg:py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 mt-0.5" />
@@ -227,7 +236,7 @@ export default function RoomSpace() {
   }
 
   return (
-    <div className="px-4 sm:px-6 py-6 lg:py-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
 
       {/* Hero Header */}
       <HeroSection

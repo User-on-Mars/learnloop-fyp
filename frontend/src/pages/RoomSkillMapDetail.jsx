@@ -126,8 +126,8 @@ export default function RoomSkillMapDetail() {
           </div>
 
           {/* Main Content */}
-          <div className={`flex-1 py-4 sm:py-8 px-3 sm:px-4 transition-all duration-300 relative z-10 ${isSidebarOpen ? 'mr-0 lg:mr-80' : 'mr-0'}`}>
-            <div className="max-w-3xl mx-auto">
+          <div className={`flex-1 py-6 sm:py-8 px-4 sm:px-6 lg:px-8 transition-all duration-300 relative z-10 ${isSidebarOpen ? 'mr-0 xl:mr-80' : 'mr-0'}`}>
+            <div className="max-w-5xl mx-auto">
               {/* Back Button */}
               <div className="mb-4 sm:mb-6">
                 <button
@@ -242,7 +242,7 @@ export default function RoomSkillMapDetail() {
           </div>
 
           {/* Right Sidebar */}
-          <div className={`fixed lg:fixed top-0 right-0 h-full bg-white border-l-4 border-site-accent shadow-xl transition-transform duration-300 z-40 ${isSidebarOpen ? "translate-x-0" : "translate-x-full"} w-80 flex flex-col`}>
+          <div className={`fixed top-16 right-0 h-[calc(100vh-4rem)] bg-white border-l-4 border-site-accent shadow-xl transition-transform duration-300 z-40 ${isSidebarOpen ? "translate-x-0" : "translate-x-full"} w-80 max-w-[calc(100vw-1rem)] flex flex-col`}>
             <div className="flex items-center justify-between p-4 border-b-4 border-site-accent bg-gradient-to-r from-green-100 to-emerald-100">
               <h2 className="text-lg font-bold text-gray-900">Details</h2>
             </div>
@@ -299,13 +299,14 @@ export default function RoomSkillMapDetail() {
           {/* Toggle sidebar button */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`fixed top-4 p-2.5 bg-white border-2 border-site-accent rounded-full shadow-lg hover:shadow-xl transition-all z-50 hover:bg-site-soft ${isSidebarOpen ? "right-[20.5rem]" : "right-4"}`}
+            className={`fixed top-20 p-2.5 bg-white border-2 border-site-accent rounded-full shadow-lg hover:shadow-xl transition-all z-50 hover:bg-site-soft ${isSidebarOpen ? "right-[20.5rem]" : "right-4"}`}
+            aria-label={isSidebarOpen ? "Hide skill map details" : "Show skill map details"}
           >
             {isSidebarOpen ? <ChevronRight className="w-5 h-5 text-site-accent" /> : <ChevronLeft className="w-5 h-5 text-site-accent" />}
           </button>
 
           {/* Mobile Overlay */}
-          {isSidebarOpen && <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
+          {isSidebarOpen && <div className="fixed inset-x-0 bottom-0 top-16 bg-black/30 z-30 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
         </div>
       </main>
     </div>

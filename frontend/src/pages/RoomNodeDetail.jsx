@@ -178,15 +178,15 @@ export default function RoomNodeDetail() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto w-full">
         <div className="min-h-screen bg-site-bg flex relative">
-          <div className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebar ? "mr-0 lg:mr-80" : "mr-0"}`}>
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-              <button onClick={() => { if (activeSession?.isRunning) { setShowBackConfirm(true); } else { nav(`/roomspace/${roomId}/skill-maps/${roomSkillMapId}`); } }} className="mb-6 px-5 py-2.5 rounded-lg font-medium bg-site-accent text-white hover:bg-site-accent-hover text-sm shadow-lg border-2 border-[#1f3518]">Back to Skill Map</button>
+          <div className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebar ? "mr-0 xl:mr-80" : "mr-0"}`}>
+            <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <button onClick={() => { if (activeSession?.isRunning) { setShowBackConfirm(true); } else { nav(`/roomspace/${roomId}/skill-maps/${roomSkillMapId}`); } }} className="mb-6 inline-flex min-h-[44px] items-center px-5 py-2.5 rounded-lg font-medium bg-site-accent text-white hover:bg-site-accent-hover text-sm shadow-lg border-2 border-[#1f3518]">Back to Skill Map</button>
               {ok && <div className="mb-4 bg-green-50 border border-green-300 text-green-700 p-3 rounded-lg text-sm">{ok}</div>}
               {err && <div className="mb-4 bg-red-50 border border-red-300 text-red-700 p-3 rounded-lg text-sm">{err}</div>}
               {isLocked && <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl text-sm mb-6">Complete the previous node to unlock this one.</div>}
 
               {/* Actions + Active Session */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-stretch">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6 items-stretch">
                 <div className="flex flex-col space-y-3">
                   {isUnlocked && !isCompleted && (
                     <button onClick={() => { if (activeSession) { setErr("Complete or end the ongoing session first"); setTimeout(() => setErr(""), 4000); } else { setShowPractice(true); } }} className={`w-full py-3.5 rounded-xl font-semibold shadow-md text-sm flex items-center justify-center gap-2 ${activeSession ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-site-accent text-white hover:bg-site-accent-hover"}`}><Play className="w-5 h-5" />Start Practice Session</button>
@@ -261,7 +261,7 @@ export default function RoomNodeDetail() {
           </div>
 
           {/* Sidebar */}
-          <div className={`fixed lg:fixed top-0 right-0 h-full bg-white border-l-4 border-site-accent shadow-xl transition-transform duration-300 z-40 ${sidebar ? "translate-x-0" : "translate-x-full"} w-80 flex flex-col`}>
+          <div className={`fixed top-16 right-0 h-[calc(100vh-4rem)] bg-white border-l-4 border-site-accent shadow-xl transition-transform duration-300 z-40 ${sidebar ? "translate-x-0" : "translate-x-full"} w-80 max-w-[calc(100vw-1rem)] flex flex-col`}>
             <div className="p-4 border-b-4 border-site-accent bg-gradient-to-r from-green-100 to-emerald-100"><h2 className="text-lg font-bold text-gray-900">Node Details</h2></div>
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4">
               <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
@@ -285,8 +285,14 @@ export default function RoomNodeDetail() {
               )}
             </div>
           </div>
-          <button onClick={() => setSidebar(!sidebar)} className={`fixed top-4 p-2.5 bg-white border-2 border-site-accent rounded-full shadow-lg hover:shadow-xl transition-all z-50 hover:bg-site-soft ${sidebar ? "right-[20.5rem]" : "right-4"}`}>{sidebar ? <ChevronRight className="w-5 h-5 text-site-accent" /> : <ChevronLeft className="w-5 h-5 text-site-accent" />}</button>
-          {sidebar && <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setSidebar(false)} />}
+          <button
+            onClick={() => setSidebar(!sidebar)}
+            className={`fixed top-20 p-2.5 bg-white border-2 border-site-accent rounded-full shadow-lg hover:shadow-xl transition-all z-50 hover:bg-site-soft ${sidebar ? "right-[20.5rem]" : "right-4"}`}
+            aria-label={sidebar ? "Hide node details" : "Show node details"}
+          >
+            {sidebar ? <ChevronRight className="w-5 h-5 text-site-accent" /> : <ChevronLeft className="w-5 h-5 text-site-accent" />}
+          </button>
+          {sidebar && <div className="fixed inset-x-0 bottom-0 top-16 bg-black/30 z-30 lg:hidden" onClick={() => setSidebar(false)} />}
         </div>
 
         {/* Start Practice Modal */}
