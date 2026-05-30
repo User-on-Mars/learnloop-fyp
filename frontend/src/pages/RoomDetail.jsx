@@ -1400,10 +1400,9 @@ function InviteModal({ roomId, onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
-  const [success, setSuccess] = useState(false);
 
-  const { showSuccess } = useToast();
-  const { handleApiError, handleValidationError } = useApiError();
+  const { showSuccess, showError } = useToast();
+  const { handleApiError } = useApiError();
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1424,6 +1423,7 @@ function InviteModal({ roomId, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    let shouldResetSubmitting = true;
 
     // Client-side validation
     if (!email.trim()) {
@@ -1441,16 +1441,16 @@ function InviteModal({ roomId, onClose }) {
       setError("");
       setEmailError("");
       
-      await invitationsAPI.createInvitation(roomId, email.trim());
-      
-      setSuccess(true);
+      const invitedAddress = email.trim();
+      await invitationsAPI.createInvitation(roomId, invitedAddress);
+
       setEmail("");
-      showSuccess("Invitation Sent", "The user will receive an email and in-app notification");
-      
-      // Auto-close after 2 seconds on success
-      setTimeout(() => {
-        onClose();
-      }, 2000);
+      showSuccess(`${invitedAddress} will receive an in-app notification.`, {
+        title: "Invitation Sent"
+      });
+      setIsSubmitting(false);
+      shouldResetSubmitting = false;
+      onClose();
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message || "";
@@ -1485,7 +1485,7 @@ function InviteModal({ roomId, onClose }) {
         });
       }
     } finally {
-      setIsSubmitting(false);
+      if (shouldResetSubmitting) setIsSubmitting(false);
     }
   };
 
@@ -1517,18 +1517,7 @@ function InviteModal({ roomId, onClose }) {
         </div>
 
         <div className="p-6">
-          {success ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-emerald-600" />
-              </div>
-              <h3 className="text-lg font-bold text-[#1c1f1a] mb-2">Invitation Sent!</h3>
-              <p className="text-sm text-[#9aa094]">
-                The user will receive an email and in-app notification
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
               <div className="mb-5">
                 <label className="block text-sm font-semibold text-[#1c1f1a] mb-2">
                   Email Address <span className="text-red-500">*</span>
@@ -1591,8 +1580,7 @@ function InviteModal({ roomId, onClose }) {
                   )}
                 </button>
               </div>
-            </form>
-          )}
+          </form>
         </div>
       </div>
     </div>

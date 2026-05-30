@@ -140,14 +140,22 @@ class InvitationService {
         timestamp: new Date().toISOString()
       });
 
-      // Requirement 5.5-5.6: Send in-app and email notifications
+      // Requirement 5.5-5.6: Send in-app and email notifications without delaying the response.
       if (owner) {
-        await NotificationService.sendInvitationCreatedNotification(
+        NotificationService.sendInvitationCreatedNotification(
           invitation.toObject(),
           room,
           invitedUser,
           owner
-        );
+        ).catch((notificationError) => {
+          ErrorLoggingService.logError(notificationError, {
+            ownerId,
+            roomId,
+            invitedEmail: trimmedEmail,
+            operation: 'sendInvitationCreatedNotification',
+            timestamp: new Date().toISOString()
+          }).catch(() => {});
+        });
       }
 
       return invitation.toObject();
