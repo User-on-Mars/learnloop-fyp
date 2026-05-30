@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { applyActionCode, confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
+import { applyActionCode, confirmPasswordReset, signInWithEmailAndPassword, verifyPasswordResetCode } from "firebase/auth";
 import { ArrowLeft, CheckCircle, Eye, EyeOff, KeyRound, Loader, MailCheck } from "lucide-react";
 import { auth } from "../firebase";
 import LogoMark from "../components/LogoMark";
@@ -96,7 +96,21 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      await verifyPasswordResetCode(auth, oobCode);
+      const resetEmail = await verifyPasswordResetCode(auth, oobCode);
+      try {
+        await signInWithEmailAndPassword(auth, resetEmail, password);
+        try {
+          await auth.signOut();
+        } catch (signOutError) {
+          console.warn("Could not sign out after reused password check:", signOutError);
+        }
+        setErr("Your new password must be different from your current password.");
+        return;
+      } catch (signInError) {
+        if (!["auth/invalid-credential", "auth/wrong-password"].includes(signInError?.code)) {
+          console.warn("Could not check whether reset password matches current password:", signInError);
+        }
+      }
       await confirmPasswordReset(auth, oobCode, password);
       setDone(true);
       setTimeout(() => nav("/login", { replace: true }), 2500);

@@ -168,6 +168,10 @@ export default function Profile() {
   const handlePasswordChange = async (e) => {
     e.preventDefault(); setPasswordChangeMessage(null);
     if (newPassword !== confirmPassword) { setPasswordChangeMessage({ variant: "error", text: "Passwords do not match" }); return; }
+    if (hasPasswordProvider && currentPassword === newPassword) {
+      setPasswordChangeMessage({ variant: "error", text: "New password must be different from your current password." });
+      return;
+    }
 
     // Validate password strength
     const validation = validatePassword(newPassword);
