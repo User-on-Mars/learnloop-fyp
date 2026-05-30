@@ -56,7 +56,9 @@ export default function Signup() {
       }
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(userCredential.user);
+      await sendEmailVerification(userCredential.user, {
+        url: `${window.location.origin}/verify-email`,
+      });
       await auth.signOut();
       setMsg("Verification email sent! Please check your inbox and verify your email before logging in.");
       setTimeout(() => nav("/login"), 3000);

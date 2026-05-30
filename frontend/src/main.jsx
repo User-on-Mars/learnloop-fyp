@@ -183,6 +183,7 @@ const router = createBrowserRouter([
       { path: "/signup", element: <Signup /> },
       { path: "/forgot", element: <ForgotPassword /> },
       { path: "/reset", element: <ResetPassword /> },
+      { path: "/verify-email", element: <ResetPassword /> },
       {
         element: <Protected><AppShell /></Protected>,
         children: [

@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
-import { ArrowLeft, CheckCircle, Eye, EyeOff, KeyRound, Loader } from "lucide-react";
+import { applyActionCode, confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
+import { ArrowLeft, CheckCircle, Eye, EyeOff, KeyRound, Loader, MailCheck } from "lucide-react";
 import { auth } from "../firebase";
 import LogoMark from "../components/LogoMark";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
@@ -23,6 +23,7 @@ function LeafDecoration({ className = "" }) {
 export default function ResetPassword() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
+  const mode = searchParams.get("mode") || "resetPassword";
   const oobCode = searchParams.get("oobCode");
   const emailFromLink = searchParams.get("email") || "";
   const [password, setPassword] = useState("");
@@ -32,13 +33,52 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
+  const isVerifyEmail = mode === "verifyEmail";
+  const isResetPassword = mode === "resetPassword";
+  const isSupportedMode = isVerifyEmail || isResetPassword;
 
-  const canSubmit = useMemo(() => Boolean(oobCode && password && confirm), [oobCode, password, confirm]);
+  const canSubmit = useMemo(
+    () => Boolean(isResetPassword && oobCode && password && confirm),
+    [isResetPassword, oobCode, password, confirm]
+  );
+
+  useEffect(() => {
+    if (!isVerifyEmail || done) return;
+
+    if (!oobCode) {
+      setErr("This verification link is missing its code. Request a new verification email.");
+      return;
+    }
+
+    setErr("");
+    setLoading(true);
+
+    applyActionCode(auth, oobCode)
+      .then(() => {
+        setDone(true);
+        setTimeout(() => nav("/login", { replace: true }), 2500);
+      })
+      .catch((error) => {
+        const map = {
+          "auth/expired-action-code": "This verification link has expired. Request a new verification email.",
+          "auth/invalid-action-code": "This verification link is invalid or has already been used.",
+          "auth/user-disabled": "This account is disabled.",
+        };
+        setErr(map[error?.code] || "Unable to verify your email. Request a new link and try again.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [done, isVerifyEmail, nav, oobCode]);
 
   async function onSubmit(e) {
     e.preventDefault();
     setErr("");
 
+    if (!isResetPassword) {
+      setErr("This link is not a password reset link.");
+      return;
+    }
     if (!oobCode) {
       setErr("This reset link is missing its verification code. Request a new password reset link.");
       return;
@@ -93,11 +133,15 @@ export default function ResetPassword() {
         <div className="w-full max-w-7xl mx-auto px-5 py-12 sm:py-16 flex flex-col md:flex-row items-center gap-10 lg:gap-16">
           <div className="hidden md:block md:w-[45%] lg:w-1/2 md:pl-6 lg:pl-10">
             <h1 className="font-[var(--font-display)] text-4xl lg:text-5xl font-extrabold tracking-tight text-[#1c1f1a] leading-tight mb-3">
-              Create a<br />new password.
+              {isVerifyEmail ? <>Verify your<br />email.</> : <>Create a<br />new password.</>}
             </h1>
-            <p className="text-[#2e5023] font-bold text-lg sm:text-xl mb-4">Keep your progress protected</p>
+            <p className="text-[#2e5023] font-bold text-lg sm:text-xl mb-4">
+              {isVerifyEmail ? "One quick check before you start" : "Keep your progress protected"}
+            </p>
             <p className="text-[#3d4a38] text-[15px] leading-relaxed max-w-sm font-medium">
-              Use a strong password with uppercase, lowercase, number, and special character.
+              {isVerifyEmail
+                ? "We will confirm this email address and send you back to log in."
+                : "Use a strong password with uppercase, lowercase, number, and special character."}
             </p>
           </div>
 
@@ -123,10 +167,45 @@ export default function ResetPassword() {
                       <div className="w-16 h-16 rounded-full bg-[#edf5e9] flex items-center justify-center mx-auto mb-5">
                         <CheckCircle className="w-8 h-8 text-[#4f7942]" />
                       </div>
-                      <h2 className="font-[var(--font-display)] text-2xl font-extrabold text-[#1c1f1a] mb-2">Password updated</h2>
-                      <p className="text-sm text-[#3d4a38] font-medium mb-6">You can now log in with your new password.</p>
+                      <h2 className="font-[var(--font-display)] text-2xl font-extrabold text-[#1c1f1a] mb-2">
+                        {isVerifyEmail ? "Email verified" : "Password updated"}
+                      </h2>
+                      <p className="text-sm text-[#3d4a38] font-medium mb-6">
+                        {isVerifyEmail ? "You can now log in to LearnLoop." : "You can now log in with your new password."}
+                      </p>
                       <Link to="/login" className="inline-flex items-center justify-center w-full min-h-[44px] rounded-xl bg-[#2e5023] text-white font-bold hover:bg-[#24441b] transition-colors">
                         Go to log in
+                      </Link>
+                    </div>
+                  ) : isVerifyEmail ? (
+                    <div className="text-center py-5">
+                      <div className="w-16 h-16 rounded-full bg-[#edf5e9] flex items-center justify-center mx-auto mb-5">
+                        {loading ? <Loader className="w-8 h-8 text-[#4f7942] animate-spin" /> : <MailCheck className="w-8 h-8 text-[#4f7942]" />}
+                      </div>
+                      <h2 className="font-[var(--font-display)] text-2xl lg:text-3xl font-extrabold text-[#1c1f1a] tracking-tight mb-2">
+                        Verifying email
+                      </h2>
+                      <p className="text-sm text-[#3d4a38] font-medium mb-6">
+                        {loading ? "Confirming your account..." : "We could not complete verification automatically."}
+                      </p>
+
+                      {err && <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600 text-left">{err}</div>}
+                      {!oobCode && <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-700 text-left">This verification link is missing a code. Request a fresh link.</div>}
+
+                      <Link to="/login" className="inline-flex items-center justify-center w-full min-h-[44px] rounded-xl bg-[#2e5023] text-white font-bold hover:bg-[#24441b] transition-colors">
+                        Go to log in
+                      </Link>
+                    </div>
+                  ) : !isSupportedMode ? (
+                    <div className="text-center py-5">
+                      <h2 className="font-[var(--font-display)] text-2xl lg:text-3xl font-extrabold text-[#1c1f1a] tracking-tight mb-2">
+                        Unsupported link
+                      </h2>
+                      <p className="text-sm text-[#3d4a38] font-medium mb-6">
+                        This email link is not supported. Please request a new link and try again.
+                      </p>
+                      <Link to="/login" className="inline-flex items-center justify-center w-full min-h-[44px] rounded-xl bg-[#2e5023] text-white font-bold hover:bg-[#24441b] transition-colors">
+                        Back to log in
                       </Link>
                     </div>
                   ) : (
