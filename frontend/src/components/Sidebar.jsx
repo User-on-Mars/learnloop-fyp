@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
@@ -41,9 +42,11 @@ export default function Sidebar() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [userMenuPosition, setUserMenuPosition] = useState({ top: 64, right: 8 });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showAdminConfirm, setShowAdminConfirm] = useState(false);
   const menuRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   const { activeSessions, clearAllSessions, toggleSession } = useActiveSessions();
   const { isAdmin } = useAdmin();
@@ -63,10 +66,42 @@ export default function Sidebar() {
   };
 
   useEffect(() => {
-    const handleClickOutside = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowUserMenu(false); };
+    const handleClickOutside = (e) => {
+      if (
+        showUserMenu &&
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target)
+      ) {
+        setShowUserMenu(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [showUserMenu]);
+
+  useEffect(() => {
+    if (!showUserMenu) return;
+
+    const updateMenuPosition = () => {
+      const rect = menuRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      setUserMenuPosition({
+        top: rect.bottom + 8,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    };
+
+    updateMenuPosition();
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+    };
+  }, [showUserMenu]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -87,6 +122,41 @@ export default function Sidebar() {
   const performLogout = async () => { try { clearAllSessions(); await signOut(auth); navigate("/login", { replace: true }); } catch (e) { console.error("Logout error:", e); } };
   const handleAdminClick = () => setShowAdminConfirm(true);
   const performAdminSwitch = () => { runningSessions.forEach(s => toggleSession(s.id)); setShowAdminConfirm(false); navigate('/admin'); };
+  const openUserMenu = () => {
+    const rect = menuRef.current?.getBoundingClientRect();
+    if (rect) {
+      setUserMenuPosition({
+        top: rect.bottom + 8,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    }
+    setShowUserMenu((open) => !open);
+  };
+
+  const userMenu = showUserMenu
+    ? createPortal(
+        <div
+          ref={userMenuRef}
+          className="fixed bg-white rounded-xl shadow-xl border border-[#dde1d6] overflow-hidden w-48"
+          style={{ top: userMenuPosition.top, right: userMenuPosition.right, zIndex: 10000 }}
+        >
+          <div className="px-3 py-2.5 border-b border-[#eef0ea]">
+            <p className="text-[13px] font-semibold text-site-ink truncate">{user?.displayName || "User"}</p>
+            <p className="text-[11px] text-site-faint truncate">{user?.email}</p>
+          </div>
+          <div className="py-1">
+            <button onClick={() => { navigate('/profile'); setShowUserMenu(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#565c52] hover:bg-[#f5f7f2] transition-colors"><UserIcon /><span>Profile</span></button>
+            <button onClick={() => { navigate('/subscription'); setShowUserMenu(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#565c52] hover:bg-[#f5f7f2] transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l3.057-3L12 3.5 15.943 0 19 3l-2 7H7L5 3zM7 10h10l1 10H6l1-10z" /></svg>
+              <span>Subscription</span>
+            </button>
+            <div className="border-t border-[#eef0ea] my-1" />
+            <button onClick={handleLogoutClick} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors"><LogoutIcon /><span>Sign out</span></button>
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
 
   return (
     <>
@@ -131,30 +201,14 @@ export default function Sidebar() {
           <NotificationBell />
           {/* Profile */}
           <div className="relative ml-1" ref={menuRef}>
-            <button onClick={() => setShowUserMenu(!showUserMenu)} className="relative">
+            <button onClick={openUserMenu} className="relative">
               <Avatar photoURL={user?.photoURL} displayName={user?.displayName} email={user?.email} size="sm" isPro={isPro} />
               {!isPro && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-[1.5px] border-white rounded-full" />}
             </button>
-            {showUserMenu && (
-              <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-[#dde1d6] overflow-hidden z-50 w-48">
-                <div className="px-3 py-2.5 border-b border-[#eef0ea]">
-                  <p className="text-[13px] font-semibold text-site-ink truncate">{user?.displayName || "User"}</p>
-                  <p className="text-[11px] text-site-faint truncate">{user?.email}</p>
-                </div>
-                <div className="py-1">
-                  <button onClick={() => { navigate('/profile'); setShowUserMenu(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#565c52] hover:bg-[#f5f7f2] transition-colors"><UserIcon /><span>Profile</span></button>
-                  <button onClick={() => { navigate('/subscription'); setShowUserMenu(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#565c52] hover:bg-[#f5f7f2] transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l3.057-3L12 3.5 15.943 0 19 3l-2 7H7L5 3zM7 10h10l1 10H6l1-10z" /></svg>
-                    <span>Subscription</span>
-                  </button>
-                  <div className="border-t border-[#eef0ea] my-1" />
-                  <button onClick={handleLogoutClick} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors"><LogoutIcon /><span>Sign out</span></button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </header>
+      {userMenu}
 
       {/* ═══ SIDEBAR ═══ */}
       <aside className={`fixed top-16 left-0 bottom-0 bg-white border-r border-[#dde1d6] flex-col items-center py-3 z-30 transition-all duration-200 overflow-hidden hidden md:flex shadow-sm shadow-black/[0.02] ${sidebarOpen ? 'w-[56px]' : 'w-0 border-r-0'}`}>

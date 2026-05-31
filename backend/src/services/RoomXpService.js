@@ -2,6 +2,7 @@ import RoomXpLedger from '../models/RoomXpLedger.js';
 import RoomStreak from '../models/RoomStreak.js';
 import RoomMember from '../models/RoomMember.js';
 import User from '../models/User.js';
+import mongoose from 'mongoose';
 import ErrorLoggingService from './ErrorLoggingService.js';
 import WebSocketService from './WebSocketService.js';
 import { ValidationError, NotFoundError, DatabaseError } from '../utils/errors.js';
@@ -13,6 +14,12 @@ import { ValidationError, NotFoundError, DatabaseError } from '../utils/errors.j
  * Requirements: 19.1-19.5, 20.1-20.5, 21.1-21.7, 23.1-23.7, 24.1-24.7
  */
 class RoomXpService {
+  static _toObjectId(id) {
+    if (id instanceof mongoose.Types.ObjectId) return id;
+    if (!mongoose.Types.ObjectId.isValid(id)) return id;
+    return new mongoose.Types.ObjectId(id);
+  }
+
   /**
    * Get the UTC calendar day (midnight) for a given date.
    * @param {Date} date
@@ -42,9 +49,10 @@ class RoomXpService {
    * @param {string} userId - User ID
    * @param {string} skillMapId - Skill map ID
    * @param {number} xpAmount - XP amount to award (must be positive)
+   * @param {object} metadata - Optional source/reference data for idempotency
    * @returns {Promise<Object>} Created RoomXpLedger entry
    */
-  async awardXp(roomId, userId, skillMapId, xpAmount) {
+  async awardXp(roomId, userId, skillMapId, xpAmount, metadata = {}) {
     // Validate inputs
     if (!roomId) {
       throw new ValidationError('roomId', roomId, { type: 'required' });
@@ -68,12 +76,32 @@ class RoomXpService {
     }
 
     try {
+      const roomObjectId = RoomXpService._toObjectId(roomId);
+      const skillMapObjectId = RoomXpService._toObjectId(skillMapId);
+      const source = metadata.source || 'manual';
+      const referenceId = metadata.referenceId || null;
+
+      if (referenceId) {
+        const existing = await RoomXpLedger.findOne({
+          roomId: roomObjectId,
+          userId,
+          skillMapId: skillMapObjectId,
+          source,
+          referenceId
+        }).lean();
+
+        if (existing) return existing;
+      }
+
       // Requirement 20.2: Record XP transaction in room_xp_ledger
       const ledgerEntry = await RoomXpLedger.create({
-        roomId,
+        roomId: roomObjectId,
         userId,
-        skillMapId,
+        skillMapId: skillMapObjectId,
         xpAmount,
+        source,
+        referenceId,
+        metadata,
         earnedAt: new Date()
       });
 
@@ -84,7 +112,9 @@ class RoomXpService {
       WebSocketService.broadcastRoomXpEarned(roomId, userId, {
         xpAmount,
         newTotal,
-        skillMapId
+        skillMapId,
+        source,
+        referenceId
       });
 
       // Get updated leaderboard and broadcast
@@ -97,6 +127,8 @@ class RoomXpService {
         skillMapId,
         xpAmount,
         newTotal,
+        source,
+        referenceId,
         timestamp: new Date().toISOString()
       });
 
@@ -107,6 +139,8 @@ class RoomXpService {
         userId,
         skillMapId,
         xpAmount,
+        source: metadata.source,
+        referenceId: metadata.referenceId,
         operation: 'awardXp',
         timestamp: new Date().toISOString()
       });
@@ -138,7 +172,8 @@ class RoomXpService {
 
     try {
       // Get all room members
-      const members = await RoomMember.find({ roomId }).lean();
+      const roomObjectId = RoomXpService._toObjectId(roomId);
+      const members = await RoomMember.find({ roomId: roomObjectId }).lean();
 
       if (members.length === 0) {
         return [];
@@ -148,7 +183,7 @@ class RoomXpService {
 
       // Requirement 21.1-21.2: Calculate room XP totals by summing room_xp_ledger entries
       const xpTotals = await RoomXpLedger.aggregate([
-        { $match: { roomId: roomId, userId: { $in: userIds } } },
+        { $match: { roomId: roomObjectId, userId: { $in: userIds } } },
         { $group: { _id: '$userId', totalXp: { $sum: '$xpAmount' } } }
       ]);
 
@@ -159,7 +194,7 @@ class RoomXpService {
 
       // Get streak data for all members
       const streaks = await RoomStreak.find({
-        roomId,
+        roomId: roomObjectId,
         userId: { $in: userIds }
       }).lean();
 
@@ -257,7 +292,7 @@ class RoomXpService {
     try {
       // Requirement 19.4: Calculate room XP by summing room_xp_ledger entries
       const result = await RoomXpLedger.aggregate([
-        { $match: { roomId: roomId, userId } },
+        { $match: { roomId: RoomXpService._toObjectId(roomId), userId } },
         { $group: { _id: null, totalXp: { $sum: '$xpAmount' } } }
       ]);
 

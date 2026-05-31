@@ -7,8 +7,8 @@ import RoomNodeProgress from '../models/RoomNodeProgress.js';
 import RoomMember from '../models/RoomMember.js';
 import RoomSkillMap from '../models/RoomSkillMap.js';
 import RoomPractice from '../models/RoomPractice.js';
-import User from '../models/User.js';
 import StreakService from '../services/StreakService.js';
+import RoomXpService from '../services/RoomXpService.js';
 
 const router = Router();
 
@@ -727,6 +727,14 @@ router.patch('/:roomId/skill-maps/:roomSkillMapId/nodes/:nodeId/status', async (
       return res.status(404).json({ message: 'Node not found' });
     }
 
+    const existingProgress = await RoomNodeProgress.findOne({
+      roomId,
+      userId,
+      skillMapId: roomSkillMapId,
+      nodeId
+    }).lean();
+    const wasCompleted = existingProgress?.status === 'Completed';
+
     // Upsert progress record
     const progress = await RoomNodeProgress.findOneAndUpdate(
       { roomId, userId, skillMapId: roomSkillMapId, nodeId },
@@ -747,7 +755,75 @@ router.patch('/:roomId/skill-maps/:roomSkillMapId/nodes/:nodeId/status', async (
       );
     }
 
-    res.json({ progress, message: 'Status updated' });
+    let nodeCompletionXpAwarded = null;
+    let skillMapXpAwarded = null;
+
+    if (status === 'Completed' && !wasCompleted) {
+      const node = roomSkillMap.nodes[nodeIndex];
+
+      const nodeXp = await RoomXpService.awardXp(
+        roomId,
+        userId,
+        roomSkillMapId,
+        10,
+        {
+          source: 'node_completion',
+          referenceId: nodeId,
+          nodeId,
+          nodeTitle: node.title
+        }
+      );
+
+      if (nodeXp) {
+        nodeCompletionXpAwarded = {
+          type: 'room_node_completion',
+          amount: nodeXp.xpAmount,
+          nodeTitle: node.title
+        };
+      }
+
+      try {
+        await RoomXpService.updateStreak(roomId, userId);
+      } catch (streakError) {
+        console.error('⚠️ Error updating room streak for node completion:', streakError.message);
+      }
+
+      const progressRecords = await RoomNodeProgress.find({
+        roomId,
+        userId,
+        skillMapId: roomSkillMapId
+      }).lean();
+      const completedNodeIds = new Set(
+        progressRecords
+          .filter((record) => record.status === 'Completed')
+          .map((record) => record.nodeId.toString())
+      );
+      const allCompleted = roomSkillMap.nodes.length > 0 && roomSkillMap.nodes.every((n) => completedNodeIds.has(n._id.toString()));
+
+      if (allCompleted) {
+        const skillMapXp = await RoomXpService.awardXp(
+          roomId,
+          userId,
+          roomSkillMapId,
+          50,
+          {
+            source: 'skillmap_completion',
+            referenceId: roomSkillMapId,
+            skillMapName: roomSkillMap.name
+          }
+        );
+
+        if (skillMapXp) {
+          skillMapXpAwarded = {
+            type: 'room_skillmap_completion',
+            amount: skillMapXp.xpAmount,
+            skillMapName: roomSkillMap.name
+          };
+        }
+      }
+    }
+
+    res.json({ progress, nodeCompletionXpAwarded, skillMapXpAwarded, message: 'Status updated' });
   } catch (error) {
     console.error('❌ Error updating node status:', error.message);
     res.status(500).json({ message: error.message });
@@ -783,11 +859,44 @@ router.post('/:roomId/skill-maps/:roomSkillMapId/nodes/:nodeId/practice', async 
     });
     await practice.save();
 
+    const practiceXpAmount = Math.floor(practice.minutesPracticed * 2);
+    let xpAwarded = null;
+    if (practiceXpAmount > 0) {
+      const ledgerEntry = await RoomXpService.awardXp(
+        roomId,
+        userId,
+        roomSkillMapId,
+        practiceXpAmount,
+        {
+          source: 'practice',
+          referenceId: practice._id.toString(),
+          nodeId,
+          nodeTitle: node.title,
+          minutesPracticed: practice.minutesPracticed,
+          timerSeconds: practice.timerSeconds
+        }
+      );
+
+      if (ledgerEntry) {
+        xpAwarded = {
+          type: 'room_practice',
+          amount: ledgerEntry.xpAmount,
+          minutesPracticed: practice.minutesPracticed
+        };
+      }
+    }
+
     // Process personal streak for room practice
     try {
       await StreakService.processSession(userId, new Date());
     } catch (streakError) {
       console.error('⚠️ Error processing streak for room practice:', streakError.message);
+    }
+
+    try {
+      await RoomXpService.updateStreak(roomId, userId);
+    } catch (streakError) {
+      console.error('⚠️ Error processing room streak for room practice:', streakError.message);
     }
 
     // Update node status to In_Progress if not already
@@ -801,7 +910,7 @@ router.post('/:roomId/skill-maps/:roomSkillMapId/nodes/:nodeId/practice', async 
       await progress.save();
     }
 
-    res.status(201).json(practice);
+    res.status(201).json({ ...practice.toObject(), xpAwarded });
   } catch (error) {
     console.error('❌ Error logging room practice:', error.message);
     res.status(500).json({ message: error.message });
@@ -832,95 +941,11 @@ router.get('/:roomId/leaderboard', async (req, res) => {
   try {
     const { roomId } = req.params;
     const userId = req.user.id;
-    const mongoose = (await import('mongoose')).default;
-    const roomObjId = new mongoose.Types.ObjectId(roomId);
 
     const membership = await RoomMember.findOne({ roomId, userId });
     if (!membership) return res.status(403).json({ message: 'Not a member' });
 
-    // Calculate start of current week (Sunday 00:00 UTC)
-    const now = new Date();
-    const dayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon...
-    const weekStart = new Date(now);
-    weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
-    weekStart.setUTCHours(0, 0, 0, 0);
-
-    // Weekly XP: only count practice from current week
-    const weeklyStats = await RoomPractice.aggregate([
-      { $match: { roomId: roomObjId, date: { $gte: weekStart } } },
-      { $group: {
-        _id: '$userId',
-        totalMinutes: { $sum: '$minutesPracticed' },
-        totalSessions: { $sum: 1 }
-      }},
-      { $sort: { totalMinutes: -1 } }
-    ]);
-
-    // Get all practice dates per user for streak calculation
-    const allPractice = await RoomPractice.aggregate([
-      { $match: { roomId: roomObjId } },
-      { $group: {
-        _id: { userId: '$userId', date: { $dateToString: { format: '%Y-%m-%d', date: '$date' } } }
-      }},
-      { $group: {
-        _id: '$_id.userId',
-        practiceDates: { $push: '$_id.date' }
-      }}
-    ]);
-
-    // Calculate streak for each user (consecutive days ending today or yesterday)
-    const calculateStreak = (dates) => {
-      if (!dates || dates.length === 0) return 0;
-      const sorted = [...new Set(dates)].sort().reverse(); // newest first
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-      
-      // Streak must include today or yesterday
-      if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
-      
-      let streak = 1;
-      for (let i = 1; i < sorted.length; i++) {
-        const curr = new Date(sorted[i - 1]);
-        const prev = new Date(sorted[i]);
-        const diffDays = Math.round((curr - prev) / 86400000);
-        if (diffDays === 1) {
-          streak++;
-        } else {
-          break;
-        }
-      }
-      return streak;
-    };
-
-    const streakMap = {};
-    allPractice.forEach(p => { streakMap[p._id] = calculateStreak(p.practiceDates); });
-
-    // Get all members
-    const members = await RoomMember.find({ roomId }).lean();
-    const userIds = members.map(m => m.userId);
-    const users = await User.find({ firebaseUid: { $in: userIds } }).select('firebaseUid name email').lean();
-    const userMap = users.reduce((acc, u) => { acc[u.firebaseUid] = u; return acc; }, {});
-
-    const weeklyMap = weeklyStats.reduce((acc, s) => { acc[s._id] = s; return acc; }, {});
-
-    const leaderboard = members.map(m => {
-      const s = weeklyMap[m.userId] || { totalMinutes: 0, totalSessions: 0 };
-      const user = userMap[m.userId];
-      const totalXp = s.totalMinutes * 2; // 2 XP per minute
-      return {
-        userId: m.userId,
-        username: user?.name || 'Unknown',
-        avatar: null,
-        role: m.role,
-        totalMinutes: s.totalMinutes,
-        totalSessions: s.totalSessions,
-        totalXp,
-        currentStreak: streakMap[m.userId] || 0,
-        rank: 0
-      };
-    }).sort((a, b) => b.totalXp - a.totalXp);
-
-    leaderboard.forEach((entry, i) => { entry.rank = i + 1; });
+    const leaderboard = await RoomXpService.getRoomLeaderboard(roomId, userId);
 
     res.json({ leaderboard, count: leaderboard.length });
   } catch (error) {
